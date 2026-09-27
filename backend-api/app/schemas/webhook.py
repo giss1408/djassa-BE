@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Any, Dict
 
 
@@ -7,5 +7,4 @@ class WebhookIn(BaseModel):
     id: str | None
     data: Dict[str, Any] | None
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")

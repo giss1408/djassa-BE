@@ -1,78 +1,100 @@
-# Architecture backend — Djassa
+# Djassa System Architecture
 
-## Principe directeur
+## Purpose
 
-Le backend est découpé en **zones réseau isolées** : une zone publique (un seul point d'entrée), une zone applicative (aucun service exposé directement à internet), et une zone données (jamais accessible depuis l'extérieur du réseau applicatif). Chaque conteneur ne parle qu'aux conteneurs dont il a strictement besoin — c'est la base sur laquelle repose toute la sécurité en profondeur détaillée dans `SECURITY.md`.
+Djassa starts as a merchant loyalty and transaction-history platform. Over time it may connect users and merchants to regulated financial partners for tontines, savings, and credit. The system must preserve a strict boundary between technology/distribution and regulated custody or lending.
 
-## Vue d'ensemble
+## Current implementation status
+
+| Area | Status | Evidence |
+|---|---|---|
+| FastAPI API | Implemented | `backend-api/app/` |
+| PostgreSQL data model and Alembic migrations | Implemented | `backend-api/alembic/` |
+| Redis/Celery worker path | Partial | `backend-api/app/celery_app.py`, Compose worker |
+| JWT authentication | Prototype | `backend-api/app/core/security.py` |
+| Resource authorization/RBAC | Partial | Endpoint checks exist; full role model is not complete |
+| Webhook signature and replay checks | Partial | Verification exists; provider reconciliation is not complete |
+| Reverse proxy and TLS | Deployment-dependent | Kubernetes ingress examples and target Compose file |
+| Object storage | Target | Described in target topology; not part of the backend VPS stack |
+| Scheduler | Target | Must be implemented as a separately owned worker/beat process |
+| Centralized logs and alerting | Target/partial | Monitoring configuration exists; production retention and access remain |
+
+## Logical topology
 
 ```mermaid
 flowchart TB
-    subgraph Internet
-        Client[Client mobile / WhatsApp / Web]
-        MobileMoney[Webhooks Wave / Orange Money / MTN / CinetPay]
-    end
+    Client[Web / mobile / partner client]
+    Provider[Mobile-money provider]
+    Edge[Ingress or reverse proxy\nTLS, request limits, security headers]
+    API[FastAPI API\nidentity, authorization, validation]
+    Worker[Celery worker\nasync processing]
+    DB[(PostgreSQL)]
+    Redis[(Redis broker/cache)]
+    Storage[(Object storage, optional)]
+    Obs[Metrics, traces, centralized logs]
 
-    subgraph edge["Zone publique (edge)"]
-        Proxy[Reverse proxy — Nginx/Traefik<br/>TLS, rate limiting, en-têtes de sécurité]
-    end
-
-    subgraph app["Zone applicative (réseau interne, non exposé)"]
-        API[API Backend<br/>Auth, RBAC, validation]
-        Worker[Worker asynchrone<br/>notifications SMS/WhatsApp, jobs tontine]
-        Scheduler[Scheduler<br/>rappels de cotisation, cycles tontine]
-    end
-
-    subgraph data["Zone données (isolée, aucun port exposé)"]
-        DB[(PostgreSQL<br/>chiffré au repos)]
-        Cache[(Redis<br/>cache + file de jobs)]
-        Storage[(Object storage<br/>reçus, justificatifs)]
-    end
-
-    subgraph obs["Observabilité"]
-        Logs[Logs centralisés]
-        Metrics[Métriques / alertes]
-    end
-
-    Client -->|HTTPS| Proxy
-    MobileMoney -->|HTTPS + signature vérifiée| Proxy
-    Proxy --> API
+    Client -->|HTTPS| Edge
+    Provider -->|Signed HTTPS callback| Edge
+    Edge --> API
     API --> DB
-    API --> Cache
+    API --> Redis
     API --> Storage
     API --> Worker
-    Worker --> Cache
+    Worker --> Redis
     Worker --> DB
-    Scheduler --> Cache
-    API -.-> Logs
-    Worker -.-> Logs
-    API -.-> Metrics
+    API --> Obs
+    Worker --> Obs
 ```
 
-## Composants
+## Trust boundaries
 
-| Composant | Rôle | Exposition réseau |
-|---|---|---|
-| **Reverse proxy** (Nginx/Traefik) | Point d'entrée unique, terminaison TLS, rate limiting, en-têtes de sécurité | Seul conteneur exposé publiquement (443) |
-| **API backend** | Logique métier (fidélité, tontine, épargne, scoring), authentification, autorisation | Interne uniquement, jamais exposé directement |
-| **Worker** | Traitement asynchrone : notifications SMS/WhatsApp, traitement des webhooks mobile money, calcul de score | Interne uniquement |
-| **Scheduler** | Tâches planifiées : rappels de cotisation, clôture de cycle de tontine, rapports | Interne uniquement |
-| **PostgreSQL** | Base de données transactionnelle principale | Réseau données uniquement, aucun port publié sur l'hôte |
-| **Redis** | Cache + file de jobs (queue) entre API et Worker | Réseau données uniquement |
-| **Object storage** (type MinIO / S3 compatible) | Reçus, justificatifs, exports | Réseau données uniquement, accès via URLs signées à durée limitée |
+1. **Internet to edge:** all requests are untrusted. TLS, size limits, rate limits, and security headers are applied here.
+2. **Edge to API:** only the API service is reachable from the edge. The API authenticates the caller and authorizes each resource.
+3. **API/worker to data:** database and Redis are private. Credentials are service-specific where the deployment supports it.
+4. **Partner to financial workflow:** payment providers and financial institutions receive only documented, consented data through dedicated interfaces.
+5. **Operations to infrastructure:** deployment and secret access use separate identities, MFA, audit logs, and least privilege.
 
-## Pourquoi cette segmentation, concrètement
+## Critical webhook flow
 
-- **Un webhook mobile money compromis ou mal formé ne peut jamais atteindre directement la base de données** : il passe par le proxy, puis l'API qui vérifie sa signature avant de le transmettre au worker.
-- **Une IMF partenaire à qui on donne un accès de lecture au score** ne touche jamais la base de données réelle — elle appelle un endpoint API dédié, avec ses propres permissions, jamais un accès direct.
-- **Aucun conteneur de données n'a de port publié vers l'hôte** (`ports:` absent dans `docker-compose.yml` pour `db` et `redis`) — seule l'API peut les atteindre, via le réseau Docker interne.
+1. Provider sends a signed callback to the public webhook endpoint.
+2. Edge forwards the request without applying business logic.
+3. API validates the raw-body signature, mandatory timestamp, payload shape, and external transaction ID.
+4. API records an idempotency marker and durable event before acknowledging acceptance.
+5. Worker processes the event asynchronously with retries and a dead-letter path.
+6. Reconciliation compares provider settlement data with internal transaction state.
 
-## Flux critique à examiner en premier : réception d'un webhook mobile money
+A signature proves message authenticity; it does not prove that the amount, recipient, or business transaction is valid. Reconciliation and state-transition checks remain mandatory.
 
-1. L'opérateur (Wave, Orange, MTN via CinetPay) envoie une notification de paiement au proxy, sur une route dédiée (`/webhooks/mobile-money`).
-2. Le proxy transmet à l'API sans logique métier.
-3. L'API **vérifie la signature cryptographique du webhook avant tout traitement** (voir `SECURITY.md`, section validation des webhooks) — un webhook non signé ou mal signé est rejeté immédiatement, sans jamais toucher la base de données.
-4. Une fois validé, l'événement est déposé dans la file Redis, pas traité en synchrone — un pic de webhooks ne doit jamais bloquer l'API.
-5. Le worker consomme la file, met à jour la transaction en base, et déclenche la notification au client (SMS/WhatsApp).
+## Payment boundary
 
-Ce flux doit être le premier testé en charge et en sécurité avant tout autre, car c'est le point d'entrée le plus exposé à une donnée externe non fiable.
+Djassa is the orchestration and record-keeping layer. A provider or regulated financial partner executes the actual wallet or bank movement. The API creates a payment intent, calls a country-selected provider adapter, stores the provider transaction ID, and updates state only after a verified callback or reconciliation result.
+
+The sandbox adapter is for integration tests only. Live adapters must be country-specific, use secret-manager credentials, enforce provider idempotency, apply timeouts and retries, and expose settlement/reconciliation data. Djassa must never mark a payment successful based only on a client response.
+
+## Deployment contracts
+
+### VPS integration test
+
+- Entry point: `backend-api/deploy-vps-test.sh`.
+- API is bound to `127.0.0.1:8000`.
+- PostgreSQL and Redis have no published host ports.
+- Migrations run before API startup.
+- Secrets are generated in a mode-600 `.env` for disposable testing only.
+
+### Kubernetes target
+
+- Entry point: `scripts/deploy-k8s.sh` or the Jenkins pipeline after review.
+- API uses a ClusterIP service and ingress TLS.
+- Pod security settings include non-root execution, no privilege escalation, read-only root filesystem, and dropped capabilities.
+- External Secrets injects `DATABASE_URL`, `DJASSA_SECRET_KEY`, and `MOBILE_MONEY_SECRETS`.
+- NetworkPolicy must be validated against the actual namespaces and labels in the cluster.
+
+The Kubernetes files contain example registry, hostname, Vault, and certificate values. They are templates, not production-ready defaults.
+
+## Scaling rules
+
+- API replicas are stateless and may scale horizontally after session and rate-limit state are externalized.
+- Workers scale independently from API replicas.
+- PostgreSQL is the source of truth for financial state; Redis is not a durable ledger.
+- Every financial event needs an idempotency key and an auditable state transition.
+- Large exports should run asynchronously and produce expiring, authorized download links.

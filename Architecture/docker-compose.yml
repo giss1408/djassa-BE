@@ -1,3 +1,5 @@
+# Target topology example. This file is not the VPS test stack; validate all
+# provider images, secret adapters, and network labels before using it.
 version: "3.9"
 
 # Trois réseaux isolés : edge (public), app (interne), data (jamais exposé).

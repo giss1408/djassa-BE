@@ -2,6 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: djassa-api-policy
+  namespace: djassa
 spec:
   podSelector:
     matchLabels:
@@ -14,7 +15,7 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: edge
-        - podSelector:
+          podSelector:
             matchLabels:
               app: djassa-proxy
       ports:
@@ -22,19 +23,42 @@ spec:
           port: 8000
   egress:
     - to:
-        - podSelector:
+        - namespaceSelector:
+            matchLabels:
+              name: data
+          podSelector:
             matchLabels:
               app: djassa-db
-        - podSelector:
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: data
+          podSelector:
             matchLabels:
               app: djassa-redis
-        - podSelector:
+      ports:
+        - protocol: TCP
+          port: 6379
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: data
+          podSelector:
             matchLabels:
               app: djassa-storage
       ports:
         - protocol: TCP
-          port: 5432
-        - protocol: TCP
-          port: 6379
-        - protocol: TCP
           port: 9000
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
