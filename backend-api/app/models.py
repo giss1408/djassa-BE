@@ -136,7 +136,7 @@ class WebhookIdempotency(Base):
 
 
 class Venue(Base):
-    """A place a customer can find and pay: a maquis or a pharmacy.
+    """A place a customer can find and pay: a maquis, a pharmacy, a shop...
 
     `payout_provider`/`payout_account` are the merchant's OWN mobile-money
     wallet. A customer payment goes straight there through the licensed
@@ -145,7 +145,7 @@ class Venue(Base):
 
     __tablename__ = "venues"
     id = Column(Integer, primary_key=True, index=True)
-    category = Column(String(32), nullable=False, index=True)  # "maquis" | "pharmacy"
+    category = Column(String(32), nullable=False, index=True)  # a key of app.api.customer.CATEGORIES
     name = Column(String(255), nullable=False)
     commune = Column(String(64), nullable=False, index=True)
     address = Column(String(255), nullable=True)
@@ -173,6 +173,34 @@ class Venue(Base):
 
     duties = relationship("PharmacyDuty", back_populates="venue")
     rewards = relationship("LoyaltyReward", back_populates="venue")
+    deals = relationship("Deal", back_populates="venue")
+
+
+class Deal(Base):
+    """A time-limited offer a venue publishes ("bon plan"): a discount, a
+    reduced price or something free with a purchase.
+
+    The merchant writes and runs their own deals. `is_featured` is the paid
+    publicity slot (home carousel, top of the list): only an admin sets it, so
+    placement is sold, not self-granted.
+    """
+
+    __tablename__ = "deals"
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    title = Column(String(120), nullable=False)
+    description = Column(Text, nullable=True)
+    # Any combination may be set; the app shows the strongest one as the badge.
+    discount_percent = Column(Integer, nullable=True)
+    price = Column(Integer, nullable=True)  # XOF, the deal price
+    original_price = Column(Integer, nullable=True)  # XOF, struck through
+    starts_at = Column(DateTime, nullable=False, index=True)
+    ends_at = Column(DateTime, nullable=False, index=True)
+    is_featured = Column(Boolean, nullable=False, default=False, index=True)
+    active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, nullable=False)
+
+    venue = relationship("Venue", back_populates="deals")
 
 
 class PharmacyDuty(Base):

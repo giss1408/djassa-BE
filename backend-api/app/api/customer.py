@@ -1,4 +1,4 @@
-"""Customer-facing API: find a maquis, find an on-duty pharmacy, pay, earn points."""
+"""Customer-facing API: find a place to eat or shop, find an on-duty pharmacy, pay, earn points."""
 
 import secrets
 from datetime import datetime, timezone
@@ -12,6 +12,8 @@ from .. import models
 from ..core.security import get_current_user, require_role
 from ..db import get_db
 from ..schemas.customer import (
+    CategoryOut,
+    DealOut,
     DutyIn,
     DutyOut,
     LoyaltyEntryOut,
@@ -32,7 +34,17 @@ from ..services.mobile_money import get_provider
 
 router = APIRouter()
 
-CATEGORIES = ("maquis", "pharmacy")
+# Kinds of venue, in the order the app shows them: key -> (label, plural).
+# French, since the app displays them as-is. A new kind of retailer is one
+# line here; the app draws a generic storefront icon for keys it does not know.
+CATEGORIES: dict[str, tuple[str, str]] = {
+    "maquis": ("Maquis", "Maquis"),
+    "superette": ("Supérette", "Supérettes"),
+    "pharmacy": ("Pharmacie", "Pharmacies"),
+    "mode": ("Mode", "Boutiques de mode"),
+    "beaute": ("Beauté", "Salons de beauté"),
+    "telephonie": ("Téléphonie", "Téléphonie"),
+}
 # No 0/O or 1/I: the code is read aloud across a noisy counter.
 _VOUCHER_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 PAY_CODE_LENGTH = 10  # 32^10 ~ 10^15: not guessable by trying codes
@@ -137,6 +149,35 @@ async def _balance(db: AsyncSession, customer_id: str, venue_id: int | None = No
 # --- Discovery --------------------------------------------------------------
 
 
+@router.get("/categories", response_model=list[CategoryOut])
+async def list_categories(user=Depends(get_current_user)):
+    return [CategoryOut(key=k, label=label, plural=plural) for k, (label, plural) in CATEGORIES.items()]
+
+
+def live_deals_filter(moment: datetime):
+    """Deals a customer may see at `moment`: switched on and within their dates."""
+    return (models.Deal.active.is_(True), models.Deal.starts_at <= moment, models.Deal.ends_at > moment)
+
+
+def deal_out(d: models.Deal) -> DealOut:
+    return DealOut(
+        id=d.id,
+        venue_id=d.venue_id,
+        venue_name=d.venue.name,
+        venue_category=d.venue.category,
+        venue_commune=d.venue.commune,
+        title=d.title,
+        description=d.description,
+        discount_percent=d.discount_percent,
+        price=d.price,
+        original_price=d.original_price,
+        starts_at=d.starts_at,
+        ends_at=d.ends_at,
+        is_featured=d.is_featured,
+        is_sample=d.venue.is_sample,
+    )
+
+
 @router.get("/venues", response_model=list[VenueOut])
 async def list_venues(
     category: str | None = Query(None),
@@ -146,7 +187,7 @@ async def list_venues(
     user=Depends(get_current_user),
 ):
     if category is not None and category not in CATEGORIES:
-        raise HTTPException(status_code=422, detail=f"category must be one of {CATEGORIES}")
+        raise HTTPException(status_code=422, detail=f"category must be one of {tuple(CATEGORIES)}")
     stmt = select(models.Venue)
     if category:
         stmt = stmt.where(models.Venue.category == category)
@@ -175,10 +216,19 @@ async def get_venue(venue_id: int, db: AsyncSession = Depends(get_db), user=Depe
     if venue is None:
         raise HTTPException(status_code=404, detail="venue not found")
     rewards = [RewardOut.model_validate(r) for r in venue.rewards if r.active]
+    deals = (
+        await db.execute(
+            select(models.Deal)
+            .options(selectinload(models.Deal.venue))
+            .where(models.Deal.venue_id == venue.id, *live_deals_filter(utcnow()))
+            .order_by(models.Deal.ends_at)
+        )
+    ).scalars().all()
     return _venue_out(
         venue,
         VenueDetailOut,
         rewards=sorted(rewards, key=lambda r: r.cost_points),
+        deals=[deal_out(d) for d in deals],
         my_points=await _balance(db, user["username"], venue.id),
     )
 

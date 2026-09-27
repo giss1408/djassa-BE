@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 WalletProvider = Literal["wave", "orange", "mtn", "moov"]
 
@@ -31,8 +31,52 @@ class VenueOut(BaseModel):
     is_sample: bool
 
 
+class CategoryOut(BaseModel):
+    key: str
+    label: str
+    plural: str
+
+
+class DealOut(BaseModel):
+    id: int
+    venue_id: int
+    venue_name: str
+    venue_category: str
+    venue_commune: str
+    title: str
+    description: str | None = None
+    discount_percent: int | None = None
+    price: int | None = None
+    original_price: int | None = None
+    starts_at: datetime
+    ends_at: datetime
+    is_featured: bool
+    is_sample: bool
+
+
+class DealIn(BaseModel):
+    title: str = Field(min_length=3, max_length=120)
+    description: str | None = Field(default=None, max_length=1000)
+    discount_percent: int | None = Field(default=None, ge=1, le=90)
+    price: int | None = Field(default=None, ge=0, le=10_000_000)
+    original_price: int | None = Field(default=None, ge=1, le=10_000_000)
+    starts_at: datetime | None = None  # defaults to now
+    ends_at: datetime
+
+    @model_validator(mode="after")
+    def _coherent(self):
+        if self.price is not None and self.original_price is not None and self.price >= self.original_price:
+            raise ValueError("le prix promo doit etre inferieur au prix d'origine")
+        return self
+
+
+class DealFeatureIn(BaseModel):
+    is_featured: bool
+
+
 class VenueDetailOut(VenueOut):
     rewards: list[RewardOut] = []
+    deals: list[DealOut] = []
     my_points: int = 0
 
 

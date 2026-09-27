@@ -1,4 +1,4 @@
-"""Sample maquis and pharmacies for development and demos.
+"""Sample maquis, pharmacies, shops and deals for development and demos.
 
 Everything here is invented: every name ends in "(exemple)", every phone number
 is a 00-prefixed placeholder, and every row has `is_sample=True` so the app can
@@ -35,11 +35,36 @@ _PHARMACIES = [
     ("Pharmacie Abobo Gare (exemple)", "Abobo", "Gare d'Abobo", None),
 ]
 
+# Other retailers: category, name, commune, address, what they sell, hours, payout.
+_SHOPS = [
+    ("superette", "Superette Bon Prix (exemple)", "Cocody", "Angre 8e tranche", "Riz, huile, lait, produits frais", "7h - 22h", ("wave", "+2250700000021")),
+    ("superette", "Alimentation Chez Moussa (exemple)", "Abobo", "Abobo Baoule", "Epicerie, boissons, recharges", "6h - 23h", ("orange", "+2250700000022")),
+    ("mode", "Wax & Style (exemple)", "Treichville", "Marche de Treichville", "Pagnes wax, couture sur mesure", "9h - 19h", ("mtn", "+2250500000023")),
+    ("mode", "Sneakers Plateau (exemple)", "Plateau", "Rue du Commerce", "Baskets, sacs, accessoires", "9h - 20h", None),
+    ("beaute", "Salon Belle Tresse (exemple)", "Yopougon", "Selmer", "Tresses, perruques, manucure", "8h - 20h", ("wave", "+2250700000025")),
+    ("telephonie", "Adjame Phone Center (exemple)", "Marcory", "Boulevard VGE", "Telephones, reparations, accessoires", "8h - 20h", ("moov", "+2250100000026")),
+]
+
 _REWARDS = {
     "maquis": [("Une boisson offerte", 50), ("Un alloco offert", 80), ("-2000 FCFA sur l'addition", 200)],
     "pharmacy": [("Livraison gratuite", 60), ("-1000 FCFA sur la prochaine ordonnance", 150)],
+    "superette": [("Un pack d'eau offert", 80), ("-1000 FCFA sur les courses", 150)],
+    "mode": [("Retouche offerte", 60), ("-10% sur un pagne", 200)],
+    "beaute": [("Soin des mains offert", 100), ("-3000 FCFA sur une coiffure", 250)],
+    "telephonie": [("Protection d'ecran offerte", 80), ("Diagnostic gratuit", 40)],
 }
 
+# Deals: venue name, title, description, discount %, price, original price,
+# days left, featured (the paid publicity slot).
+_DEALS = [
+    ("Maquis Le Baobab (exemple)", "Poulet braise + attieke a 3 500 F", "Tous les jeudis soir.", None, 3500, 5000, 5, True),
+    ("Superette Bon Prix (exemple)", "-20% sur le riz parfume 25 kg", "Dans la limite des stocks.", 20, None, None, 3, True),
+    ("Wax & Style (exemple)", "Pagne 6 yards a 7 500 F", "Nouvelle collection.", None, 7500, 10000, 10, True),
+    ("Salon Belle Tresse (exemple)", "-30% sur les tresses le mardi", None, 30, None, None, 14, False),
+    ("Adjame Phone Center (exemple)", "Changement d'ecran des 15 000 F", "Garantie 3 mois.", None, 15000, 25000, 7, False),
+    ("Chez Tantie Awa (exemple)", "Garba + boisson a 1 000 F", "Le midi en semaine.", None, 1000, 1300, 2, False),
+    ("Pharmacie Riviera 3 (exemple)", "-15% sur la parapharmacie", "Hors medicaments.", 15, None, None, 6, False),
+]
 
 
 def seeding_enabled() -> bool:
@@ -71,11 +96,63 @@ async def _backfill_pay_codes(db) -> None:
     await db.commit()
 
 
+async def _seed_shops_and_deals(db) -> None:
+    """Other retailers and sample deals. Idempotent, so a dev database seeded
+    before these existed gets them on its next start."""
+    has_shops = (
+        await db.execute(select(func.count(models.Venue.id)).where(models.Venue.category == _SHOPS[0][0]))
+    ).scalar_one()
+    if not has_shops:
+        for i, (category, name, commune, address, specialties, hours, payout) in enumerate(_SHOPS):
+            venue = models.Venue(
+                category=category,
+                name=name,
+                commune=commune,
+                address=address,
+                specialties=specialties,
+                opening_hours=hours,
+                phone=f"+225 00 00 00 30 {i:02d}",
+                description="Commerce fictif, donnees de demonstration.",
+                points_per_100=1,
+                payout_provider=payout[0] if payout else None,
+                payout_account=payout[1] if payout else None,
+                is_sample=True,
+            )
+            venue.rewards = [models.LoyaltyReward(title=t, cost_points=c) for t, c in _REWARDS[category]]
+            db.add(venue)
+        await db.flush()
+
+    if not (await db.execute(select(func.count(models.Deal.id)))).scalar_one():
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        venues = {v.name: v for v in (await db.execute(select(models.Venue).where(models.Venue.is_sample.is_(True)))).scalars()}
+        for name, title, description, percent, price, original, days, featured in _DEALS:
+            venue = venues.get(name)
+            if venue is None:
+                continue
+            db.add(
+                models.Deal(
+                    venue_id=venue.id,
+                    title=title,
+                    description=description,
+                    discount_percent=percent,
+                    price=price,
+                    original_price=original,
+                    starts_at=now - timedelta(days=1),
+                    ends_at=now + timedelta(days=days),
+                    is_featured=featured,
+                    active=True,
+                    created_at=now,
+                )
+            )
+    await db.commit()
+
+
 async def seed_sample_data() -> None:
     if not seeding_enabled():
         return
     async with AsyncSessionLocal() as db:
         if (await db.execute(select(func.count(models.Venue.id)))).scalar_one():
+            await _seed_shops_and_deals(db)
             await _backfill_pay_codes(db)
             return
 
@@ -127,4 +204,5 @@ async def seed_sample_data() -> None:
             db.add(venue)
 
         await db.commit()
+        await _seed_shops_and_deals(db)
         await _backfill_pay_codes(db)

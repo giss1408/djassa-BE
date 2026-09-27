@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from .api import payments, auth, transactions, export, tontine, webhooks, customer, payment_requests
+from .api import payments, auth, transactions, export, tontine, webhooks, customer, payment_requests, deals
 from .db import engine, Base
 from .seed import seed_sample_data
 from . import tasks
@@ -92,6 +92,7 @@ app.include_router(export.router, prefix="/api")
 app.include_router(tontine.router, prefix="/api")
 app.include_router(customer.router, prefix="/api")
 app.include_router(payment_requests.router, prefix="/api")
+app.include_router(deals.router, prefix="/api")
 app.include_router(webhooks.router)
 
 # Expose /metrics endpoint for Prometheus to scrape (compose local)
