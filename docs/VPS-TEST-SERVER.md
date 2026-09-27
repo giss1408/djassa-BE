@@ -128,7 +128,7 @@ export DJASSA_SECRET_KEY="$(openssl rand -hex 32)"
 export MOBILE_MONEY_SECRETS="$(openssl rand -hex 32)"
 ```
 
-The current `docker-compose.poc.yml` contains fixed database credentials and does not pass these two variables to the application. For a temporary test server, inject them when starting the web service after the dependencies are running.
+The current `docker-compose.poc.yml` requires database and application secrets through the private `.env` file. For a temporary test server, the automated deployment script creates these values and passes them to the services.
 
 For repeatable testing, update the Compose file to use a private `.env` or Docker secrets and replace the hardcoded PostgreSQL password before deploying it anywhere beyond a disposable test VPS.
 

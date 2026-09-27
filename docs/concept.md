@@ -41,7 +41,7 @@ La fidélité ne fonctionne que si le client a une raison d'ouvrir l'app chaque 
 
 Le paiement est ce qui rend l'app essentielle : c'est le geste qui génère à la fois les points du client et l'historique vérifié du commerçant.
 
-📄 Voir [`docs/loyalty-app.md`](docs/loyalty-app.md) pour le détail du MVP, du modèle de pricing et du plan pilote *(à créer)*.
+📄 Voir [Product Concept](PRODUCT-CONCEPT.md), [Business Model](BUSINESS-MODEL.md), and [Product Roadmap](ROADMAP.md) for the synchronized English MVP, pricing, and pilot documentation.
 
 ## 🗺️ Roadmap de l'écosystème
 

@@ -1,15 +1,17 @@
 from fastapi import APIRouter, Request, Header, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from ..db import get_db
-from ..models import WebhookEvent, WebhookIdempotency
+from ..models import Payment as PaymentModel, PaymentReconciliation, WebhookEvent, WebhookIdempotency
+from ..services.payment_state import PaymentStatus, transition
 from ..schemas.webhook import WebhookIn
 from ..rate_limiter import limiter
 import hmac
 import hashlib
 import json
-from datetime import datetime, timedelta
+from decimal import Decimal, InvalidOperation
+from datetime import datetime, timezone
 import os
-from datetime import timezone
 REPLAY_WINDOW_SECONDS = int(os.getenv("WEBHOOK_REPLAY_WINDOW", "300"))
 IDEMPOTENCY_TTL_SECONDS = int(os.getenv("WEBHOOK_IDEMPOTENCY_TTL", "86400"))
 
@@ -41,8 +43,7 @@ async def verify_signature(raw_body: bytes, signature: str, secret: str) -> bool
 
 
 @router.post("/mobile-money")
-@router.post("/mobile-money")
-@limiter.limit("10/minute", key_func=lambda: "webhook")
+@limiter.limit("10/minute")
 async def mobile_money_webhook(
     request: Request,
     x_signature: str | None = Header(None),
@@ -51,8 +52,10 @@ async def mobile_money_webhook(
     raw = await request.body()
     try:
         payload = json.loads(raw)
-    except Exception:
+    except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="invalid json")
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="invalid json payload")
 
     # Secret rotation: `MOBILE_MONEY_SECRETS` contains comma-separated keys (latest first)
     keys = load_active_and_previous_keys("MOBILE_MONEY_SECRETS")
@@ -66,16 +69,21 @@ async def mobile_money_webhook(
     if not external_id:
         raise HTTPException(status_code=400, detail="missing transaction id")
 
-    # Basic replay protection: require a `timestamp` field within allowed window
+    # Replay protection is mandatory for signed payment events.
     ts = payload.get("timestamp")
-    if ts:
-        try:
-            ev_time = datetime.fromisoformat(ts)
-            now = datetime.utcnow()
-            if abs((now - ev_time).total_seconds()) > REPLAY_WINDOW_SECONDS:
-                raise HTTPException(status_code=400, detail="replay window exceeded")
-        except Exception:
-            raise HTTPException(status_code=400, detail="invalid timestamp")
+    if not ts or not isinstance(ts, str):
+        raise HTTPException(status_code=400, detail="missing timestamp")
+    try:
+        ev_time = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        if ev_time.tzinfo is None:
+            ev_time = ev_time.replace(tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
+        if abs((now - ev_time).total_seconds()) > REPLAY_WINDOW_SECONDS:
+            raise HTTPException(status_code=400, detail="replay window exceeded")
+    except HTTPException:
+        raise
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="invalid timestamp")
 
     # check idempotency record; expired markers should be ignored
     existing = await db.get(WebhookIdempotency, external_id)
@@ -90,7 +98,14 @@ async def mobile_money_webhook(
     event = WebhookEvent(payload=json.dumps(payload), external_id=external_id)
     db.add(marker)
     db.add(event)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception as exc:
+        from sqlalchemy.exc import IntegrityError
+        if not isinstance(exc, IntegrityError):
+            raise
+        await db.rollback()
+        return {"status": "already_processed"}
 
     # Enqueue async processing via Celery
     try:
@@ -100,5 +115,39 @@ async def mobile_money_webhook(
         # fallback: process inline
         from ..services import tontine
         await tontine.process_webhook(external_id)
+
+    # Reconcile a matching payment intent when the provider includes status,
+    # amount, and currency. Business settlement remains provider-specific.
+    payment_result = await db.execute(select(PaymentModel).where(PaymentModel.external_id == str(external_id)))
+    payment = payment_result.scalar_one_or_none()
+    provider_status = str(payload.get("status", "")).lower()
+    if payment and provider_status in {"succeeded", "failed", "cancelled", "disputed"}:
+        try:
+            callback_amount = payload.get("amount")
+            callback_currency = str(payload.get("currency", "")).upper()
+            try:
+                callback_amount_value = Decimal(str(callback_amount))
+            except (InvalidOperation, TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="invalid payment amount")
+            if callback_currency != payment.currency or callback_amount_value != payment.amount:
+                raise HTTPException(status_code=400, detail="payment amount or currency mismatch")
+            target = PaymentStatus(provider_status)
+            payment.status = transition(payment.status, target)
+            payment.provider_status = provider_status
+            db.add(PaymentReconciliation(
+                payment_id=payment.id,
+                external_id=str(external_id),
+                provider=payment.provider,
+                provider_status=provider_status,
+                amount=callback_amount_value,
+                currency=payment.currency,
+                raw_reference=str(payload.get("reference", ""))[:255] or None,
+            ))
+            await db.commit()
+        except HTTPException:
+            await db.rollback()
+            raise
+        except ValueError:
+            await db.rollback()
 
     return {"status": "accepted"}

@@ -1,111 +1,89 @@
-# djassa — Container orchestration security architecture
+# Container and Kubernetes Security
 
-Goal: provide concrete, actionable security guidance for running `djassa` in container orchestration platforms (Docker Compose for local/dev and Kubernetes for production). This document covers design principles, build-time and runtime controls, CI/CD gating, supply-chain protections, monitoring, and concrete Kubernetes manifest examples.
+This is the operational hardening guide for Docker Compose, Kubernetes, image supply chain, and runtime controls. The [application security guide](SECURITY.md) covers identity, data, and payment behavior.
 
-Principles
-- Least privilege: run services with the minimum permissions, network reachability, and file-system access they need.
-- Immutable images: build reproducible, versioned images; never build in production clusters.
-- Defense in depth: combine network segmentation, runtime detection, admission controls, and audit logging.
-- Fail closed: CI gates must block vulnerable images; admission controllers must reject non-compliant workloads.
+## Environment model
 
-1) Environment segmentation
-- Keep three logical zones (matches the existing docker-compose):
-  - edge (ingress/proxy) — only component with host-facing ports.
-  - app (application network) — API, workers; no direct host exposure.
-  - data (storage) — DB, Redis, object storage; never exposed publicly.
+| Environment | Canonical entry point | Purpose | Security posture |
+|---|---|---|---|
+| Local development | `backend-api/docker-compose.dev.yml` | Developer feedback loop | Disposable data; never shared or internet-facing |
+| VPS integration test | `backend-api/deploy-vps-test.sh` | Controlled integration testing | Private dependencies, localhost API binding, test secrets |
+| Kubernetes target | `Architecture/k8s/` and `scripts/deploy-k8s.sh` | Staging/production-shaped deployment | Requires cluster policy, secret store, TLS, and reviewed values |
 
-- Kubernetes mapping:
-  - Use separate namespaces: `edge`, `app`, `data`.
-  - Use NetworkPolicies to restrict cross-namespace traffic to only required flows (ingress -> app/api; app -> data).
+Do not use the local or VPS test configuration for production financial traffic.
 
-2) Image build and supply chain
-- Build images in CI with reproducible build args, fixed base image digests (use `FROM python:3.11-slim@sha256:...`).
-- Generate an SBOM for every image (Syft) and attach it as build artifact.
-- Scan every image for vulnerabilities (Trivy/Clair) and fail builds on disallowed severities (e.g., HIGH/CRITICAL).
-- Sign images (cosign) and verify signatures in the cluster admission policy.
-- Use ephemeral build runners or hardened build runners; avoid developer machines as the single source of truth for production images.
+## Image supply chain
 
-3) Secrets management
-- Do not store secrets in Git. Use one of:
-  - Cloud-managed secret stores (AWS Secrets Manager, Azure Key Vault, GCP Secret Manager).
-  - Kubernetes External Secrets / Secret Store CSI driver to sync secrets into the cluster at deploy time.
-- In Docker Compose, mount secrets via Docker secrets (already present). Ensure secret files are excluded from commits and use OS-level permissions.
-- Restrict which ServiceAccounts / Pods can access secrets via RBAC and admission policies.
+1. Build images only in controlled CI/CD workers.
+2. Pin base images and dependency versions where practical.
+3. Generate an SBOM with Syft for every release image.
+4. Fail the pipeline on unresolved Critical/High vulnerabilities according to the approved policy.
+5. Sign release images with Cosign.
+6. Enforce signature verification and disallow mutable tags through admission policy.
+7. Retain the image digest, SBOM, scan report, source commit, and deployment record together.
 
-4) Kubernetes runtime controls
-- Pod-level controls:
-  - `securityContext` with `runAsNonRoot: true`, non-root user, `readOnlyRootFilesystem: true`, drop capabilities (`NET_RAW`, `SYS_ADMIN`), and set `seccompProfile` to `RuntimeDefault`.
-  - Resource limits and requests for CPU/memory to prevent noisy neighbors.
-  - Readiness and liveness probes to detect failures.
+The root `Jenkinsfile` implements build, test, migration, SBOM, scan, publish, and gated deployment stages. Image signing and admission enforcement remain cluster responsibilities.
 
-- Namespace & cluster controls:
-  - PodSecurity admission in `restricted` mode for production namespaces.
-  - NetworkPolicy to implement north-south and east-west filtering.
-  - RBAC least-privilege for CI/CD agents and runtime controllers.
-  - Admission controllers: OPA/Gatekeeper or Kyverno to enforce labeling, disallow `latest` tags, enforce image signatures, and block privileged containers.
+## Kubernetes runtime baseline
 
-5) Runtime detection and response
-- Use Falco or a cloud-native detection agent to watch for suspicious syscalls, unexpected network connections, or privilege escalations.
-- Forward alerts and audit logs to a central logging/monitoring stack (ELK, Loki+Grafana, or cloud equivalents). Keep audit logs immutable and retained for compliance.
+Every production workload should define:
 
-6) Network and Ingress
-- Terminate TLS at the edge (ingress) and use mTLS for inter-service communications if high assurance is required (service mesh like Istio/Linkerd with strict mTLS policy).
-- Certificate management: use cert-manager with ACME or cloud CA; store private keys in secrets with strict access control.
-
-7) Node & host hardening
-- Use minimal host OS images, keep container runtime (containerd) and kubelet updated, and apply CIS Kubernetes benchmark hardening.
-- Lock down SSH access and use bastion hosts + MFA. Use IAM roles for node operations instead of static credentials.
-
-8) Backup, recovery, and secrets rotation
-- Regularly backup databases and object storage with encrypted snapshots; test restore procedures.
-- Rotate secrets and keys on a schedule; support emergency rotation workflows.
-
-9) CI/CD gating (example rules)
-- SBOM produced + attached to build.
-- Vulnerability scan: fail on >= 1 Critical or N High (configurable).
-- Image signing required; admission controller verifies signature.
-- Linting + container image policy (no root user, no latest tag).
-
-10) Operational checklist
-- Enforce PodSecurity level `restricted` in production namespaces.
-- NetworkPolicies: deny-all default, allow only known flows.
-- Enforce image scanning and SBOM production in CI.
-- Install runtime detection (Falco) and centralize alerts.
-- Enable Kubernetes audit logging and export to tamper-evident storage.
-
-Recommended tools
-- Build & SBOM: Syft (Anchore), Docker buildx
-- Scanning: Trivy, Clair, Snyk
-- Image signing: cosign
-- Admission control: OPA/Gatekeeper, Kyverno
-- Runtime detection: Falco
-- Secrets: External Secrets Operator, K8s CSI Secret Store
-- Monitoring/logging: Prometheus, Grafana, Loki, ELK
-
-References & further reading
-- Kubernetes Pod Security Standards
-- CIS Kubernetes Benchmark
-- NIST guidance on supply chain security
-
-Appendix: quick Kubernetes manifest examples are in `k8s/` subfolder.
-
-Quick deploy steps
-
-- Ensure `kubectl` context points to the target cluster and you have appropriate privileges.
-- Install cert-manager and External Secrets Operator in the cluster (see their docs).
-- Apply manifests:
-
-```bash
-chmod +x scripts/deploy-k8s.sh
-./scripts/deploy-k8s.sh
+```yaml
+securityContext:
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+  seccompProfile:
+    type: RuntimeDefault
 ```
 
-CI notes (registry + secrets)
+Also require resource requests and limits, liveness/readiness probes, an immutable image reference, and a dedicated ServiceAccount.
 
-- Set the following GitHub repository secrets used by the CI workflow:
-  - `REGISTRY_URL` — e.g. `ghcr.io/yourorg` or `registry.example.com`
-  - `REGISTRY_USERNAME`
-  - `REGISTRY_PASSWORD`
+## Network policy baseline
 
-- The workflow will build the image, optionally push (set `push: true` if desired), generate SBOM, and fail the job on High/Critical vulnerabilities as configured.
+Start with deny-all ingress and egress in the application namespace. Add only required flows:
 
+- Ingress controller to API on TCP 8000.
+- API to PostgreSQL on TCP 5432.
+- API/worker to Redis on TCP 6379.
+- API/worker to object storage only when the feature is enabled.
+- DNS egress to the cluster DNS service.
+- HTTPS egress only for explicitly approved external providers.
+
+The current example NetworkPolicy must be checked against real namespace labels, database labels, and DNS requirements before enforcement.
+
+## Secrets baseline
+
+Use External Secrets or a cloud secret manager. The application contract is:
+
+```text
+DATABASE_URL
+DJASSA_SECRET_KEY
+MOBILE_MONEY_SECRETS
+CELERY_BROKER_URL
+```
+
+Do not place values in manifests, images, Git, or Jenkins logs. Rotate keys using an overlap window, deploy consumers that accept the new key, remove the old key, and verify provider callbacks afterward.
+
+## Runtime operations
+
+- Centralize application, ingress, audit, and Kubernetes logs.
+- Do not expose Prometheus, Grafana, Alertmanager, Redis, PostgreSQL, or exporter ports publicly.
+- Alert on readiness failures, 5xx rate, webhook rejection spikes, queue age, database storage, and backup failures.
+- Use Falco or an equivalent runtime detector for privilege escalation and unexpected network behavior.
+- Enable Kubernetes audit logs and retain them in tamper-resistant storage.
+- Test database restore and incident-response procedures regularly.
+
+## Kubernetes deployment checklist
+
+- [ ] Namespace exists and has restricted Pod Security admission.
+- [ ] External Secrets Operator and provider authentication are installed.
+- [ ] Registry pull secret exists and has least privilege.
+- [ ] Image is published by CI and referenced by digest or immutable tag.
+- [ ] ServiceAccount, Role, and RoleBinding names match the Deployment.
+- [ ] Ingress hostname and certificate issuer are real values.
+- [ ] NetworkPolicy allows DNS and all required application flows.
+- [ ] Resource limits and probes are configured.
+- [ ] Rollout and rollback commands have been tested.

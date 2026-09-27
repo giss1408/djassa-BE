@@ -6,7 +6,9 @@ licensed aggregator (CinetPay covers Wave, Orange Money, MTN MoMo and Moov in
 one API — see docs/concept.md). Nothing in here may route money through an
 account Djassa controls; that would be deposit-taking without a BCEAO licence.
 
-`PAYMENT_PROVIDER` selects the implementation:
+`MOBILE_MONEY_PROVIDER` selects the implementation. (Distinct from
+`PAYMENT_PROVIDER`, which configures the payment orchestration in
+payment_providers.py: one variable cannot pick both.)
 
 * ``fake`` (default) — decides instantly, for development and demos. A payer
   number ending in ``0000`` is declined, so the failure path can be exercised.
@@ -57,10 +59,10 @@ class FakeProvider(MobileMoneyProvider):
 
 
 def get_provider() -> MobileMoneyProvider:
-    name = os.getenv("PAYMENT_PROVIDER", "fake")
+    name = os.getenv("MOBILE_MONEY_PROVIDER", "fake")
     if name == "fake":
         # A fake provider in production would "confirm" payments no one made.
         if os.getenv("DJASSA_ENV") == "production":
-            raise RuntimeError("PAYMENT_PROVIDER=fake is refused when DJASSA_ENV=production")
+            raise RuntimeError("MOBILE_MONEY_PROVIDER=fake is refused when DJASSA_ENV=production")
         return FakeProvider()
-    raise RuntimeError(f"Unknown or unimplemented PAYMENT_PROVIDER: {name!r}")
+    raise RuntimeError(f"Unknown or unimplemented MOBILE_MONEY_PROVIDER: {name!r}")

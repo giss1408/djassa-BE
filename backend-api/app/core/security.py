@@ -7,7 +7,9 @@ from jose import jwt, JWTError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-SECRET_KEY = os.getenv("DJASSA_SECRET_KEY", "change-me-in-prod")
+SECRET_KEY = os.getenv("DJASSA_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("DJASSA_SECRET_KEY must be set before starting the application")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
@@ -44,12 +46,11 @@ def decode_access_token(token: str):
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = decode_access_token(token)
-    if not payload:
+    subject = payload.get("sub") if payload else None
+    if not subject or not isinstance(subject, str):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
-    # For skeleton: payload should include `sub` for username/user id
     # Tokens issued before roles existed carry none; they were merchant tokens.
-    user = {"username": payload.get("sub"), "role": payload.get("role", "merchant")}
-    return user
+    return {"username": subject, "role": payload.get("role", "merchant")}
 
 
 def require_role(*roles: str):

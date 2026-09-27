@@ -3,21 +3,30 @@
 Purpose: implement user-facing frontend components, pages, and interactions with accessibility and responsive design in mind.
 
 When to use:
-- Building web UI, dashboards, forms, and client-side data handling for `djassa`.
+- Building web UI, dashboards, merchant tools, mobile/PWA workflows, support screens, and client-side synchronization for Djassa.
 
-Recommended stack guidance (suggested):
-- Framework: `React` with TypeScript or `Vue 3` with Composition API.
-- Styling: utility CSS (`Tailwind`) or component library (`Chakra UI` / `MUI`).
-- State: local component state for simple screens; `React Query` or `SWR` for server state; `zustand` or `Redux` for complex global state.
-- Testing: component tests with `@testing-library/react`, end-to-end with `Playwright` or `Cypress`.
+Recommended guidance:
+- Use the frontend framework already selected by the product; do not add a second framework without a decision record.
+- Prefer TypeScript, semantic HTML, accessible forms, and a small dependency footprint.
+- Use a service worker or platform storage for offline queues where supported.
+- Keep server state separate from local pending operations.
+- Use the backend country configuration endpoint instead of hard-coded country/provider rules.
+- Route support requests with country code, language, channel, and category metadata.
 
 Key deliverables:
 - Small component library and storybook-like examples (or docs) for shared components.
 - Accessible forms and validation with clear error states.
 - Integration examples showing API calls to backend endpoints with mock server or MSW.
+- Offline queue with visible `pending`, `synced`, and `failed` states.
+- Retry-safe calls using a stable `Idempotency-Key` per operation.
+- Low-bandwidth mode with compressed assets, pagination, lazy loading, and no unnecessary polling.
 
 Prompt patterns:
-- Task: "Create a `PaymentForm` component that posts payment data to `/api/payments`, shows success and error states, and includes unit and e2e tests."
+- Task: "Create an offline-capable transaction form that stores pending operations locally, syncs through `/api/transactions/sync`, preserves idempotency keys across retries, and shows accepted, already-processed, and rejected results."
 
 Contributor notes:
 - Include design tokens and breakpoints in a central file. Write clear props documentation.
+- Design for low-end devices and intermittent connectivity first.
+- Keep the primary merchant action usable in a few taps and with minimal data transfer.
+- Never discard a pending operation silently; explain failures and allow retry or correction.
+- Test offline, slow-network, duplicate-submit, reconnect, and partial-sync states.

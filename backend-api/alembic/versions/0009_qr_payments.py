@@ -1,15 +1,15 @@
 """QR payments: venue pay codes, venue owner, merchant payment requests
 
-Revision ID: 0004_qr_payments
-Revises: 0003_customer
+Revision ID: 0009_qr_payments
+Revises: 0008_customer
 Create Date: 2026-09-27 00:00:00.000001
 """
 from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '0004_qr_payments'
-down_revision = '0003_customer'
+revision = '0009_qr_payments'
+down_revision = '0008_customer'
 branch_labels = None
 depends_on = None
 

@@ -1,15 +1,15 @@
 """customer side: venues, on-duty pharmacies, customer payments, loyalty
 
-Revision ID: 0003_customer
-Revises: 0002_tontine
+Revision ID: 0008_customer
+Revises: 0007_identity_profiles
 Create Date: 2026-09-27 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '0003_customer'
-down_revision = '0002_tontine'
+revision = '0008_customer'
+down_revision = '0007_identity_profiles'
 branch_labels = None
 depends_on = None
 

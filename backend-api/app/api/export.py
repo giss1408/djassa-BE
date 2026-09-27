@@ -14,7 +14,8 @@ router = APIRouter()
 
 @router.post("/consents", response_model=ConsentOut, status_code=201)
 async def create_consent(payload: ConsentIn, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
-    consent = ConsentModel(user_id=payload.user_id, merchant_id=payload.merchant_id, scope=payload.scope)
+    user_id = user.get("username")
+    consent = ConsentModel(user_id=user_id, merchant_id=payload.merchant_id, scope=payload.scope)
     db.add(consent)
     await db.flush()
     await db.commit()
@@ -31,19 +32,17 @@ async def export_transactions_csv(merchant_id: int, db: AsyncSession = Depends(g
     if not consent:
         raise HTTPException(status_code=403, detail="No consent for export")
 
-    q2 = select(TransactionModel).where(TransactionModel.merchant_id == merchant_id).order_by(TransactionModel.timestamp.desc())
-    res2 = await db.execute(q2)
-    txns = res2.scalars().all()
-
-    def iter_csv():
+    q2 = select(TransactionModel).where(TransactionModel.merchant_id == merchant_id).order_by(TransactionModel.timestamp.desc()).limit(10000)
+    async def iter_csv():
         buf = io.StringIO()
         writer = csv.writer(buf)
         writer.writerow(["id", "merchant_id", "user_id", "amount", "currency", "type", "timestamp"]) 
         yield buf.getvalue()
         buf.seek(0)
         buf.truncate(0)
-        for t in txns:
-            writer.writerow([t.id, t.merchant_id, t.user_id, float(t.amount), t.currency, t.type, t.timestamp.isoformat()])
+        result = await db.stream_scalars(q2)
+        async for t in result:
+            writer.writerow([t.id, t.merchant_id, t.user_id, t.amount, t.currency, t.type, t.timestamp.isoformat()])
             yield buf.getvalue()
             buf.seek(0)
             buf.truncate(0)

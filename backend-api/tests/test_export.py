@@ -24,7 +24,7 @@ async def test_consent_and_export():
         # create consent
         rc = await ac.post(
             "/api/consents",
-            json={"user_id": "demo", "merchant_id": 42, "scope": "transactions:export"},
+            json={"user_id": "another-user", "merchant_id": 42, "scope": "transactions:export"},
             headers={"Authorization": f"Bearer {token}"},
         )
         assert rc.status_code == 201

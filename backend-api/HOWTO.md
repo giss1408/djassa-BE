@@ -1,6 +1,8 @@
-# djassa backend — HOWTO
+# Djassa Backend — HOWTO
 
-This document explains how to set up and run the `djassa` backend locally and in CI. Follow the steps below. Do NOT commit any credentials — keep them in environment variables or an `.env` file (listed in `.gitignore`).
+This document explains local development and CI for the backend. For the project overview, start with [the root README](../README.md). For the complete technical map, see [the technical guide](../docs/TECHNICAL-GUIDE.md).
+
+Do not commit credentials. Use environment variables, a private `.env`, or a managed secret store.
 
 ## 1) Prepare a Python virtual environment
 
@@ -31,6 +33,8 @@ Apply database migrations (Alembic):
 ```bash
 alembic -c alembic.ini upgrade head
 ```
+
+See [MIGRATIONS.md](MIGRATIONS.md) before creating or rolling back schema changes.
 
 Run the development server:
 
@@ -94,12 +98,27 @@ Add a workflow step that runs Trivy against the built image and fails if critica
 		format: 'table'
 ```
 
-## 7) Security & secrets
+## 7) Background worker (Celery + Redis)
+
+Start Redis and the worker in a second terminal:
+
+```bash
+docker compose -f docker-compose.dev.yml up -d redis
+export CELERY_BROKER_URL=redis://127.0.0.1:6379/0
+export CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0
+celery -A app.celery_app.celery_app worker --loglevel=info
+```
+
+See [README-CELERY.md](README-CELERY.md) for worker and scheduled-task details.
+
+## 8) Security & secrets
 
 - Do not commit `.env` files or credentials. Use environment variables or a secrets manager (External Secrets in Kubernetes is configured in `Architecture/k8s/external-secret-example.yaml`).
 - The file `.gitignore` already excludes `.env`, `.venv`, `infra/secrets/` and common credential file extensions.
+- The application expects `DJASSA_SECRET_KEY` for JWT signing and `MOBILE_MONEY_SECRETS` for webhook verification.
+- Never use demo credentials or placeholder secrets on an Internet-accessible server.
 
-## 8) Useful commands summary
+## 9) Useful commands summary
 
 ```bash
 # start postgres locally
@@ -176,7 +195,7 @@ DATABASE_URL=postgresql+asyncpg://djassa:djassa@db:5432/djassa
 CELERY_BROKER_URL=redis://redis:6379/0
 
 # Web
-SECRET_KEY=replace-with-random
+DJASSA_SECRET_KEY=replace-with-random
 MOBILE_MONEY_SECRETS=...
 ```
 

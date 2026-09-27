@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: djassa-api
+  namespace: djassa
   labels:
     app: djassa-api
 spec:
@@ -37,6 +38,8 @@ spec:
             runAsUser: 1000
             capabilities:
               drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           envFrom:
             - secretRef:
                 name: djassa-app-secrets

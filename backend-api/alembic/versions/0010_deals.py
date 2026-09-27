@@ -1,15 +1,15 @@
 """Deals ("bons plans") published by venues, with an admin-only featured slot
 
-Revision ID: 0005_deals
-Revises: 0004_qr_payments
+Revision ID: 0010_deals
+Revises: 0009_qr_payments
 Create Date: 2026-09-27 00:00:00.000002
 """
 from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '0005_deals'
-down_revision = '0004_qr_payments'
+revision = '0010_deals'
+down_revision = '0009_qr_payments'
 branch_labels = None
 depends_on = None
 
