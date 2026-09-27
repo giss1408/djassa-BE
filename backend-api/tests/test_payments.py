@@ -1,11 +1,11 @@
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from app.main import app
 
 
 @pytest.mark.asyncio
 async def test_create_payment():
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         # get token
         token_resp = await ac.post("/api/token", data={"username": "demo", "password": "demo123"})
         assert token_resp.status_code == 200

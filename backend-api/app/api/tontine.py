@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 from fastapi.responses import StreamingResponse
 import csv
@@ -101,7 +102,13 @@ async def list_cycles(group_id: int, db: AsyncSession = Depends(get_db)):
 @router.get("/tontines/{group_id}/export")
 async def export_proof(group_id: int, db: AsyncSession = Depends(get_db)):
     # Export contributions for group as CSV
-    res = await db.execute(select(models.Contribution).where(models.Contribution.group_id == group_id))
+    # Members are loaded up front: the CSV generator below runs synchronously,
+    # where an async session cannot lazy-load `c.member` (MissingGreenlet).
+    res = await db.execute(
+        select(models.Contribution)
+        .options(selectinload(models.Contribution.member))
+        .where(models.Contribution.group_id == group_id)
+    )
     contributions = res.scalars().all()
 
     def iter_csv():
