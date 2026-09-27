@@ -30,6 +30,17 @@ Le premier projet de l'écosystème est une **application de fidélité client p
 
 **Modèle économique** : abonnement mensuel par commerçant (SaaS), payé en mobile money, avec des paliers selon le volume de clients actifs.
 
+### 📱 L'application client : le quotidien, dans la poche
+
+La fidélité ne fonctionne que si le client a une raison d'ouvrir l'app chaque jour. L'application client (`djassa-App-user`) est donc pensée comme un outil du quotidien, pas comme une simple carte de points :
+
+- **Trouver un maquis** : recherche par plat (poulet braisé, garba, alloco…), par nom ou par commune.
+- **Pharmacies de garde** : la liste des pharmacies de garde en ce moment, avec la fin de la garde et un bouton « Appeler ». Aucune API officielle n'existe : la rotation hebdomadaire est saisie par un administrateur depuis la liste officielle publiée.
+- **Payer** : le client paie un maquis ou une pharmacie depuis son portefeuille mobile money (Wave, Orange Money, MTN MoMo, Moov Money), via l'agrégateur agréé. **L'argent va directement du portefeuille du client à celui du commerçant — Djassa ne le détient jamais**, conformément à [`dkassa-inclusion-financiere.md`](./dkassa-inclusion-financiere.md). L'app le dit au client au moment de payer.
+- **Fidélité** : chaque paiement réussi rapporte des points chez ce commerçant (taux configurable par commerçant) ; les points s'échangent contre des récompenses offertes par ce même commerçant (boisson, remise, livraison). **Pas de conversion en argent** tant que le cadre BCEAO n'est pas validé.
+
+Le paiement est ce qui rend l'app essentielle : c'est le geste qui génère à la fois les points du client et l'historique vérifié du commerçant.
+
 📄 Voir [`docs/loyalty-app.md`](docs/loyalty-app.md) pour le détail du MVP, du modèle de pricing et du plan pilote *(à créer)*.
 
 ## 🗺️ Roadmap de l'écosystème

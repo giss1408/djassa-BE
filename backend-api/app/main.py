@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
-from .api import payments, auth, transactions, export, tontine, webhooks
+from .api import payments, auth, transactions, export, tontine, webhooks, customer, payment_requests
 from .db import engine, Base
+from .seed import seed_sample_data
 from . import tasks
 from starlette.middleware import Middleware
 from slowapi.middleware import SlowAPIMiddleware
@@ -42,6 +43,7 @@ async def startup():
     # Create DB tables in the skeleton environment (sqlite default)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    await seed_sample_data()
 
 # instrument frameworks after app creation
 FastAPIInstrumentor.instrument_app(app)
@@ -88,6 +90,8 @@ app.include_router(payments.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api")
 app.include_router(export.router, prefix="/api")
 app.include_router(tontine.router, prefix="/api")
+app.include_router(customer.router, prefix="/api")
+app.include_router(payment_requests.router, prefix="/api")
 app.include_router(webhooks.router)
 
 # Expose /metrics endpoint for Prometheus to scrape (compose local)

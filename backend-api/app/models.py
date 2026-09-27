@@ -126,3 +126,143 @@ class WebhookIdempotency(Base):
     external_id = Column(String(255), primary_key=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     expires_at = Column(DateTime(timezone=True), nullable=True, index=True)
+
+
+# --- Customer side: places, on-duty pharmacies, payments, loyalty -----------
+#
+# Datetimes below are naive UTC. Abidjan is UTC+0 all year, so "now" on the
+# server and on a customer's phone agree without conversion, and SQLite (the
+# dev default) drops tzinfo anyway.
+
+
+class Venue(Base):
+    """A place a customer can find and pay: a maquis or a pharmacy.
+
+    `payout_provider`/`payout_account` are the merchant's OWN mobile-money
+    wallet. A customer payment goes straight there through the licensed
+    aggregator; Djassa never holds the money (docs/dkassa-inclusion-financiere.md).
+    """
+
+    __tablename__ = "venues"
+    id = Column(Integer, primary_key=True, index=True)
+    category = Column(String(32), nullable=False, index=True)  # "maquis" | "pharmacy"
+    name = Column(String(255), nullable=False)
+    commune = Column(String(64), nullable=False, index=True)
+    address = Column(String(255), nullable=True)
+    latitude = Column(Numeric, nullable=True)
+    longitude = Column(Numeric, nullable=True)
+    phone = Column(String(32), nullable=True)
+    description = Column(Text, nullable=True)
+    specialties = Column(String(255), nullable=True)
+    opening_hours = Column(String(255), nullable=True)
+    merchant_id = Column(Integer, ForeignKey("merchants.id"), nullable=True)
+    # The login that runs this venue from the merchant app. Skeleton auth has
+    # no user table, so the username is the link.
+    owner_username = Column(String(128), nullable=True, index=True)
+    payout_provider = Column(String(16), nullable=True)
+    payout_account = Column(String(32), nullable=True)
+    # Printed in the venue's payment QR code (see app/api/customer.py). Random
+    # and unguessable, so a QR cannot be forged by counting up ids; rotating it
+    # voids a stolen or tampered sticker.
+    pay_code = Column(String(16), nullable=True, unique=True, index=True)
+    # Loyalty points earned per 100 XOF paid. 0 = venue not in the programme.
+    points_per_100 = Column(Integer, nullable=False, default=1)
+    # Seeded demo data. Shown as such in the app so nobody mistakes a sample
+    # pharmacy for a real one open tonight.
+    is_sample = Column(Boolean, nullable=False, default=False)
+
+    duties = relationship("PharmacyDuty", back_populates="venue")
+    rewards = relationship("LoyaltyReward", back_populates="venue")
+
+
+class PharmacyDuty(Base):
+    """One on-duty ("de garde") period. The rotation changes weekly."""
+
+    __tablename__ = "pharmacy_duties"
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    starts_at = Column(DateTime, nullable=False, index=True)
+    ends_at = Column(DateTime, nullable=False, index=True)
+
+    venue = relationship("Venue", back_populates="duties")
+
+
+class CustomerPayment(Base):
+    """A customer paying a venue with mobile money.
+
+    Lifecycle: pending -> succeeded | failed. Only the aggregator decides the
+    outcome (synchronously for the fake provider, by webhook for a real one);
+    loyalty points are granted exactly once, on the transition to succeeded.
+    """
+
+    __tablename__ = "customer_payments"
+    id = Column(Integer, primary_key=True, index=True)
+    customer_id = Column(String(128), nullable=False, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    amount = Column(Integer, nullable=False)  # XOF has no minor unit
+    currency = Column(String(8), nullable=False, default="XOF")
+    wallet_provider = Column(String(16), nullable=False)
+    payer_msisdn = Column(String(32), nullable=False)
+    status = Column(String(16), nullable=False, default="pending", index=True)
+    failure_reason = Column(String(255), nullable=True)
+    provider_reference = Column(String(64), nullable=True, index=True)
+    # Client-generated, so a retry after a dropped connection cannot charge twice.
+    idempotency_key = Column(String(64), nullable=False, unique=True)
+    points_awarded = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+
+    venue = relationship("Venue")
+
+
+class LoyaltyReward(Base):
+    """Something a venue offers in exchange for points. Never cash."""
+
+    __tablename__ = "loyalty_rewards"
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    cost_points = Column(Integer, nullable=False)
+    active = Column(Boolean, nullable=False, default=True)
+
+    venue = relationship("Venue", back_populates="rewards")
+
+
+class LoyaltyEntry(Base):
+    """Append-only points ledger. A balance is always a SUM, never a stored total."""
+
+    __tablename__ = "loyalty_entries"
+    id = Column(Integer, primary_key=True, index=True)
+    customer_id = Column(String(128), nullable=False, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    points = Column(Integer, nullable=False)  # + earned, - redeemed
+    reason = Column(String(16), nullable=False)  # "payment" | "redeem"
+    payment_id = Column(Integer, ForeignKey("customer_payments.id"), nullable=True, unique=True)
+    reward_id = Column(Integer, ForeignKey("loyalty_rewards.id"), nullable=True)
+    voucher_code = Column(String(16), nullable=True)
+    created_at = Column(DateTime, nullable=False)
+
+    venue = relationship("Venue")
+    reward = relationship("LoyaltyReward")
+
+
+class PaymentRequest(Base):
+    """A one-time QR the merchant shows at the counter, for a fixed amount.
+
+    open -> processing -> paid, or back to open if the customer's wallet
+    declines; open -> expired | cancelled. `processing` is taken with a
+    conditional UPDATE so two customers scanning the same QR cannot both pay it.
+    """
+
+    __tablename__ = "payment_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(16), nullable=False, unique=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    amount = Column(Integer, nullable=False)
+    status = Column(String(16), nullable=False, default="open", index=True)
+    created_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    payment_id = Column(Integer, ForeignKey("customer_payments.id"), nullable=True)
+
+    venue = relationship("Venue")
+    payment = relationship("CustomerPayment")

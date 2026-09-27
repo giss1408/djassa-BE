@@ -47,5 +47,17 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     if not payload:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
     # For skeleton: payload should include `sub` for username/user id
-    user = {"username": payload.get("sub")}
+    # Tokens issued before roles existed carry none; they were merchant tokens.
+    user = {"username": payload.get("sub"), "role": payload.get("role", "merchant")}
     return user
+
+
+def require_role(*roles: str):
+    """Dependency factory: 403 unless the caller's token carries one of `roles`."""
+
+    async def checker(user=Depends(get_current_user)):
+        if user["role"] not in roles:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed for this account")
+        return user
+
+    return checker
