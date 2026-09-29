@@ -20,6 +20,18 @@ os.environ.setdefault("CELERY_RESULT_BACKEND", "cache+memory://")
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pytest_asyncio  # noqa: E402  (after the env setup above, on purpose)
+from sqlalchemy import event  # noqa: E402
+from sqlalchemy.engine import Engine  # noqa: E402
+
+
+# SQLite ignores foreign keys unless asked, so without this a broken reference
+# passes in tests and fails with a 500 on Postgres in production.
+@event.listens_for(Engine, "connect")
+def _sqlite_enforce_foreign_keys(dbapi_connection, _record):
+    if dbapi_connection.__class__.__module__.startswith("sqlite3"):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 
 @pytest_asyncio.fixture(autouse=True)

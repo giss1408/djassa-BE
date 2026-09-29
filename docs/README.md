@@ -10,6 +10,8 @@ This folder contains the English decision documents for the product and the tech
 - [Business model](BUSINESS-MODEL.md): merchant-first monetization, corridor strategy, pricing, and unit economics.
 - [Partner and outreach plan](PARTNERS-AND-OUTREACH.md): who to contact, why, what to ask, and how to run a pilot conversation.
 - [Product roadmap](ROADMAP.md): phases, dependencies, measurements, and exit criteria.
+- [Concept review and optimization proposals](optimization_claude_djassa.md): independent review of the concept as documented and as implemented, revenue options, and optimization proposals.
+- [Implementation action plan](action_plan_claude_djassa.md): ordered workstreams, per-step file changes, test criteria, decision gates, and sequencing for the review's findings.
 - The long-term identity direction is documented in [PRODUCT-CONCEPT.md](PRODUCT-CONCEPT.md) and [ROADMAP.md](ROADMAP.md); it is a federated trust-layer hypothesis, not a current production claim.
 
 ## Technical

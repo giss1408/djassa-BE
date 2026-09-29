@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from .. import models
+from ..core.entitlements import max_stats_days
 from ..core.security import require_role
 from ..db import get_db
 from ..schemas.customer import DayTotal, MerchantStatsOut, PaymentRequestIn, PaymentRequestOut
@@ -114,8 +115,24 @@ async def merchant_stats(
     Aggregated in Python rather than SQL: a single venue's month is a few
     hundred rows, and it keeps the day bucketing identical on SQLite (dev)
     and Postgres (prod).
+
+    The *window* is what the plan gates, never the recording underneath it: a
+    starter merchant still records every sale and still earns their customers
+    points, they just cannot read further back than a week
+    (app/core/entitlements.py explains why that line is drawn there).
     """
     venue = await _my_venue(db, user, require_wallet=False)
+    from .billing import subscription_for  # local: billing imports _my_venue from here
+
+    allowed = max_stats_days(await subscription_for(db, venue.id))
+    if allowed is not None and days > allowed:
+        raise HTTPException(
+            status_code=402,
+            detail=(
+                f"Votre formule affiche {allowed} jours d'historique. "
+                "Passez a la formule Croissance pour voir plus loin."
+            ),
+        )
     now = utcnow()
     since = (now - timedelta(days=days - 1)).replace(hour=0, minute=0, second=0, microsecond=0)
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)

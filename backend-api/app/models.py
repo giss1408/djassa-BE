@@ -100,6 +100,33 @@ class Consent(Base):
     merchant = relationship("Merchant")
 
 
+class ExportAudit(Base):
+    """One row per consented export, so a data transfer is always attributable.
+
+    A partner will ask who took what and under which consent, and an export that
+    cannot answer that is an undocumented transfer of other people's transaction
+    data rather than a consented one (docs/dkassa-inclusion-financiere.md).
+    Append-only: an audit trail that can be edited is not one.
+    """
+
+    __tablename__ = "export_audits"
+    __table_args__ = (Index("ix_export_audits_occurred_at", "occurred_at"),)
+    id = Column(Integer, primary_key=True, index=True)
+    exported_by = Column(String(128), nullable=False, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=True, index=True)
+    merchant_id = Column(Integer, nullable=True, index=True)
+    kind = Column(String(32), nullable=False)  # revenue_summary | customer_rows
+    scope = Column(String(255), nullable=True)
+    consent_id = Column(Integer, ForeignKey("consents.id"), nullable=True)
+    # How many data subjects the export covered: 0 for an aggregate, which is
+    # the difference that makes an aggregate safe to hand over.
+    subject_count = Column(Integer, nullable=False, default=0)
+    row_count = Column(Integer, nullable=False, default=0)
+    period_start = Column(DateTime, nullable=True)
+    period_end = Column(DateTime, nullable=True)
+    occurred_at = Column(DateTime, nullable=False)
+
+
 class TontineGroup(Base):
     __tablename__ = "tontine_groups"
     id = Column(Integer, primary_key=True, index=True)
@@ -258,6 +285,41 @@ class Deal(Base):
     created_at = Column(DateTime, nullable=False)
 
     venue = relationship("Venue", back_populates="deals")
+    placements = relationship("DealPlacement", back_populates="deal")
+
+
+class DealPlacement(Base):
+    """A sold run of the featured slot: which deal, for which window, at what price.
+
+    `Deal.is_featured` is the read flag the apps already use; it is *derived*
+    from an active placement rather than set by hand, so a slot stops being
+    featured when its window ends instead of running forever unpaid. The
+    placement is the commercial record (who bought it, what they owe, whether
+    they settled) and stays after the window for the books.
+    """
+
+    __tablename__ = "deal_placements"
+    __table_args__ = (Index("ix_deal_placements_window", "starts_at", "ends_at"),)
+    id = Column(Integer, primary_key=True, index=True)
+    deal_id = Column(Integer, ForeignKey("deals.id"), nullable=False, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    starts_at = Column(DateTime, nullable=False)
+    ends_at = Column(DateTime, nullable=False)
+    price = Column(Integer, nullable=False)  # XOF has no minor unit
+    currency = Column(String(8), nullable=False, default="XOF")
+    # reserved -> active -> expired, or cancelled from either. Only `active`
+    # inside its window puts the deal in the carousel.
+    status = Column(String(16), nullable=False, default="reserved", index=True)
+    # Settled out of band in the pilot (direct mobile-money transfer), so an
+    # admin records it here. Unpaid does not un-feature: chasing payment is a
+    # commercial matter, not a reason to break a live campaign.
+    paid_at = Column(DateTime, nullable=True)
+    payment_reference = Column(String(64), nullable=True)
+    created_by = Column(String(128), nullable=False)
+    created_at = Column(DateTime, nullable=False)
+
+    deal = relationship("Deal", back_populates="placements")
+    venue = relationship("Venue")
 
 
 class PharmacyDuty(Base):
@@ -351,6 +413,63 @@ class PaymentRequest(Base):
 
     venue = relationship("Venue")
     payment = relationship("CustomerPayment")
+
+
+class MerchantSubscription(Base):
+    """What a venue is on, and whether they are paying for it.
+
+    One live subscription per venue. The plan gates *paid* features only --
+    recording a sale and issuing points are never behind it, because the share
+    of real transactions recorded is the metric every other feature and the
+    whole financing case depend on (docs/djassa-product-concept-v2.md).
+    """
+
+    __tablename__ = "merchant_subscriptions"
+    __table_args__ = (Index("ix_merchant_subscriptions_venue_status", "venue_id", "status"),)
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    plan = Column(String(16), nullable=False, default="starter")  # starter | growth | network
+    # trialing -> active <-> past_due -> cancelled. A venue with no row at all is
+    # treated as starter: the pilot signs merchants up before it bills them.
+    status = Column(String(16), nullable=False, default="trialing", index=True)
+    amount = Column(Integer, nullable=False, default=0)  # XOF per period
+    currency = Column(String(8), nullable=False, default="XOF")
+    period = Column(String(16), nullable=False, default="monthly")
+    current_period_start = Column(DateTime, nullable=True)
+    current_period_end = Column(DateTime, nullable=True)
+    started_at = Column(DateTime, nullable=False)
+    cancelled_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False)
+
+    venue = relationship("Venue")
+    events = relationship("BillingEvent", back_populates="subscription")
+
+
+class BillingEvent(Base):
+    """Append-only billing history: what was due, what was paid, what failed.
+
+    Append-only for the same reason the loyalty ledger is: MRR, paid conversion
+    and renewal have to be answerable from the record months later, and a
+    mutable status column cannot answer them.
+    """
+
+    __tablename__ = "billing_events"
+    __table_args__ = (Index("ix_billing_events_subscription_occurred", "subscription_id", "occurred_at"),)
+    id = Column(Integer, primary_key=True, index=True)
+    subscription_id = Column(Integer, ForeignKey("merchant_subscriptions.id"), nullable=False, index=True)
+    kind = Column(String(16), nullable=False, index=True)  # invoice_due | paid | failed | refunded
+    amount = Column(Integer, nullable=False)
+    currency = Column(String(8), nullable=False, default="XOF")
+    # The mobile-money reference the merchant settled with. Collected by hand in
+    # the pilot, so it is whatever the admin was given.
+    payment_reference = Column(String(64), nullable=True)
+    period_start = Column(DateTime, nullable=True)
+    period_end = Column(DateTime, nullable=True)
+    note = Column(String(255), nullable=True)
+    occurred_at = Column(DateTime, nullable=False)
+    recorded_by = Column(String(128), nullable=False)
+
+    subscription = relationship("MerchantSubscription", back_populates="events")
 
 
 class SupportRequest(Base):

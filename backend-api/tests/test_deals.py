@@ -82,11 +82,15 @@ async def test_merchant_publishes_and_ends_a_deal_but_cannot_feature_it(client):
     feed = (await client.get("/api/deals", headers=customer)).json()
     assert any(d["id"] == deal["id"] for d in feed)
 
-    # Only an admin can promote it.
-    assert (await client.patch(f"/api/admin/deals/{deal['id']}/feature", json={"is_featured": True}, headers=merchant)).status_code == 403
+    # Only an admin can sell the slot.
+    slot = {"ends_at": _in(1), "price": 5000}
+    assert (await client.post(f"/api/admin/deals/{deal['id']}/placements", json=slot, headers=merchant)).status_code == 403
     admin = await _auth(client, "admin", "admin123")
-    r = await client.patch(f"/api/admin/deals/{deal['id']}/feature", json={"is_featured": True}, headers=admin)
-    assert r.status_code == 200 and r.json()["is_featured"] is True
+    r = await client.post(f"/api/admin/deals/{deal['id']}/placements", json=slot, headers=admin)
+    assert r.status_code == 201, r.text
+    assert r.json()["is_live"] is True
+    promoted = (await client.get("/api/deals", params={"featured": "true"}, headers=customer)).json()
+    assert any(d["id"] == deal["id"] for d in promoted)
 
     assert (await client.delete(f"/api/merchant/deals/{deal['id']}", headers=merchant)).status_code == 204
     feed = (await client.get("/api/deals", headers=customer)).json()

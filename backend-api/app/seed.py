@@ -129,21 +129,38 @@ async def _seed_shops_and_deals(db) -> None:
             venue = venues.get(name)
             if venue is None:
                 continue
-            db.add(
-                models.Deal(
-                    venue_id=venue.id,
-                    title=title,
-                    description=description,
-                    discount_percent=percent,
-                    price=price,
-                    original_price=original,
-                    starts_at=now - timedelta(days=1),
-                    ends_at=now + timedelta(days=days),
-                    is_featured=featured,
-                    active=True,
-                    created_at=now,
-                )
+            deal = models.Deal(
+                venue_id=venue.id,
+                title=title,
+                description=description,
+                discount_percent=percent,
+                price=price,
+                original_price=original,
+                starts_at=now - timedelta(days=1),
+                ends_at=now + timedelta(days=days),
+                is_featured=featured,
+                active=True,
+                created_at=now,
             )
+            db.add(deal)
+            if featured:
+                # A featured sample deal gets a sample placement behind it:
+                # `is_featured` is derived from a sold slot now, so seeding the
+                # flag alone would create demo data the expiry sweep undoes.
+                await db.flush()
+                db.add(
+                    models.DealPlacement(
+                        deal_id=deal.id,
+                        venue_id=venue.id,
+                        starts_at=deal.starts_at,
+                        ends_at=deal.ends_at,
+                        price=0,  # demo data: nothing was really sold
+                        currency="XOF",
+                        status="active",
+                        created_by="seed",
+                        created_at=now,
+                    )
+                )
     await db.commit()
 
 

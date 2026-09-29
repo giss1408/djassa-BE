@@ -74,6 +74,38 @@ class DealFeatureIn(BaseModel):
     is_featured: bool
 
 
+class PlacementIn(BaseModel):
+    """An admin selling the featured slot for a dated window."""
+
+    starts_at: datetime | None = None  # defaults to now
+    ends_at: datetime
+    price: int = Field(ge=0, le=10_000_000)  # 0 is allowed: a comped slot is still a record
+    currency: str = "XOF"
+
+
+class PlacementPaidIn(BaseModel):
+    payment_reference: str | None = Field(default=None, max_length=64)
+
+
+class PlacementOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    deal_id: int
+    venue_id: int
+    venue_name: str
+    deal_title: str
+    starts_at: datetime
+    ends_at: datetime
+    price: int
+    currency: str
+    status: str
+    paid_at: datetime | None = None
+    payment_reference: str | None = None
+    created_by: str
+    created_at: datetime
+    is_live: bool  # active AND inside its window right now
+
+
 class VenueDetailOut(VenueOut):
     rewards: list[RewardOut] = []
     deals: list[DealOut] = []

@@ -1,4 +1,5 @@
 from .celery_app import celery_app
+from .services import placements as placements_service
 from .services import tontine as tontine_service
 from .celery_app import record_task
 
@@ -32,4 +33,16 @@ def send_webhook_processing_event(external_id: str):
         record_task('send_webhook_processing_event', 'success')
     except Exception:
         record_task('send_webhook_processing_event', 'failure')
+        raise
+
+
+@celery_app.task(name='placements.expire_finished')
+def expire_finished_placements_task():
+    """Drop finished featured-slot campaigns out of the carousel."""
+    try:
+        result = placements_service.expire_finished_placements_sync()
+        record_task('placements.expire_finished', 'success')
+        return result
+    except Exception:
+        record_task('placements.expire_finished', 'failure')
         raise
