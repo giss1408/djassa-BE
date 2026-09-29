@@ -200,6 +200,36 @@ async def test_a_queued_sale_keeps_the_day_it_was_made(client):
 
 
 @pytest.mark.asyncio
+async def test_a_tz_aware_occurred_at_is_accepted(client):
+    """The app sends `occurred_at` as `DateTime.toUtc().toIso8601String()`,
+    which is always tz-aware (a trailing `Z`). The column is a naive
+    TIMESTAMP, so a client-shaped payload -- not the naive one this test file
+    otherwise uses -- has to make it through `/sales` and `/sales/sync`."""
+    merchant = await _auth(client, "demo", "demo123")
+    single = await client.post(
+        "/api/merchant/sales",
+        json={
+            "amount": "5500",
+            "idempotency_key": "declared-tz-aware",
+            "occurred_at": "2026-09-29T13:00:00Z",
+        },
+        headers=merchant,
+    )
+    assert single.status_code == 201, single.text
+
+    batch = await client.post(
+        "/api/merchant/sales/sync",
+        json={
+            "operations": [
+                {"amount": "5500", "idempotency_key": "declared-tz-aware-sync", "occurred_at": "2026-09-29T13:00:00+02:00"},
+            ]
+        },
+        headers=merchant,
+    )
+    assert [r["status"] for r in batch.json()["results"]] == ["accepted"], batch.json()
+
+
+@pytest.mark.asyncio
 async def test_stats_split_confirmed_from_declared_and_reconcile_with_the_stream(client):
     merchant = await _auth(client, "demo", "demo123")
     customer = await _auth(client, "client", "client123")

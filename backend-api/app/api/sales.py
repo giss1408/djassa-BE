@@ -10,6 +10,7 @@ Never gated by plan. Recording is the habit every other feature and the whole
 financing case depend on (app/core/entitlements.py).
 """
 
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -26,6 +27,14 @@ from .customer import utcnow
 from .payment_requests import _my_venue
 
 router = APIRouter()
+
+
+def _naive_utc(value: datetime | None) -> datetime | None:
+    """The column is `TIMESTAMP WITHOUT TIME ZONE`; asyncpg refuses a tz-aware
+    value outright rather than silently dropping the offset, so every
+    `occurred_at` from a client (always tz-aware -- Flutter sends `...Z`) has
+    to be converted here before it reaches the model."""
+    return value.astimezone(timezone.utc).replace(tzinfo=None) if value and value.tzinfo else value
 
 
 def _out(event: models.SaleEvent) -> SaleOut:
@@ -53,6 +62,7 @@ async def _record(db: AsyncSession, venue_id: int, payload: SaleIn, username: st
     which expires every loaded instance, and reading `venue.id` off an expired
     one attempts synchronous IO under asyncio and fails.
     """
+    occurred_at = _naive_utc(payload.occurred_at)
     event, existed = await sale_events.record_declared_sale(
         db,
         venue_id=venue_id,
@@ -61,7 +71,7 @@ async def _record(db: AsyncSession, venue_id: int, payload: SaleIn, username: st
         type_=payload.type,
         client_key=payload.idempotency_key,
         recorded_by=username,
-        occurred_at=payload.occurred_at,
+        occurred_at=occurred_at,
         now=utcnow(),
     )
     if existed:
@@ -69,7 +79,7 @@ async def _record(db: AsyncSession, venue_id: int, payload: SaleIn, username: st
             amount=payload.amount,
             currency=payload.currency,
             type_=payload.type,
-            occurred_at=payload.occurred_at,
+            occurred_at=occurred_at,
         )
         if event.venue_id != venue_id or event.idempotency_hash != fingerprint:
             raise HTTPException(status_code=409, detail="Idempotency key already used")
