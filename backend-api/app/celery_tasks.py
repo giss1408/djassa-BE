@@ -1,5 +1,8 @@
+import logging
+
 from .celery_app import celery_app
 from .services import placements as placements_service
+from .services import sale_events as sale_events_service
 from .services import tontine as tontine_service
 from .celery_app import record_task
 
@@ -45,4 +48,28 @@ def expire_finished_placements_task():
         return result
     except Exception:
         record_task('placements.expire_finished', 'failure')
+        raise
+
+
+@celery_app.task(name='sale_events.report_quarantine')
+def report_quarantine_task():
+    """Keep the unresolved backfill backlog visible.
+
+    Migration 0014 quarantined declared sales it could not attach to a venue
+    rather than guessing one. Those are real amounts belonging to nobody we can
+    name, excluded from every revenue figure -- so the count has to stay in front
+    of someone until it is zero.
+    """
+    try:
+        result = sale_events_service.quarantine_summary_sync()
+        if result['quarantined']:
+            logging.getLogger('djassa.sale_events').warning(
+                'sale_events quarantine: %s unresolved declared sales totalling %s -- '
+                'resolve via GET /api/admin/sale-events/quarantined',
+                result['quarantined'], result['amount'],
+            )
+        record_task('sale_events.report_quarantine', 'success')
+        return result
+    except Exception:
+        record_task('sale_events.report_quarantine', 'failure')
         raise

@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -281,3 +282,68 @@ class MerchantStatsOut(BaseModel):
     today_payments: int
     by_day: list[DayTotal]
     by_wallet: dict[str, int]
+    # --- The merged stream (app/services/revenue.py) --------------------------
+    #
+    # `revenue` above stays what it always was: money that actually arrived
+    # through Djassa, so no existing client reads a different number than
+    # before. The fields below add the cash the merchant recorded themselves,
+    # labelled as such -- an aggregator confirmation and a typed figure are
+    # never summed into one unqualified total.
+    turnover: int  # confirmed + declared
+    confirmed_revenue: int  # = revenue; named for what it is evidentially
+    declared_revenue: int  # cash the merchant recorded; unverified
+    declared_sales: int
+    # 0.0-1.0. The merchant's own reason to push customers to digital payment:
+    # this is the number a lender reads.
+    verified_share: float
+    # Active days / days in the window.
+    regularity: float
+
+
+class SaleIn(BaseModel):
+    """A cash sale the merchant recorded at the counter.
+
+    No `merchant_id` and no `venue_id`: the venue comes from the token. That
+    absence is the fix -- the old declared stream took the id from the body, so
+    a client could name any merchant, and the server created one if it did not
+    exist.
+    """
+
+    amount: Decimal = Field(gt=0, max_digits=18, decimal_places=2)
+    currency: str = Field(default="XOF", min_length=3, max_length=8)
+    type: str = Field(default="sale", min_length=1, max_length=32)
+    # Client-generated before the first send, reused for every retry: an
+    # offline queue cannot tell a lost request from a lost response.
+    idempotency_key: str = Field(min_length=8, max_length=128)
+    # When the merchant recorded it on the device. A sale queued overnight
+    # belongs to the day it was made, not the day it synced.
+    occurred_at: datetime | None = None
+
+
+class SaleOut(BaseModel):
+    id: int
+    venue_id: int | None
+    source: str
+    amount: Decimal
+    currency: str
+    type: str | None
+    occurred_at: datetime
+    recorded_at: datetime
+    idempotency_key: str
+
+
+class SaleSyncIn(BaseModel):
+    """A batch from the offline queue. Capped like the old sync endpoint."""
+
+    operations: list[SaleIn] = Field(min_length=1, max_length=50)
+
+
+class SaleSyncResult(BaseModel):
+    idempotency_key: str
+    status: str  # accepted | already_processed | rejected
+    sale: SaleOut | None = None
+    error: str | None = None
+
+
+class SaleSyncOut(BaseModel):
+    results: list[SaleSyncResult]

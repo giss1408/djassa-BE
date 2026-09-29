@@ -12,7 +12,9 @@ from .api.transactions import persist_transaction, request_fingerprint, transact
 from .core.countries import country_dict, get_country
 from .core.security import decode_access_token
 from .db import AsyncSessionLocal
+from .models import SaleEvent as SaleEventModel
 from .models import Transaction as TransactionModel
+from .models import Venue as VenueModel
 from .schemas import Transaction as TransactionInput
 
 
@@ -29,6 +31,12 @@ class Country:
 
 @strawberry.type
 class Transaction:
+    """DEPRECATED: a row of the old merchant-declared stream.
+
+    Superseded by `SaleEvent`, which labels its evidence class. Kept while
+    `transactions` exists for rollback safety; use `mySales`.
+    """
+
     id: int
     merchant_id: int
     user_id: Optional[str]
@@ -36,6 +44,27 @@ class Transaction:
     currency: str
     type: str
     timestamp: str
+
+
+@strawberry.type
+class SaleEvent:
+    """One sale, with the evidence behind it stated.
+
+    `source` is the field that matters: `mobile_money_confirmed` means an
+    aggregator confirmed the money moved, `cash_declared` means the merchant
+    said so. Both are real business; they are never the same evidence
+    (docs/optimization_claude_djassa.md, finding 2).
+    """
+
+    id: int
+    venue_id: Optional[int]
+    source: str
+    amount: str
+    currency: str
+    type: Optional[str]
+    occurred_at: str
+    recorded_at: str
+    customer_id: Optional[str]
 
 
 @strawberry.input
@@ -65,6 +94,20 @@ def to_country(profile) -> Country:
         languages=list(data["languages"]),
         support_channels=list(data["support_channels"]),
         payment_providers=list(data["payment_providers"]),
+    )
+
+
+def to_sale_event(value: SaleEventModel) -> SaleEvent:
+    return SaleEvent(
+        id=value.id,
+        venue_id=value.venue_id,
+        source=value.source,
+        amount=str(value.amount),
+        currency=value.currency,
+        type=value.type,
+        occurred_at=value.occurred_at.isoformat(),
+        recorded_at=value.recorded_at.isoformat(),
+        customer_id=value.customer_id,
     )
 
 
@@ -107,6 +150,33 @@ class Query:
         return to_country(profile)
 
     @strawberry.field
+    async def my_sales(self, info: Info, limit: int = 50) -> list[SaleEvent]:
+        """The signed-in merchant's own sales, from the merged stream.
+
+        No `merchant_id` argument: the venue comes from the token, so there is
+        nothing to tamper with. Quarantined rows are excluded -- they belong to
+        no identifiable venue, so they are nobody's to read.
+        """
+        user_id = authenticated_user(info.context["request"])
+        limit = max(1, min(limit, 100))
+        async with AsyncSessionLocal() as db:
+            venue = (
+                await db.execute(select(VenueModel).where(VenueModel.owner_username == user_id))
+            ).scalars().first()
+            if venue is None:
+                raise GraphQLError("This account is not linked to a venue")
+            result = await db.execute(
+                select(SaleEventModel)
+                .where(
+                    SaleEventModel.venue_id == venue.id,
+                    SaleEventModel.status == "recorded",
+                )
+                .order_by(SaleEventModel.occurred_at.desc(), SaleEventModel.id.desc())
+                .limit(limit)
+            )
+            return [to_sale_event(value) for value in result.scalars().all()]
+
+    @strawberry.field(deprecation_reason="Use mySales: the declared stream is merged into sale_events")
     async def my_transactions(self, info: Info, merchant_id: int, limit: int = 50) -> list[Transaction]:
         user_id = authenticated_user(info.context["request"])
         limit = max(1, min(limit, 100))
@@ -122,7 +192,9 @@ class Query:
 
 @strawberry.type
 class Mutation:
-    @strawberry.mutation
+    @strawberry.mutation(
+        deprecation_reason="Use POST /api/merchant/sales/sync: the venue must come from the token, not the body"
+    )
     async def sync_transactions(self, info: Info, operations: list[TransactionOperation]) -> list[SyncResult]:
         if not 1 <= len(operations) <= 50:
             raise GraphQLError("Between 1 and 50 operations are required")

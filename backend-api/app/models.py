@@ -70,6 +70,15 @@ class Merchant(Base):
 
 
 class Transaction(Base):
+    """DEPRECATED: the merchant-declared half of the old two-stream design.
+
+    Superseded by `SaleEvent` (migration `0014_sale_events` backfills it). Kept
+    so a rollback has the rows to fall back on and so the quarantine in that
+    migration can be resolved against the originals. Nothing reads it for
+    revenue any more: `/api/export`, `/api/merchant/stats` and the statement all
+    read `sale_events`. Do not add a caller.
+    """
+
     __tablename__ = "transactions"
     __table_args__ = (
         Index("ix_transactions_merchant_timestamp", "merchant_id", "timestamp"),
@@ -503,3 +512,76 @@ class IdentityProfile(Base):
     consent_version = Column(String(64), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class SaleEvent(Base):
+    """The single stream of "this venue sold something", whatever the evidence.
+
+    Before this table there were two unrelated ones: `Transaction` (whatever the
+    retailer app typed in, keyed on a client-supplied `merchant_id`) and
+    `CustomerPayment` (confirmed by the aggregator, linked to a venue and to
+    points). The credit export read the *unverified* one, so what a lender would
+    have received was a list of numbers a merchant typed
+    (docs/optimization_claude_djassa.md, finding 2).
+
+    One stream, one `source` field. A merchant's cash business is real and must
+    be recordable, so `cash_declared` is a first-class row -- but it is never
+    silently mixed with `mobile_money_confirmed`, because an aggregator
+    confirmation and a typed figure are not the same evidence and the first
+    partner to audit the difference will find it.
+
+    Append-only, like `LoyaltyEntry`: a total is always a SUM over rows.
+    """
+
+    __tablename__ = "sale_events"
+    __table_args__ = (
+        Index("ix_sale_events_venue_occurred_at", "venue_id", "occurred_at"),
+        Index("ix_sale_events_venue_source", "venue_id", "source"),
+    )
+    id = Column(Integer, primary_key=True, index=True)
+    # Nullable only for quarantined rows: the old stream carried no venue link,
+    # so a backfilled declared sale may belong to nobody we can name.
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=True, index=True)
+    # mobile_money_confirmed -> the aggregator said the money moved.
+    # cash_declared          -> the merchant says they took cash. Unverified.
+    source = Column(String(24), nullable=False, index=True)
+    # recorded | quarantined. A quarantined row is history we could not attach
+    # to a venue; it is counted and reported, never guessed at and never summed
+    # into anyone's revenue.
+    status = Column(String(16), nullable=False, default="recorded", index=True)
+    # Numeric, not Integer: XOF has no minor unit, but the declared stream it
+    # absorbs allowed decimals and other currencies, and rounding a migration
+    # loses money that was really taken.
+    amount = Column(Numeric, nullable=False)
+    currency = Column(String(8), nullable=False, default="XOF")
+    # What the merchant calls it ("sale", "credit"...). Carried over from the
+    # declared stream, which already collected it.
+    type = Column(String(32), nullable=True)
+    # When the sale happened, per the merchant or the aggregator.
+    occurred_at = Column(DateTime, nullable=False, index=True)
+    # When it reached us. The gap is the offline window, and is itself a signal:
+    # a sale queued overnight on a dead cell is normal, a month-old batch is not.
+    recorded_at = Column(DateTime, nullable=False)
+    # Nullable: a cash sale across a counter is usually anonymous.
+    customer_id = Column(String(128), nullable=True, index=True)
+    # Unique, so one confirmed payment can never produce two events -- the
+    # database enforces it even if a replayed webhook tries.
+    payment_id = Column(Integer, ForeignKey("customer_payments.id"), nullable=True, unique=True)
+    loyalty_entry_id = Column(Integer, ForeignKey("loyalty_entries.id"), nullable=True)
+    # Namespaced by source ("pay:12", "sale:<client key>") so a client-chosen
+    # key can never collide with an internally derived one.
+    idempotency_key = Column(String(160), nullable=False, unique=True, index=True)
+    # Fingerprint of the declared payload, so replaying a key with a different
+    # amount is refused instead of silently returning someone else's sale.
+    idempotency_hash = Column(String(64), nullable=True)
+    # The merchant login that declared a cash sale. Not a customer: the old
+    # `transactions.user_id` held this, and mapping it to `customer_id` would
+    # have invented customers out of merchant accounts.
+    recorded_by = Column(String(128), nullable=True, index=True)
+    # Quarantine forensics: what the old row claimed, so a human can resolve it.
+    legacy_merchant_id = Column(Integer, nullable=True, index=True)
+    legacy_transaction_id = Column(Integer, nullable=True)
+    created_at = Column(DateTime, nullable=False)
+
+    venue = relationship("Venue")
+    payment = relationship("CustomerPayment")

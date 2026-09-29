@@ -16,6 +16,7 @@ from ..core.entitlements import max_stats_days
 from ..core.security import require_role
 from ..db import get_db
 from ..schemas.customer import DayTotal, MerchantStatsOut, PaymentRequestIn, PaymentRequestOut
+from ..services import revenue as revenue_service
 from .customer import new_pay_code, qr_payload, utcnow
 
 router = APIRouter()
@@ -110,7 +111,20 @@ async def merchant_stats(
     db: AsyncSession = Depends(get_db),
     user=Depends(require_role("merchant")),
 ):
-    """Money received through Djassa over the last `days` days.
+    """What the venue sold over the last `days` days.
+
+    Two halves, deliberately never added into one unqualified number:
+
+    * `revenue` / `confirmed_revenue` -- money that actually arrived through
+      Djassa. Unchanged from before this endpoint read the merged stream, so no
+      client sees a different figure than it used to.
+    * `declared_revenue` -- cash the merchant recorded themselves. Real business,
+      weaker evidence, labelled as such.
+
+    `verified_share` is the ratio between them, and it is here for the merchant
+    rather than for us: seeing it move is what gives *them* a reason to push
+    customers toward digital payment (docs/optimization_claude_djassa.md,
+    optimization B).
 
     Aggregated in Python rather than SQL: a single venue's month is a few
     hundred rows, and it keeps the day bucketing identical on SQLite (dev)
@@ -137,15 +151,27 @@ async def merchant_stats(
     since = (now - timedelta(days=days - 1)).replace(hour=0, minute=0, second=0, microsecond=0)
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    payments = (
-        await db.execute(
-            select(models.CustomerPayment).where(
-                models.CustomerPayment.venue_id == venue.id,
-                models.CustomerPayment.status == "succeeded",
-                models.CustomerPayment.completed_at >= since,
-            )
+    # One stream, both evidence classes (app/services/revenue.py). A confirmed
+    # event carries the payment it came from, which is still where the wallet mix
+    # and the points live: `sale_events` labels the sale, it does not duplicate
+    # the payment mechanics.
+    try:
+        events = await revenue_service.events_in_window(db, venue.id, since, now)
+    except revenue_service.TooManyEvents as exc:
+        raise HTTPException(
+            status_code=413,
+            detail="Trop d'operations sur cette periode. Choisissez une fenetre plus courte.",
+        ) from exc
+    profile = revenue_service.profile_from_events(venue=venue, events=events, since=since, until=now)
+
+    payment_ids = [e.payment_id for e in events if e.payment_id is not None]
+    payments = []
+    if payment_ids:
+        payments = list(
+            (
+                await db.execute(select(models.CustomerPayment).where(models.CustomerPayment.id.in_(payment_ids)))
+            ).scalars().all()
         )
-    ).scalars().all()
     redeemed = (
         await db.execute(
             select(models.LoyaltyEntry).where(
@@ -156,6 +182,9 @@ async def merchant_stats(
         )
     ).scalars().all()
 
+    # `revenue` and everything derived from it stay confirmed-only, so a client
+    # written against the old shape reads exactly the number it used to. The
+    # declared half is reported alongside, never folded in.
     per_customer = Counter(p.customer_id for p in payments)
     returning = {c for c, n in per_customer.items() if n > 1}
     by_day: dict[str, list[int]] = defaultdict(lambda: [0, 0])
@@ -187,4 +216,13 @@ async def merchant_stats(
             for d in ((since + timedelta(days=i)).date().isoformat() for i in range(days))
         ],
         by_wallet=dict(by_wallet),
+        # XOF has no minor unit, so the merchant-facing totals are whole francs.
+        # int() truncates the Decimal the stream carries rather than rounding a
+        # declared 1500.40 up into money the merchant did not take.
+        turnover=int(profile.total),
+        confirmed_revenue=int(profile.confirmed_total),
+        declared_revenue=int(profile.declared_total),
+        declared_sales=profile.declared_count,
+        verified_share=profile.verified_share,
+        regularity=profile.regularity,
     )

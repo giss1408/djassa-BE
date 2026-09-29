@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from .api import payments, auth, transactions, export, tontine, webhooks, config, support, identity
-from .api import customer, payment_requests, deals, billing
+from .api import customer, payment_requests, deals, billing, sales, statements
 from .graphql_api import router as graphql_router
 from .db import engine, Base
 from .seed import seed_sample_data, seeding_enabled
@@ -99,6 +99,8 @@ app.include_router(customer.router, prefix="/api")
 app.include_router(payment_requests.router, prefix="/api")
 app.include_router(deals.router, prefix="/api")
 app.include_router(billing.router, prefix="/api")
+app.include_router(sales.router, prefix="/api")
+app.include_router(statements.router, prefix="/api")
 app.include_router(webhooks.router)
 app.include_router(config.router, prefix="/api")
 app.include_router(support.router, prefix="/api")

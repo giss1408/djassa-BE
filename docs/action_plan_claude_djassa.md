@@ -42,9 +42,10 @@ even if it ships:
 # Phase 1 — Cash and correctness (no external dependency)
 
 > **Status: implemented 2026-09-29.** W1-1, W1-2 and W2-1 are built, tested and
-> verified against Postgres (57 backend tests pass, migrations `0011`–`0013` roll
-> forward and back). Phase 2 onward is unchanged and not started. Deltas from the
-> plan as written are noted per step below.
+> verified against Postgres (migrations `0011`–`0013` roll forward and back).
+> Deltas from the plan as written are noted per step below.
+> **Phase 2 (W3-1 – W3-3) is also implemented** — see
+> [Phase 2 implementation notes](#phase-2-implementation-notes). Phase 3 is not started.
 
 ## W1-1 — Sell the featured deal slot — **DONE**
 
@@ -222,18 +223,23 @@ What was built, and where it departed from the plan above.
 - **Campaigns, multi-outlet and the revenue statement** are defined as plan
   entitlements but the features themselves do not exist yet. `Feature.REVENUE_STATEMENT`
   is the gate W3-3 will use.
-- **Phase 2 and beyond are untouched**, so the two event streams and the
-  concept-integrity problem in finding 2 remain open. The export now reads the
-  *confirmed* payment stream rather than the unverified one, which narrows the
-  exposure but does not close the finding.
+- **Phase 2 was untouched at the time of writing**, so the two event streams and
+  the concept-integrity problem in finding 2 remained open. The export read the
+  *confirmed* payment stream rather than the unverified one, which narrowed the
+  exposure without closing the finding. **Closed in Phase 2 by W3-1** (migration
+  `0014_sale_events`).
 
 ---
 
 # Phase 2 — One event stream (the concept-integrity work)
 
+> **Status: implemented 2026-09-29.** All three steps are built and verified against
+> Postgres. See [Phase 2 implementation notes](#phase-2-implementation-notes) for what
+> departed from the plan below.
+
 Start after W2-1 is merged. This is the step that makes the credit thesis real instead of nominal.
 
-## W3-1 — Merge the two event streams *(~1–1.5 weeks; the highest-value step in this plan)*
+## W3-1 — Merge the two event streams — **DONE**
 
 Today `Transaction`/`Merchant` (merchant-declared, what the retailer app posts and what `/api/export`
 reads) and `CustomerPayment`/`Venue`/`LoyaltyEntry` (aggregator-confirmed, loyalty-linked) never touch.
@@ -301,7 +307,7 @@ view reads. Keep the append-only discipline already used by `LoyaltyEntry`.
 **Done when:** one table answers "what did this venue sell", every row is labelled by evidence class,
 and no client can assert which venue a sale belongs to.
 
-## W3-2 — Verified revenue share *(~2 days, on top of W3-1)*
+## W3-2 — Verified revenue share — **DONE**
 
 The share of a venue's turnover that was aggregator-confirmed. Falls out of W3-1 almost free, and it is
 the metric **no competitor in Côte d'Ivoire can currently produce** (review optimization B).
@@ -313,7 +319,7 @@ the metric **no competitor in Côte d'Ivoire can currently produce** (review opt
 
 **Done when:** a merchant can see their verified share and it moves when payment mix changes.
 
-## W3-3 — The revenue statement, replacing the CSV dump *(~3–4 days)*
+## W3-3 — The revenue statement, replacing the CSV dump — **DONE**
 
 No IMF wants 10,000 raw rows; they want a reviewable attestation (review optimization C).
 
@@ -329,6 +335,104 @@ an unpaid plan is refused; every issue writes an audit row.
 
 **Done when:** the artifact shown to an IMF is a signed statement, and its numbers reconcile with the
 event stream by construction.
+
+---
+
+## Phase 2 implementation notes
+
+What was built, and where it departed from the plan above.
+
+### Delivered
+
+| Step | Migration | New endpoints | Tests |
+|---|---|---|---|
+| W3-1 | `0014_sale_events` | `POST /api/merchant/sales`, `POST /api/merchant/sales/sync`, `GET /api/admin/sale-events/quarantined`, GraphQL `mySales` | `tests/test_sale_events.py` (12), `tests/test_sale_events_migration.py` (6) |
+| W3-2 | — (falls out of W3-1) | extends `GET /api/merchant/stats` | covered in `tests/test_sale_events.py` |
+| W3-3 | — | `GET /api/merchant/statement`, `POST /api/statements/verify`, `GET /api/admin/venues/{id}/statement` | `tests/test_statement.py` (13) |
+
+90 backend tests pass; the Flutter suite is 35. Migration `0014` rolls forward and
+back on both SQLite and Postgres, and the endpoints were exercised against a live
+server on Postgres 15.
+
+### Decisions taken during implementation
+
+- **`merchant_stats` keeps `revenue` meaning exactly what it meant before**:
+  money that actually arrived through Djassa. The declared half is reported
+  beside it (`declared_revenue`, `turnover`, `verified_share`) rather than folded
+  in, so no existing client silently starts reading a larger number, and an
+  aggregator confirmation is never summed with a typed figure into one
+  unqualified total.
+- **Quarantine got an endpoint and a periodic warning**, not just a migration
+  log line. The plan said to count and report unresolvable rows; a count printed
+  once during a deployment is a count nobody reads, so
+  `GET /api/admin/sale-events/quarantined` shows the backlog and
+  `sale_events.report_quarantine` logs it until it is zero.
+- **An ambiguous merchant is quarantined too.** The plan covered declared sales
+  with *no* resolvable venue. Two venues sharing one `merchant_id` is the same
+  problem wearing a different hat: `MIN(id)` would have silently credited one
+  merchant with another's sales, so the backfill resolves only where exactly one
+  venue claims the id.
+- **`sale_events.amount` is `Numeric`, not `Integer`.** XOF has no minor unit, but
+  the declared stream being absorbed allowed two decimal places, and a migration
+  that rounded would lose money that was really taken. Verified against Postgres
+  with a `1500.40` legacy row.
+- **Statement amounts are normalized strings.** Postgres and SQLite return the
+  same amount at different scales (`7000` vs `7000.0000000000`), and since those
+  bytes are what gets signed, the two databases would otherwise produce different
+  signatures for the same business.
+- **HMAC, not a public-key signature.** A verifier must ask Djassa, so it proves
+  "this is the document Djassa issued" rather than "only Djassa could have made
+  it". Right trade for a pilot — no key distribution — and the payload carries
+  `algorithm` and `key_id` so the swap to Ed25519 is a one-line change when a
+  partner wants to verify offline.
+- **A missing signing secret refuses the statement (503)** rather than issuing an
+  unsigned one. An unsigned attestation would reach a lender looking exactly as
+  official as a real one.
+- **A window too dense to aggregate is refused (413), never truncated.** Not in
+  the plan, but the statement signs whatever total it is handed, and a truncated
+  event set still sums to a *plausible* turnover. A signed document understating a
+  merchant's revenue because a query hit a row limit is the worst failure this
+  code could have, so `events_in_window` raises rather than answering. The old
+  export's silent `LIMIT 10000` is gone for the same reason.
+- **The statement has a 28-day minimum period.** Regularity is half of what the
+  document is for, and a three-day window cannot speak to it — issuing one anyway
+  would produce a misleading artifact that still carried a valid signature.
+- **An admin can issue a statement for any venue, on any plan.** Pilot reality: a
+  partner conversation happens with Djassa in the room, and a starter-plan
+  merchant still needs their history to exist. Audited identically.
+- **The per-customer export now carries a `source` column** and cash sales are
+  absent from it entirely — an anonymous counter sale has no data subject, so
+  there is nobody who could have consented to it.
+- **`Transaction` and `POST /api/transactions` are deprecated, not deleted**, per
+  the plan's rollback-safety note. GraphQL `myTransactions` and `syncTransactions`
+  carry `deprecation_reason`; `mySales` is the replacement and takes no merchant
+  id.
+- **`recordSale` lost its `merchantId` parameter** in the retailer app, and the
+  local `sales.merchant_id` column is now written as `0` and never read. It could
+  not be dropped: `minSdk 21` means SQLite older than 3.35 (no `DROP COLUMN`), and
+  `database.dart` rightly forbids recreating `sales` — a merchant upgrading with
+  unsynced sales must not lose them.
+- **The app now sends `occurred_at`.** The server records its own `recorded_at`
+  alongside, so a sale queued overnight counts on the day it was made and the gap
+  stays visible as the offline-window signal (`median_recording_lag_hours`).
+
+### Not done in Phase 2
+
+- **The `_DEMO_USERS` blocker still stands.** Three hardcoded logins remain a hard
+  blocker for a real pilot. Still tracked as its own item, still out of scope here.
+- **Multi-outlet is still one venue per login.** `_my_venue` resolves the caller's
+  venue with `.first()`, so a merchant owning two outlets sees only one — every
+  Phase 2 endpoint inherits that. `Feature.MULTI_OUTLET` is defined as a plan
+  entitlement but the feature behind it does not exist yet, unchanged from Phase 1.
+- **Quarantined rows have no resolution endpoint**, only visibility. Attaching one
+  to a venue is a judgement call about whose money it was; the deliberate choice
+  was to surface the backlog rather than build a tool that makes guessing easy.
+- **Seed data does not create sale events.** A fresh dev database starts with an
+  empty stream; recording a sale or paying a QR fills it. Seeding turnover would
+  put invented revenue into a document whose whole purpose is being trustworthy.
+- **`GET /api/merchant/statement` is JSON only.** A PDF is what a credit officer
+  will eventually want, but the signature covers the JSON payload, and rendering
+  is a presentation concern to settle with the first partner.
 
 ---
 

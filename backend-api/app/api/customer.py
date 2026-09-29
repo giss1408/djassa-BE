@@ -30,6 +30,7 @@ from ..schemas.customer import (
     VenueDetailOut,
     VenueOut,
 )
+from ..services import sale_events
 from ..services.mobile_money import get_provider
 
 router = APIRouter()
@@ -332,6 +333,10 @@ async def settle_payment(db: AsyncSession, payment: models.CustomerPayment, outc
     Also the entry point a real aggregator's webhook will call. Settling an
     already-final payment is a no-op, so a replayed webhook cannot grant the
     points twice (the unique `payment_id` on the ledger is the second lock).
+
+    On success this writes the `sale_event` in the same transaction that grants
+    the points: one event, every view, atomically. A failed payment writes none
+    -- an aggregator decline is not a sale, and the stream carries no row for it.
     """
     if payment.status != "pending":
         return
@@ -352,17 +357,23 @@ async def settle_payment(db: AsyncSession, payment: models.CustomerPayment, outc
     venue = payment.venue
     points = (payment.amount // 100) * (venue.points_per_100 or 0)
     payment.points_awarded = points
+    entry = None
     if points > 0:
-        db.add(
-            models.LoyaltyEntry(
-                customer_id=payment.customer_id,
-                venue_id=venue.id,
-                points=points,
-                reason="payment",
-                payment_id=payment.id,
-                created_at=payment.completed_at,
-            )
+        entry = models.LoyaltyEntry(
+            customer_id=payment.customer_id,
+            venue_id=venue.id,
+            points=points,
+            reason="payment",
+            payment_id=payment.id,
+            created_at=payment.completed_at,
         )
+        db.add(entry)
+        # Flushed so the event can carry the entry's id: the point of the merged
+        # stream is that one row links the payment, the venue and the points.
+        await db.flush()
+    await sale_events.record_confirmed_sale(
+        db, payment=payment, loyalty_entry=entry, occurred_at=payment.completed_at
+    )
 
 
 @router.post("/customer/payments", response_model=PaymentOut, status_code=201)

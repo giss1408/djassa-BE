@@ -21,6 +21,7 @@ import csv
 import io
 from collections import defaultdict
 from datetime import timedelta
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -31,6 +32,8 @@ from .. import models
 from ..core.security import get_current_user, require_role
 from ..db import get_db
 from ..schemas import ConsentIn, ConsentOut
+from ..services import revenue as revenue_service
+from ..services import sale_events
 from .customer import utcnow
 from .payment_requests import _my_venue
 
@@ -39,6 +42,8 @@ router = APIRouter()
 # The scope a customer grants to let their own rows leave in a merchant export.
 CUSTOMER_ROWS_SCOPE = "transactions:export"
 
+# Rows one CSV will carry. Exceeded means refuse, never truncate: see
+# app/services/revenue.py::TooManyEvents.
 MAX_EXPORT_ROWS = 10_000
 
 
@@ -79,20 +84,30 @@ async def withdraw_consent(consent_id: int, db: AsyncSession = Depends(get_db), 
     await db.commit()
 
 
-async def _payments_in_window(db: AsyncSession, venue_id: int, days: int):
-    since = (utcnow() - timedelta(days=days)).replace(hour=0, minute=0, second=0, microsecond=0)
-    return (
-        await db.execute(
-            select(models.CustomerPayment)
-            .where(
-                models.CustomerPayment.venue_id == venue_id,
-                models.CustomerPayment.status == "succeeded",
-                models.CustomerPayment.completed_at >= since,
-            )
-            .order_by(models.CustomerPayment.completed_at)
-            .limit(MAX_EXPORT_ROWS)
-        )
-    ).scalars().all(), since
+async def _events_in_window(db: AsyncSession, venue_id: int, days: int):
+    """The venue's own sale events for the window, newest last.
+
+    Reads `sale_events`, which is the merged stream: before it existed the
+    revenue export read the *declared* table, so what a lender received was a
+    list of numbers a merchant had typed
+    (docs/optimization_claude_djassa.md, finding 2). Now every row carries its
+    evidence class and the export says which is which.
+    """
+    now = utcnow()
+    since = (now - timedelta(days=days)).replace(hour=0, minute=0, second=0, microsecond=0)
+    try:
+        events = await revenue_service.events_in_window(db, venue_id, since, now, limit=MAX_EXPORT_ROWS)
+    except revenue_service.TooManyEvents as exc:
+        # Refused rather than truncated. A CSV silently missing its tail still
+        # sums to a believable figure, and this is the file a lender reads.
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"Trop d'operations sur cette periode (plus de {exc.limit}). "
+                "Exportez une periode plus courte."
+            ),
+        ) from exc
+    return events, since, now
 
 
 @router.get("/export/merchant/revenue.csv")
@@ -108,18 +123,29 @@ async def export_revenue_summary(
     customer's consent because it names none of them. A pseudonymous count of
     distinct payers is included because "how many repeat customers" is part of
     the same question -- a count is not an identity.
+
+    Every daily row now splits confirmed from declared turnover, and the header
+    carries the verified share for the whole period. A lender who wants only the
+    aggregator-confirmed figure can take that column and ignore the rest; before
+    the streams were merged there was no way to tell the two apart at all.
+
+    For a reviewable attestation rather than rows, see
+    `GET /api/merchant/statement` -- this stays the raw form.
     """
     venue = await _my_venue(db, user, require_wallet=False)
-    payments, since = await _payments_in_window(db, venue.id, days)
+    events, since, now = await _events_in_window(db, venue.id, days)
+    profile = revenue_service.profile_from_events(venue=venue, events=events, since=since, until=now)
 
-    by_day: dict[str, list] = defaultdict(lambda: [0, 0, set()])
-    for p in payments:
-        bucket = by_day[p.completed_at.date().isoformat()]
-        bucket[0] += p.amount
-        bucket[1] += 1
-        bucket[2].add(p.customer_id)
+    by_day: dict[str, list] = defaultdict(lambda: [Decimal(0), Decimal(0), 0, set()])
+    for e in events:
+        bucket = by_day[e.occurred_at.date().isoformat()]
+        bucket[0] += Decimal(e.amount)
+        if e.source == sale_events.CONFIRMED:
+            bucket[1] += Decimal(e.amount)
+        bucket[2] += 1
+        if e.customer_id:
+            bucket[3].add(e.customer_id)
 
-    now = utcnow()
     db.add(
         models.ExportAudit(
             exported_by=user["username"],
@@ -144,14 +170,32 @@ async def export_revenue_summary(
             buf.truncate(0)
             return out
 
-        w.writerow(["venue", "currency", "period_start", "period_end"])
-        w.writerow([venue.name, "XOF", since.date().isoformat(), now.date().isoformat()])
+        w.writerow(["venue", "currency", "period_start", "period_end", "verified_share", "regularity"])
+        w.writerow(
+            [
+                venue.name,
+                profile.currency,
+                since.date().isoformat(),
+                now.date().isoformat(),
+                profile.verified_share,
+                profile.regularity,
+            ]
+        )
         w.writerow([])
-        w.writerow(["date", "amount_total", "transactions", "distinct_customers"])
+        w.writerow(
+            [
+                "date",
+                "amount_total",
+                "amount_confirmed",
+                "amount_declared",
+                "transactions",
+                "distinct_customers",
+            ]
+        )
         yield flush()
         for day in sorted(by_day):
-            total, count, customers = by_day[day]
-            w.writerow([day, total, count, len(customers)])
+            total, confirmed, count, customers = by_day[day]
+            w.writerow([day, total, confirmed, total - confirmed, count, len(customers)])
             yield flush()
 
     return StreamingResponse(
@@ -172,9 +216,15 @@ async def export_customer_rows(
     A customer who never consented is absent -- not anonymized, absent. If nobody
     consented the export is refused rather than returning an empty file, so the
     merchant learns that consent is the missing piece.
+
+    Only *identified* events can appear here, which in practice means confirmed
+    mobile-money payments: a cash sale across a counter has no customer to have
+    consented, so it has no row. The wallet and the points come from the payment
+    the event links to -- the merged stream labels the sale, it does not copy the
+    payment mechanics.
     """
     venue = await _my_venue(db, user, require_wallet=False)
-    payments, since = await _payments_in_window(db, venue.id, days)
+    events, since, now = await _events_in_window(db, venue.id, days)
 
     # Consent is recorded against a merchant id; a venue may not have one, in
     # which case no customer can have consented to this venue's export yet.
@@ -199,9 +249,17 @@ async def export_customer_rows(
             detail="Aucun client n'a consenti a l'export de ses transactions",
         )
 
-    rows = [p for p in payments if p.customer_id in consented]
-    now = utcnow()
-    subjects = {p.customer_id for p in rows}
+    rows = [e for e in events if e.customer_id and e.customer_id in consented]
+    payments = {}
+    payment_ids = [e.payment_id for e in rows if e.payment_id is not None]
+    if payment_ids:
+        payments = {
+            p.id: p
+            for p in (
+                await db.execute(select(models.CustomerPayment).where(models.CustomerPayment.id.in_(payment_ids)))
+            ).scalars().all()
+        }
+    subjects = {e.customer_id for e in rows}
     db.add(
         models.ExportAudit(
             exported_by=user["username"],
@@ -224,19 +282,23 @@ async def export_customer_rows(
     def stream():
         buf = io.StringIO()
         w = csv.writer(buf)
-        w.writerow(["customer_id", "amount", "currency", "wallet_provider", "completed_at", "points_awarded"])
+        w.writerow(
+            ["customer_id", "amount", "currency", "source", "wallet_provider", "occurred_at", "points_awarded"]
+        )
         yield buf.getvalue()
         buf.seek(0)
         buf.truncate(0)
-        for p in rows:
+        for e in rows:
+            payment = payments.get(e.payment_id)
             w.writerow(
                 [
-                    p.customer_id,
-                    p.amount,
-                    p.currency,
-                    p.wallet_provider,
-                    p.completed_at.isoformat() if p.completed_at else "",
-                    p.points_awarded,
+                    e.customer_id,
+                    e.amount,
+                    e.currency,
+                    e.source,
+                    payment.wallet_provider if payment else "",
+                    e.occurred_at.isoformat(),
+                    payment.points_awarded if payment else 0,
                 ]
             )
             yield buf.getvalue()
