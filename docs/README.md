@@ -11,7 +11,7 @@
 | [Business model](business/BUSINESS-MODEL.md) | Who pays, revenue streams in order, pricing experiment, unit economics, decision gates. |
 | [Roadmap](business/ROADMAP.md) | Where we stand today, phases 0–6 with exit gates, strategic horizon. |
 | [Partners](business/PARTNERS.md) | Institution directory, contact order, acquisition channels, meeting kit, guardrails. |
-| [Investor brief](business/INVESTOR-BRIEF.md) | The two-page summary for investors: problem, product, model, traction, milestones, team, company status and the ask. *Contains placeholders to fill before sending.* |
+| Investor brief ([EN](business/INVESTOR-BRIEF.md) · [FR](business/INVESTOR-BRIEF.fr.md)) | The two-page summary for investors: problem, product, model, traction, milestones, team, company status and the ask. *Contains placeholders to fill before sending.* |
 
 ## Planning: reviews and action plans
 
