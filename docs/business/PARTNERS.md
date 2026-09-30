@@ -9,7 +9,7 @@ Phase references point to [ROADMAP.md](ROADMAP.md). The one-sentence pitch per a
 1. **Merchants first.** Interview 5 to 10 merchants in the pilot corridor before approaching large institutions.
 2. **APIF-CI and APSFD-CI.** Validate strategic alignment and get one entry point to many MFIs.
 3. **CIFA.** Join the fintech ecosystem and follow regulatory change.
-4. **Wave Côte d'Ivoire** (Business and developer team). Confirm webhook access for small merchants and the loyalty use of payer phone numbers. This decides the zero-habit capture route. Then **CinetPay** (or another licensed aggregator) as the fallback payment route.
+4. **Mobile-money operators, Wave first** (Business and developer teams). With Wave, confirm webhook access for small merchants and the loyalty use of payer phone numbers: this decides the zero-habit capture route. With MTN and Orange, confirm whether payments to a merchant's static QR can be notified, and their merchant rates. Then **CinetPay** (or another licensed aggregator) as the fallback payment route.
 5. **Fin'ELLE plus one or two generalist MFIs** (UNACOOPEC-CI, Advans). Prepare the Phase 3–5 partnerships.
 6. **BCEAO or qualified regulatory counsel.** Before any feature that moves money beyond merchant payments, holds funds, produces a score for third parties, or involves credit, to confirm whether Djassa acts as technology provider, agent, payment facilitator or another regulated role.
 
@@ -21,7 +21,7 @@ Phase references point to [ROADMAP.md](ROADMAP.md). The one-sentence pitch per a
 
 | Institution | Role | Why contact | When |
 |---|---|---|---|
-| **BCEAO** | Licences EME/EP, credit-scoring workstream, PISPI interoperability | Unavoidable for any e-money or scoring feature; ask about the regulatory sandbox | Before any financial launch |
+| **BCEAO** | Licences EME/EP, credit-scoring workstream, PI-SPI interoperability | Unavoidable for any e-money or scoring feature; ask about the regulatory sandbox and about reaching the PI-SPI interoperable merchant QR through a licensed participant | Before any financial launch; PI-SPI from Phase 0 |
 | **ARTCI** | Personal-data protection authority | Consent, retention, data transfer, identity data | Phase 0 |
 | **APIF-CI** | Runs the National Financial Inclusion Strategy and financial education | Near-identical mission, including gender and rural inclusion; natural institutional partner | Now |
 | **SGPME** | Partial guarantee on bank and MFI credit to SMEs | Lowers the risk an MFI partner takes on merchants without bank history | Phase 5 |
@@ -58,8 +58,8 @@ Phase references point to [ROADMAP.md](ROADMAP.md). The one-sentence pitch per a
 | Operator | Why it matters | When |
 |---|---|---|
 | **Wave CI** | ~1% merchant fee, ~1M QR merchants, Business API with `merchant.payment_received` webhooks. Djassa's loyalty layer sits on top of its QR; pitch: repeat customers mean more Wave volume | **Phase 0, first technical partner** |
-| **Orange Money CI** (OM Business) | Historic leader, densest agent network; its merchant offer is our positioning reference | MVP |
-| **MTN MoMo CI** | Second operator; needed for full coverage, via the aggregator | Phase 2 |
+| **Orange Money CI** (OM Business) | Historic leader, densest agent network. Direct merchant API (checkout with confirmation callback), ~1–2%, 1–3 weeks to activate | Phase 0 check, Phase 2 adapter |
+| **MTN MoMo CI** | Second operator. MoMo API "request to pay": the customer approves on their own phone, which suits a counter; callbacks are not retried, so status must also be polled | Phase 0 check, Phase 2 adapter |
 | **Moov Africa CI** | Price-sensitive and peri-urban segments | Phase 2+ |
 
 ### 5. Funders and guarantee programmes
@@ -104,7 +104,7 @@ Bring to every meeting:
 
 **Regulatory:** Which activities need a licence or a licensed institution? Can the pilot run in a sandbox or controlled test framework? What consent, retention, audit and data-transfer requirements apply?
 
-**Technical:** Is there a sandbox? How are signatures, retries, idempotency, reconciliation and settlement handled? What uptime, support and incident commitments exist? Which identifiers are stable across retries and channels? Is the partner PISPI-connected?
+**Technical:** Is there a sandbox? How are signatures, retries, idempotency, reconciliation and settlement handled? What uptime, support and incident commitments exist? Which identifiers are stable across retries and channels? Is the partner PI-SPI-connected?
 
 **Commercial:** Who pays which fee, and when? Minimum volume or contract term? What happens when a customer withdraws consent? Which outcomes define a successful pilot?
 

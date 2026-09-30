@@ -27,7 +27,7 @@ Avoid starting with businesses whose purchase frequency is too low to prove rete
 | 01 | **Merchant subscription** | Monthly per outlet, tiered by activity, paid in mobile money. Primary MVP revenue. | MVP |
 | 02 | **Campaigns, messaging and featured deals** | Merchants publish deals for free; the **featured ("sponsored") slot** on the customer app home carousel is paid. SMS/WhatsApp campaigns are sold with costs passed through transparently. | MVP |
 | 03 | **Multi-outlet and network contracts** | Merchant networks, pharmacy groups, associations; priced separately from single outlets. | After proof |
-| 04 | **Payment orchestration** *(minor)* | An aggregator revenue share on payments made through the Djassa route only, where the licensed provider permits it. **Never priced above what the merchant pays Wave today.** This is not a core stream, because Djassa builds on the merchant's existing wallet (see [CONCEPT.md § 3](CONCEPT.md#3-the-idea-one-habit-five-uses)). | After proof |
+| 04 | **Payment orchestration** *(minor)* | An aggregator revenue share on payments made through the Djassa route only, where the licensed provider permits it. **Never priced above what the merchant pays on their existing wallet today (~1% on Wave).** This is not a core stream, because Djassa builds on the merchant's existing wallet (see [CONCEPT.md § 3](CONCEPT.md#3-the-idea-one-habit-five-uses)). | After proof |
 | 05 | **Consented partner commissions** | Paid by a licensed partner for a qualified, consented referral: credit (working capital, stock, revenue advance), savings accounts opened and funded, tontine processing fees. Djassa never touches the funds, only the distribution commission. Moniepoint (36% transaction lift after loans) and Kopo Kopo (42%) show this is where merchant platforms create the most value, as long as responsible-lending safeguards are in place (see below). | After partnership |
 | 06 | **Institutional services** | Reporting, reconciliation and aggregated, anonymised, consented insight for institutions. Never casual sale of personal data. | After partnership |
 
@@ -55,7 +55,7 @@ The subscription must be small compared with what loyalty brings in. It also has
 Two conclusions:
 
 1. A small subscription is easy to justify **if** loyalty measurably brings customers back. The merchant must see that number every week.
-2. Rerouting payments through a more expensive rail would wipe out most or all of the gain. That is why Djassa builds on the merchant's existing Wave QR rather than replacing it.
+2. Rerouting payments through a more expensive rail would wipe out most or all of the gain. That is why Djassa builds on the merchant's existing wallet QR (Wave first, other operators and the interoperable PI-SPI QR next) rather than replacing it.
 
 **Notification cost is the hidden risk.** If every visit triggered a paid SMS, a busy maquis with ~600 identified visits a month could cost more in messages than it pays in subscription. Rules: confirm points in the customer app (free push) when the customer has it; otherwise send a batched weekly SMS or WhatsApp summary, not one message per visit; sell campaign messages as a pass-through; and measure the real cost per active outlet in the pilot.
 

@@ -48,13 +48,26 @@ Loyalty, tontine, savings and credit are not five products shipped one after ano
 
 | Entry point | Who acts | Extra effort for the merchant | Extra fee | Strength of evidence |
 |---|---|---|---|---|
-| **1. Wallet payment, captured automatically** *(preferred)* | The customer pays the merchant's **existing** Wave QR as usual. Wave notifies Djassa (`merchant.payment_received`: amount, fee, customer phone, time). | **None** | None; the merchant keeps Wave's ~1% | Confirmed by the provider |
+| **1. Wallet payment, captured automatically** *(preferred)* | The customer pays the merchant's **existing** wallet QR as usual, and the operator notifies Djassa. Wave first: its `merchant.payment_received` webhook carries the amount, fee, customer phone and time. | **None** | None; the merchant keeps their current rate (~1% on Wave) | Confirmed by the provider |
 | **2. Recorded sale** | The merchant records a cash sale in the merchant app, even offline; it syncs later without duplicates | One tap, plus the customer's phone for points | None | Declared by the merchant |
-| **3. Djassa payment** | The customer scans the Djassa QR in the customer app and pays through a licensed aggregator | None | Aggregator fee (~3% + 50 F today) | Confirmed by the provider |
+| **3. Djassa payment** | The customer scans the Djassa QR in the customer app, or approves a request on their phone, through an operator API (MTN MoMo request-to-pay, Orange Money) or a licensed aggregator | None | Operator rate (~1–2%) or aggregator fee (~3% + 50 F) | Confirmed by the provider |
 
 All three feed the same history. **Entry point 1 is the strategic priority.** In Abidjan, 55–65% of a digitised merchant's takings already arrive by mobile money, and Wave charges merchants about 1% while an aggregator charges about 3% (see [MARKET.md § 9](MARKET.md#9-evidence-for-the-djassa-model)). Asking a merchant to move payments to a more expensive rail would destroy the value we sell. Instead, Djassa sits **on top of** the wallets merchants already use: their existing payments become the recorded history and earn customer points automatically. The merchant app handles cash, and the Djassa payment route is kept for merchants or wallets without direct integration.
 
 This turns the concept's "one habit" into **zero habit** for mobile-money sales. It is the strongest answer to the failure pattern of African merchant tools (see [MARKET.md § 9](MARKET.md#9-evidence-for-the-djassa-model)). Access to Wave's Business API for small merchants, and the consent rules for customer phone numbers, must be confirmed in Phase 0.
+
+### Operator-neutral by design
+
+Djassa is **not tied to Wave**. It builds on whichever wallet the merchant already uses, and each operator is an adapter behind the same event stream:
+
+| Order | Rail | Why this order |
+|---|---|---|
+| 1 | **Wave**: automatic capture of payments to the merchant's existing QR | Most small merchants, lowest merchant fee (~1%), and a confirmed webhook that notifies payments Djassa did not start |
+| 2 | **MTN MoMo** (request-to-pay) and **Orange Money** (merchant API) | For merchants mainly on those networks. Both confirm payments Djassa starts; whether they can also notify payments to a merchant's static QR is to be confirmed |
+| 3 | **PI-SPI interoperable QR** (BCEAO), through a licensed partner | One QR that accepts any wallet or bank in UEMOA. When it is live for merchants in Côte d'Ivoire, it becomes the single operator-neutral rail and removes the question |
+| Always | **Cash sale + phone number** | Works with any wallet or with cash, today; recorded as merchant-declared |
+
+Whatever the rail, every sale lands in the same history with its evidence label, and the merchant never pays more for a payment than they do today.
 
 ## 4. The product today: four pieces
 
@@ -143,6 +156,7 @@ It is a possible benefit, never a guaranteed loan and never a condition for cred
 - Low bandwidth and old phones are the target, not edge cases (Android 5, ~1 GB RAM, prepaid data). SMS and WhatsApp come before push notifications.
 - Charge for merchant value before monetising financial referrals.
 - **Never make a payment cost the merchant more than it does today.** Djassa builds on the wallets merchants already use; it does not compete with them for the payment.
+- **Operator-neutral.** No dependency on a single wallet: Wave first, other operators next, the interoperable PI-SPI QR as the target.
 - Users can see and correct their data; every score is explainable; merchant and customer data are separated and permissioned.
 - Licensed institutions handle custody, lending and settlement.
 - Women, rural users and low-income users are primary users.

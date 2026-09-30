@@ -38,7 +38,7 @@ Microfinance is growing fast but concentrated in Abidjan and poorly adapted to s
 
 - Any fintech operating in UEMOA needs a BCEAO status: **electronic money institution (EME)**, **payment institution (EP)**, or technical partner of a licensed institution. Djassa operates as a **technology and distribution partner** of licensed institutions and holds no licence itself.
 - 2023 regulation encourages fintechs to target unbanked populations and eases multi-country expansion under common rules. About 200 fintechs were registered by BCEAO at the time.
-- **PISPI** (instant-payment interoperability platform) launched on 30 September 2025. Connection has been mandatory for all financial institutions since 30 June 2026. Any payment partner we sign must be PISPI-compliant.
+- **PI-SPI** (instant-payment interoperability platform) launched on 30 September 2025. Connection has been mandatory for all financial institutions since 30 June 2026. Any payment partner we sign must be PI-SPI-compliant. Its interoperable merchant QR (one QR accepting any wallet or bank) is the long-term operator-neutral rail for Djassa (see § 9).
 - BCEAO has an open workstream on **credit scoring** and has discussed a **regulatory sandbox**. Any third-party scoring must go through that route rather than launch in a grey zone.
 
 ### National: Côte d'Ivoire
@@ -112,6 +112,16 @@ External research gathered on 30 September 2026 to test the two things that matt
 
 **Implications:** payment acceptance is a commodity, and the cheapest rail (Wave) is winning. Djassa must **not** try to become the merchant's payment rail: routing a maquis's takings through an aggregator would add about 2 points of cost, which is more than any loyalty uplift can repay. Djassa's value is what sits **on top of** the rails: recognising customers, bringing them back, and turning payments into proof. Wave's webhook makes this possible with no new habit for the merchant, subject to confirming access and consent in Phase 0. No source found shows Wave offering loyalty or customer-retention tools to its merchants.
 
+### Other rails: Djassa is operator-neutral
+
+| Rail | What it offers Djassa | Merchant cost | Source |
+|---|---|---|---|
+| **Orange Money CI**, direct merchant API | Checkout started by the merchant's system: OAuth token, transaction, redirect, server-to-server callback (verified with a notification token, not HMAC). OM Pay launched for simpler mobile payments | ~1–2%; 1–3 weeks to activate | Kolonell 2026; FinDev Gateway |
+| **MTN MoMo**, Collections API (Côte d'Ivoire supported) | "Request to pay": the customer approves on their own phone. Asynchronous callback over HTTPS, **no retry**, so status must also be polled | Negotiated | MTN MoMo developer docs |
+| **PI-SPI** (BCEAO) | Instant-payment interoperability platform, live since 30 Sept. 2025; all UEMOA financial institutions had to connect by 30 June 2026. Its **interoperable QR** lets one merchant QR accept any wallet or bank account | To be confirmed | AllAfrica 2026; Ecofin; CDPI |
+
+**Implication:** Wave is the first rail, not the only one. Each operator is an adapter behind the same event stream, and the interoperable PI-SPI QR, reached through a licensed participant, is the long-term operator-neutral rail.
+
 ### What worked elsewhere
 
 | Comparable | What happened | Lesson for Djassa |
@@ -138,6 +148,8 @@ External research gathered on 30 September 2026 to test the two things that matt
 ### Evidence gaps to close in Phase 0
 
 - Wave Business API and webhook access for small merchants, and whether customer phone numbers may be used for loyalty (Wave terms and ARTCI).
+- Whether Orange Money and MTN MoMo can notify payments to a merchant's static QR, as Wave's webhook does; only flows started by the merchant's system were found.
+- Actual PI-SPI merchant-QR adoption in Côte d'Ivoire, and a licensed participant willing to connect Djassa.
 - WhatsApp Business rates for Côte d'Ivoire, and local bulk SMS rates. These drive the cost per loyalty notification.
 - Number of maquis and small restaurants in the target corridor; no reliable source was found.
 - Merchant willingness to pay, measured in the paid pilot rather than estimated.
@@ -148,7 +160,7 @@ Inclusion rates differ between the World Bank (58%) and the local fintech sector
 
 ## Sources
 
-World Bank, *Global Findex Database 2025* · GSMA Mobile for Development · BCEAO (UEMOA regulation, PISPI, credit scoring, sandbox) · APSFD-CI · APIF-CI (gouv.ci) · SGPME · GUDE-PME · TechCabal, Financial Afrik, CFNews Afrique, AllAfrica · OSIRIS (Senegal) · Ivorian national indicators 2023.
+World Bank, *Global Findex Database 2025* · GSMA Mobile for Development · BCEAO (UEMOA regulation, PI-SPI, credit scoring, sandbox) · APSFD-CI · APIF-CI (gouv.ci) · SGPME · GUDE-PME · TechCabal, Financial Afrik, CFNews Afrique, AllAfrica · OSIRIS (Senegal) · Ivorian national indicators 2023.
 
 Section 9 sources:
 
@@ -157,6 +169,9 @@ Section 9 sources:
 - [Best payment gateways in Côte d'Ivoire 2026](https://boldrails.com/blog/best-payment-gateways-cote-divoire), Boldrails
 - [Les paiements marchands de Wave](https://osiris.sn/le-paiements-marchands-de-wave-un-nouveau-levier-pour-accelerer-l-inclusion.html), OSIRIS
 - [Wave webhooks documentation](https://docs.wave.com/webhook)
+- [Orange Money CI merchant API](https://kolonell.com/fr/blog/orange-money-ci-api-marchand-abidjan-integration-2026) · [Orange Money web payment](https://kolonell.com/fr/blog/orange-money-web-payment-integration-cote-ivoire-2026), Kolonell · [Orange CI launches OM Pay](https://www.findevgateway.org/fr/actualites/orange-cote-divoire-lance-om-pay-pour-simplifier-les-paiements-mobiles), FinDev Gateway
+- [MTN MoMo API callbacks](https://momodeveloper.mtn.com/content/html_widgets/0a5av.html), MTN MoMo developer
+- [PI-SPI: la BCEAO fait entrer l'Afrique de l'Ouest dans l'ère du paiement intégré](https://fr.allafrica.com/stories/202602120405.html), AllAfrica · [BCEAO sets 30 June deadline](https://www.ecofinagency.com/news-finances/0404-54418-bceao-imposes-june-30-deadline-to-complete-instant-payments-integration), Ecofin · [Code QR interopérable](https://docs.cdpi.dev/fr/notes-techniques/payments/code-qr-interoperable), CDPI
 - [Santé privée: officines](https://economie-ivoirienne.ci/activites-sectorielles/sante-privee.html), economie-ivoirienne.ci
 - [Moniepoint: from PoS scale to full-stack lock-in](https://techcabal.com/?p=180023), TechCabal · [Moniepoint 2025 report](https://techpoint.africa/news/moniepoint-2025-report/), Techpoint
 - [Responsible digital credit for merchants: insights from Kenya](https://www.cgap.org/blog/responsible-digital-credit-for-merchants-insights-kenya) · [How to drive merchant payments](https://cgap.org/node/2637), CGAP

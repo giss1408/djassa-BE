@@ -35,7 +35,7 @@ A phase is complete when **real users have validated it**, not when the code shi
 4. No live payment provider (sandbox adapter only); no reconciliation with settlement reports.
 5. No per-resource authorisation model; no production secrets or backups; no independent security review.
 6. Dioula and other local-language support not started; no gzip on the API.
-7. **No automatic capture of wallet payments.** Merchants' existing Wave QR payments do not yet flow into Djassa. This is the zero-habit entry point the concept now prioritises (see [CONCEPT.md § 3](CONCEPT.md#3-the-idea-one-habit-five-uses)).
+7. **No automatic capture of wallet payments.** Merchants' existing wallet QR payments (Wave first) do not yet flow into Djassa. This is the zero-habit entry point the concept now prioritises (see [CONCEPT.md § 3](CONCEPT.md#3-the-idea-one-habit-five-uses)).
 
 ## Phase 0 — Discovery and compliance · *in progress*
 
@@ -43,8 +43,10 @@ A phase is complete when **real users have validated it**, not when the code shi
 
 - 5 to 10 merchant interviews in one Abidjan corridor; one segment (pharmacies and maquis are the current candidates, matching the customer app) and one acquisition channel.
 - A narrow pilot agreement.
+- **Operator capabilities**: whether Orange Money and MTN MoMo can notify payments to a merchant's static QR (not only payments Djassa starts), their merchant rates, and activation times.
+- **PI-SPI status in Côte d'Ivoire**: how far interoperable merchant QR has rolled out, and which licensed payment institution could connect Djassa to it.
 - **Wave Business API access for pilot merchants**: can a small merchant enable the `merchant.payment_received` webhook for Djassa, and may the customer phone number be used for loyalty (Wave terms, ARTCI)? This decides the Phase 1 architecture.
-- Payment aggregator sandbox access (CinetPay or equivalent) as the fallback route, and confirmed PISPI compliance.
+- Payment aggregator sandbox access (CinetPay or equivalent) as the fallback route, and confirmed PI-SPI compliance.
 - Real cost per loyalty notification: local bulk SMS and WhatsApp Business rates for Côte d'Ivoire.
 - Merchant willingness to pay against the pricing hypotheses in [BUSINESS-MODEL.md](BUSINESS-MODEL.md#pricing-experiment).
 - Data inventory and consent design; ARTCI review.
@@ -84,7 +86,8 @@ A phase is complete when **real users have validated it**, not when the code shi
 
 - Deals, featured placement (paid), campaigns and customer reactivation by SMS/WhatsApp.
 - Association and merchant-referral onboarding; multi-outlet accounts.
-- A second aggregator or operator adapter for full coverage.
+- A second operator adapter for merchants mainly on other networks: MTN MoMo request-to-pay or the Orange Money merchant API, at the operator's own rate rather than an aggregator's.
+- PI-SPI interoperable QR through a licensed partner, if it is live for merchants in Côte d'Ivoire: one QR for every wallet and bank, and the end of per-operator work.
 - Onboarding and support playbook.
 - Progressive verification workflow and fraud-review queue, only where the partner and regulator approve.
 
