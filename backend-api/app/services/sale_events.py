@@ -99,6 +99,50 @@ async def record_confirmed_sale(
     return event
 
 
+async def record_wallet_sale(
+    db: AsyncSession,
+    *,
+    venue_id: int,
+    amount: int,
+    idempotency_key: str,
+    customer_id: str | None,
+    points_per_100: int | None,
+    now: datetime,
+) -> models.SaleEvent:
+    """A payment the merchant's own wallet reported (e.g. Wave's
+    merchant.payment_received), made outside a Djassa checkout.
+
+    Confirmed evidence -- the wallet operator says the money arrived -- but
+    with no `CustomerPayment` behind it, so the key is the operator's
+    transaction id ("wave:T_..."), unique like every other. With the sender's
+    number the customer earns the venue's points, as at the counter.
+    """
+    entry = None
+    points = cash_sale_points(Decimal(amount), "XOF", points_per_100) if customer_id else 0
+    if points > 0:
+        entry = models.LoyaltyEntry(
+            customer_id=customer_id, venue_id=venue_id, points=points, reason="wallet_payment", created_at=now
+        )
+        db.add(entry)
+        await db.flush()
+    event = models.SaleEvent(
+        venue_id=venue_id,
+        source=CONFIRMED,
+        status=RECORDED,
+        amount=amount,
+        currency="XOF",
+        type="sale",
+        occurred_at=now,
+        recorded_at=now,
+        customer_id=customer_id,
+        loyalty_entry_id=entry.id if entry is not None else None,
+        idempotency_key=idempotency_key,
+        created_at=now,
+    )
+    db.add(event)
+    return event
+
+
 async def find_declared(db: AsyncSession, client_key: str) -> models.SaleEvent | None:
     return (
         await db.execute(

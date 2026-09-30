@@ -155,6 +155,23 @@ The default `PAYMENT_PROVIDER=sandbox` adapter is safe for tests and returns pen
 
 Provider callbacks must include an external ID, status, amount, and currency. The webhook path verifies the signature and replay window, then records a reconciliation row only when amount and currency match the payment intent. A valid signature alone never settles money.
 
+### Customer payments to a venue: Wave, merchant's own account (pilot)
+
+During the pilot Djassa has no Wave account and never holds funds. Each merchant connects **their own** Wave Business account (`app/api/wave.py`):
+
+| Endpoint | Who | What |
+|---|---|---|
+| `PUT /api/merchant/wave` | merchant | Saves the Wave API key (Checkout access) and the webhook signing secret. The key is tested first with a search that moves no money. Both are sealed with Fernet under `DJASSA_ENCRYPTION_KEY` (`app/core/secretbox.py`) and never returned; only a hint (`…a1B2`) is. The response gives the `webhook_url` to paste into the Wave portal. |
+| `GET` / `DELETE /api/merchant/wave` | merchant | Status (key hint, webhook configured, last event) / disconnect. |
+| `POST /webhooks/wave/{token}` | Wave | Signed events (`Wave-Signature`, HMAC-SHA256, 5-minute replay window). The random token identifies the venue. |
+| `GET /api/customer/payments/{id}` | customer | Re-reads a pending checkout from Wave, so a late webhook does not block the app. |
+
+Flow: the customer pays with Wave → `POST /api/customer/payments` creates a Wave checkout **with the merchant's key** (amount fixed, payer restricted to the customer's number, `client_reference` = the payment's idempotency key) → the response is `pending` with `checkout_url` → the app opens it, the Wave app approves → `checkout.session.completed` settles the payment, grants points and writes one confirmed `sale_event`.
+
+`merchant.payment_received` (someone paid the merchant's ordinary Wave QR, outside Djassa) grants the venue's points on the sender's phone number (`tel:+225…`, the counter key) and records a confirmed sale keyed `wave:<transaction id>`. It is skipped when the same money is a Djassa checkout (same transaction id, or a pending checkout from the same number for the same amount).
+
+`MOBILE_MONEY_PROVIDER=wave`: venues with a connected account use Wave for Wave payments; other payments stay simulated in test and are refused (422, "payez au comptoir") in production. Wave has no sandbox: tests use a mock transport (`tests/test_wave.py`); the first live check is a small real payment.
+
 ## VPS test deployment
 
 Use the automated deployment script, not the development server:
@@ -175,6 +192,7 @@ Required production-like variables:
 | `DATABASE_URL` | PostgreSQL connection URL |
 | `DJASSA_SECRET_KEY` | JWT signing key; never use a placeholder |
 | `MOBILE_MONEY_SECRETS` | Comma-separated webhook signing keys |
+| `DJASSA_ENCRYPTION_KEY` | Seals merchants' Wave keys at rest; changing it forces merchants to reconnect |
 | `CELERY_BROKER_URL` | Redis broker URL |
 
 Do not use the demo credentials or placeholder secrets on an Internet-accessible server.

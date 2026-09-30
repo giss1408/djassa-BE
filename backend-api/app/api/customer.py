@@ -31,7 +31,7 @@ from ..schemas.customer import (
     VenueOut,
 )
 from ..services import sale_events
-from ..services.mobile_money import get_provider
+from ..services.mobile_money import ProviderUnavailable, provider_for
 
 router = APIRouter()
 
@@ -132,6 +132,7 @@ def _payment_out(p: models.CustomerPayment) -> PaymentOut:
         status=p.status,
         failure_reason=p.failure_reason,
         provider_reference=p.provider_reference,
+        checkout_url=p.checkout_url if p.status == "pending" else None,
         points_awarded=p.points_awarded,
         created_at=p.created_at,
         completed_at=p.completed_at,
@@ -403,6 +404,13 @@ async def pay_venue(payload: PaymentIn, db: AsyncSession = Depends(get_db), user
             raise HTTPException(status_code=422, detail="Montant requis")
         amount = payload.amount
 
+    # Chosen before anything is written: a venue that cannot take this wallet
+    # is refused without leaving a pending payment or a claimed QR behind.
+    try:
+        provider = await provider_for(db, venue, payload.wallet_provider)
+    except ProviderUnavailable as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     payment = models.CustomerPayment(
         customer_id=user["username"],
         venue_id=venue.id,
@@ -432,7 +440,7 @@ async def pay_venue(payload: PaymentIn, db: AsyncSession = Depends(get_db), user
     # a record to reconcile against the aggregator instead of a lost payment.
     await db.commit()
 
-    result = await get_provider().initiate(
+    result = await provider.initiate(
         amount=payment.amount,
         currency=payment.currency,
         wallet_provider=payment.wallet_provider,
@@ -441,7 +449,8 @@ async def pay_venue(payload: PaymentIn, db: AsyncSession = Depends(get_db), user
         payout_account=venue.payout_account,
         idempotency_key=payment.idempotency_key,
     )
-    payment.provider_reference = result.reference
+    payment.provider_reference = result.reference or None
+    payment.checkout_url = result.launch_url
     if result.status in ("succeeded", "failed"):
         await settle_payment(db, payment, result.status, result.failure_reason)
     await db.commit()
@@ -461,6 +470,28 @@ async def my_payments(db: AsyncSession = Depends(get_db), user=Depends(require_r
         )
     ).scalars().all()
     return [_payment_out(p) for p in rows]
+
+
+@router.get("/customer/payments/{payment_id}", response_model=PaymentOut)
+async def my_payment(payment_id: int, db: AsyncSession = Depends(get_db), user=Depends(require_role("customer"))):
+    """One payment. A pending wallet checkout is re-read from the operator
+    first, so the app can show the outcome even if the webhook is late."""
+    payment = (
+        await db.execute(
+            select(models.CustomerPayment)
+            .options(selectinload(models.CustomerPayment.venue))
+            .where(models.CustomerPayment.id == payment_id, models.CustomerPayment.customer_id == user["username"])
+        )
+    ).scalar_one_or_none()
+    if payment is None:
+        raise HTTPException(status_code=404, detail="Paiement introuvable")
+    if payment.status == "pending" and payment.checkout_url:
+        from .wave import refresh_payment  # local: app.api.wave imports this module
+
+        await refresh_payment(db, payment)
+        await db.commit()
+        await db.refresh(payment)
+    return _payment_out(payment)
 
 
 # --- Loyalty ----------------------------------------------------------------

@@ -194,6 +194,9 @@ class PaymentOut(BaseModel):
     status: str
     failure_reason: str | None = None
     provider_reference: str | None = None
+    # Set while a wallet checkout awaits the customer's approval: the app
+    # opens it (Wave) and then polls GET /customer/payments/{id}.
+    checkout_url: str | None = None
     points_awarded: int
     created_at: datetime
     completed_at: datetime | None = None

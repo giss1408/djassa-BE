@@ -368,11 +368,43 @@ class CustomerPayment(Base):
     status = Column(String(16), nullable=False, default="pending", index=True)
     failure_reason = Column(String(255), nullable=True)
     provider_reference = Column(String(64), nullable=True, index=True)
+    # Wave (option B): the page the customer's phone opens to pay in the Wave
+    # app, and Wave's own transaction id once paid. The id also stops the same
+    # money from being counted again if the merchant's account reports it as a
+    # plain merchant payment too.
+    checkout_url = Column(String(512), nullable=True)
+    external_transaction_id = Column(String(64), nullable=True, index=True)
     # Client-generated, so a retry after a dropped connection cannot charge twice.
     idempotency_key = Column(String(64), nullable=False, unique=True)
     points_awarded = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime, nullable=False)
     completed_at = Column(DateTime, nullable=True)
+
+    venue = relationship("Venue")
+
+
+class WaveAccount(Base):
+    """A merchant's own Wave Business account, connected to Djassa (option B).
+
+    The merchant creates an API key (Checkout access) and a webhook in THEIR
+    Wave Business portal and gives both to Djassa. Payments then go from the
+    customer's wallet straight into the merchant's; Djassa only reads the
+    outcome and grants the customer's points. Both secrets are stored sealed
+    (app/core/secretbox.py). `webhook_token` is the random part of the webhook
+    URL given to Wave, and identifies the venue without exposing its id.
+    """
+
+    __tablename__ = "wave_accounts"
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, unique=True, index=True)
+    api_key_sealed = Column(Text, nullable=False)
+    api_key_hint = Column(String(8), nullable=False)
+    webhook_secret_sealed = Column(Text, nullable=True)
+    webhook_token = Column(String(48), nullable=False, unique=True, index=True)
+    connected_by = Column(String(128), nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+    last_event_at = Column(DateTime, nullable=True)
 
     venue = relationship("Venue")
 

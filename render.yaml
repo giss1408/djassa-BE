@@ -9,8 +9,10 @@
 #   * No background worker: Celery tasks do not run. The API does not need
 #     them to serve the apps.
 #
-# This is a TEST environment: fake mobile-money provider (no real money moves)
-# and the demo logins (demo/demo123, client/client123). Never point real users
+# This is a TEST environment: payments are simulated (no real money moves),
+# EXCEPT at a venue whose merchant connected their own Wave Business account
+# (pilot option B): there a Wave payment is real and goes straight to that
+# merchant's wallet. Plus the demo logins (demo/demo123, client/client123). Never point real users
 # or real payments at it. See docs/technical/DEPLOY-TEST.md.
 
 services:
@@ -45,8 +47,14 @@ services:
       # Test environment only.
       - key: DJASSA_ENV
         value: test
+      # "wave": a venue with a connected Wave account is paid through Wave
+      # with the merchant's own key; every other payment stays simulated.
       - key: MOBILE_MONEY_PROVIDER
-        value: fake
+        value: wave
+      # Seals the merchants' Wave keys at rest. Generated once by Render; if it
+      # ever changes, merchants must reconnect Wave.
+      - key: DJASSA_ENCRYPTION_KEY
+        generateValue: true
       # Seeds the sample venues, pharmacies and deals the apps show, once;
       # later starts detect them and add nothing.
       - key: DJASSA_SEED_SAMPLE
