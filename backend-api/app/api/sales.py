@@ -19,6 +19,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
+from ..core.phone import InvalidPhone, PHONE_KEY_PREFIX, mask_phone, normalize_phone, phone_key
 from ..core.security import require_role
 from ..db import get_db
 from ..schemas.customer import SaleIn, SaleOut, SaleSyncIn, SaleSyncOut, SaleSyncResult
@@ -37,7 +38,19 @@ def _naive_utc(value: datetime | None) -> datetime | None:
     return value.astimezone(timezone.utc).replace(tzinfo=None) if value and value.tzinfo else value
 
 
-def _out(event: models.SaleEvent) -> SaleOut:
+async def _points_of(db: AsyncSession, event: models.SaleEvent) -> int:
+    if event.loyalty_entry_id is None:
+        return 0
+    entry = await db.get(models.LoyaltyEntry, event.loyalty_entry_id)
+    return entry.points if entry is not None else 0
+
+
+def _customer_label(event: models.SaleEvent) -> str | None:
+    cid = event.customer_id or ""
+    return mask_phone(cid[len(PHONE_KEY_PREFIX):]) if cid.startswith(PHONE_KEY_PREFIX) else None
+
+
+def _out(event: models.SaleEvent, points: int = 0) -> SaleOut:
     return SaleOut(
         id=event.id,
         venue_id=event.venue_id,
@@ -48,10 +61,28 @@ def _out(event: models.SaleEvent) -> SaleOut:
         occurred_at=event.occurred_at,
         recorded_at=event.recorded_at,
         idempotency_key=event.idempotency_key,
+        points_awarded=points,
+        customer=_customer_label(event),
     )
 
 
-async def _record(db: AsyncSession, venue_id: int, payload: SaleIn, username: str) -> tuple[models.SaleEvent, bool]:
+def _customer_id(payload: SaleIn) -> str | None:
+    """The phone key for the sale's customer, or None for an anonymous sale.
+
+    An unparseable number is refused rather than dropped: the merchant told the
+    customer they would earn points, so silently recording the sale without
+    them would break that promise with nobody noticing."""
+    if not payload.customer_phone or not payload.customer_phone.strip():
+        return None
+    try:
+        return phone_key(normalize_phone(payload.customer_phone))
+    except InvalidPhone as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+async def _record(
+    db: AsyncSession, venue_id: int, points_per_100: int | None, payload: SaleIn, username: str
+) -> tuple[models.SaleEvent, bool]:
     """Record one declared sale, or return the existing one for a reused key.
 
     A key reused with *different* contents is a conflict, not a duplicate: the
@@ -63,6 +94,7 @@ async def _record(db: AsyncSession, venue_id: int, payload: SaleIn, username: st
     one attempts synchronous IO under asyncio and fails.
     """
     occurred_at = _naive_utc(payload.occurred_at)
+    customer_id = _customer_id(payload)
     event, existed = await sale_events.record_declared_sale(
         db,
         venue_id=venue_id,
@@ -73,6 +105,8 @@ async def _record(db: AsyncSession, venue_id: int, payload: SaleIn, username: st
         recorded_by=username,
         occurred_at=occurred_at,
         now=utcnow(),
+        customer_id=customer_id,
+        points_per_100=points_per_100,
     )
     if existed:
         fingerprint = sale_events.declared_hash(
@@ -80,6 +114,7 @@ async def _record(db: AsyncSession, venue_id: int, payload: SaleIn, username: st
             currency=payload.currency,
             type_=payload.type,
             occurred_at=occurred_at,
+            customer_id=customer_id,
         )
         if event.venue_id != venue_id or event.idempotency_hash != fingerprint:
             raise HTTPException(status_code=409, detail="Idempotency key already used")
@@ -90,10 +125,10 @@ async def _record(db: AsyncSession, venue_id: int, payload: SaleIn, username: st
 async def record_sale(payload: SaleIn, db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
     """Record one cash sale. Idempotent on `idempotency_key`."""
     venue = await _my_venue(db, user, require_wallet=False)
-    event, _ = await _record(db, venue.id, payload, user["username"])
+    event, _ = await _record(db, venue.id, venue.points_per_100, payload, user["username"])
     await db.commit()
     await db.refresh(event)
-    return _out(event)
+    return _out(event, await _points_of(db, event))
 
 
 @router.post("/merchant/sales/sync", response_model=SaleSyncOut)
@@ -104,19 +139,20 @@ async def sync_sales(payload: SaleSyncIn, db: AsyncSession = Depends(get_db), us
     row cannot block the rest of a batch -- the behaviour the retailer app's
     queue already relies on.
     """
-    # Resolved once, as a plain int: the rollback below expires ORM instances.
-    venue_id = (await _my_venue(db, user, require_wallet=False)).id
+    # Resolved once, as plain values: the rollback below expires ORM instances.
+    venue = await _my_venue(db, user, require_wallet=False)
+    venue_id, points_per_100 = venue.id, venue.points_per_100
     results: list[SaleSyncResult] = []
     for operation in payload.operations:
         try:
-            event, existed = await _record(db, venue_id, operation, user["username"])
+            event, existed = await _record(db, venue_id, points_per_100, operation, user["username"])
             await db.commit()
             await db.refresh(event)
             results.append(
                 SaleSyncResult(
                     idempotency_key=operation.idempotency_key,
                     status="already_processed" if existed else "accepted",
-                    sale=_out(event),
+                    sale=_out(event, await _points_of(db, event)),
                 )
             )
         except HTTPException as exc:
@@ -134,7 +170,7 @@ async def sync_sales(payload: SaleSyncIn, db: AsyncSession = Depends(get_db), us
                     SaleSyncResult(
                         idempotency_key=operation.idempotency_key,
                         status="already_processed",
-                        sale=_out(existing),
+                        sale=_out(existing, await _points_of(db, existing)),
                     )
                 )
             else:

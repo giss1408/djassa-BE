@@ -235,6 +235,23 @@ class RedeemOut(BaseModel):
     remaining_points: int
 
 
+class CounterCustomerIn(BaseModel):
+    """A customer identified at the counter by phone. POST, not a query
+    string, so the number stays out of URLs and access logs."""
+
+    phone: str = Field(min_length=6, max_length=32)
+
+
+class CounterLoyaltyOut(BaseModel):
+    customer: str  # masked
+    points: int
+    rewards: list[RewardOut]
+
+
+class CounterRedeemIn(CounterCustomerIn):
+    reward_id: int
+
+
 class PaymentRequestIn(BaseModel):
     amount: int = Field(ge=100, le=2_000_000)
 
@@ -318,6 +335,10 @@ class SaleIn(BaseModel):
     # When the merchant recorded it on the device. A sale queued overnight
     # belongs to the day it was made, not the day it synced.
     occurred_at: datetime | None = None
+    # The customer's number, as typed at the counter. Optional: most cash sales
+    # are anonymous. When present, the customer earns this venue's points on
+    # the sale, keyed on the normalised number (app/core/phone.py).
+    customer_phone: str | None = Field(default=None, max_length=32)
 
 
 class SaleOut(BaseModel):
@@ -330,6 +351,10 @@ class SaleOut(BaseModel):
     occurred_at: datetime
     recorded_at: datetime
     idempotency_key: str
+    # Points the customer earned on this sale, and the number they went to,
+    # masked ("07 •• •• 56 78") so the full number is not echoed back.
+    points_awarded: int = 0
+    customer: str | None = None
 
 
 class SaleSyncIn(BaseModel):

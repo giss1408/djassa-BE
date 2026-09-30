@@ -15,7 +15,7 @@ The backend is a FastAPI service with:
 
 API surfaces, by client:
 
-- **Merchant app** (`djassa-App-retailer`): `/api/token`, `/api/transactions` and `/api/transactions/sync`, merchant deals, stats and payment requests.
+- **Merchant app** (`djassa-App-retailer`): `/api/token`, `/api/merchant/sales` and `/api/merchant/sales/sync` (optional `customer_phone` earns the customer points), `/api/merchant/customers/loyalty` and `/redeem` (balance and reward at the counter, by phone), merchant deals, stats and payment requests.
 - **Customer app** (`djassa-App-user`): venues, categories, on-duty pharmacies, deals, pay-code lookup, customer payments, loyalty balance and redemption.
 - **Admin**: pharmacy duty rotation, venue pay codes, featured deals.
 - **Foundations not exposed to users yet**: tontines, consents, identity verification tiers, exports, payments with refunds and disputes (see [ROADMAP.md § Where we stand](../business/ROADMAP.md#where-we-stand)).

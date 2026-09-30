@@ -20,6 +20,7 @@ A phase is complete when **real users have validated it**, not when the code shi
 | Merchant subscriptions and billing ledger | Prototype *(integration)* | Plans, append-only billing events, admin revenue report (MRR, conversion, renewal); payment collected manually for the pilot. Recording sales and earning points are never behind a paywall |
 | Consented revenue export with audit | Prototype *(integration)* | Default export names no customer; customer-level export needs each customer's consent; every export audited; consent can be withdrawn |
 | Loyalty ledger and redemption | Prototype | Points awarded on customer payments |
+| **Points on cash sales, by phone** | Prototype *(integration)* | The merchant app sends the customer's number with a cash sale; the customer earns the venue's points; the merchant looks up the balance and hands over a reward at the counter. Not merged into customer-app accounts until an OTP-verified phone login exists |
 | Tontine groups, cycles, contributions, export | Foundation only | Built early; **not to be exposed before the Phase 3 gate** |
 | Consent records, verification tiers (request only) | Foundation only | Tier 1 and 2 cannot be self-approved; they need a licensed KYC adapter |
 | Payment state machine, signed and idempotent webhooks, refunds, disputes | Prototype | Reconciliation incomplete |
@@ -30,7 +31,7 @@ A phase is complete when **real users have validated it**, not when the code shi
 
 1. **Authentication is a hardcoded demo user.** No registration, no phone/OTP Tier 0 login, no refresh token.
 2. ~~Two data models are not yet linked.~~ **In progress on `integration`:** recorded sales and customer payments now write one `SaleEvent` stream, and the merchant app posts to it. Remaining: automatic Wave capture as a third source (gap 7), and resolving the quarantined legacy sales.
-3. No outlet registration or onboarding flow (on `integration` the merchant is derived from the login, but accounts are still created by hand); no loyalty for sales recorded at the counter with the customer's phone number.
+3. No outlet registration or onboarding flow (on `integration` the merchant is derived from the login, but accounts are still created by hand); points earned by phone at the counter are not yet visible in the customer app, because a Tier 0 profile declares a number without proving it (needs OTP login, gap 1).
 4. No live payment provider (sandbox adapter only); no reconciliation with settlement reports.
 5. No per-resource authorisation model; no production secrets or backups; no independent security review.
 6. Dioula and other local-language support not started; no gzip on the API.

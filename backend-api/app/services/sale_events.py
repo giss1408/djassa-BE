@@ -43,11 +43,27 @@ def declared_key(client_key: str) -> str:
     return f"sale:{client_key}"
 
 
-def declared_hash(*, amount: Decimal, currency: str, type_: str, occurred_at: datetime | None) -> str:
+def declared_hash(
+    *, amount: Decimal, currency: str, type_: str, occurred_at: datetime | None, customer_id: str | None = None
+) -> str:
     """Fingerprint of a declared sale, so a reused key with different contents
-    is a conflict rather than a silent no-op returning someone else's row."""
+    is a conflict rather than a silent no-op returning someone else's row.
+
+    The customer is appended only when present, so the fingerprint of every
+    anonymous sale -- including all rows stored before customers could be
+    attached -- is unchanged."""
     parts = f"{amount}|{currency.upper()}|{type_}|{occurred_at.isoformat() if occurred_at else ''}"
+    if customer_id:
+        parts += f"|{customer_id}"
     return hashlib.sha256(parts.encode()).hexdigest()
+
+
+def cash_sale_points(amount: Decimal, currency: str, points_per_100: int | None) -> int:
+    """Same rule as a mobile-money payment (`settle_payment`): the venue's
+    points per full 100 F. Only XOF, the currency the rule is written in."""
+    if currency.upper() != "XOF" or not points_per_100:
+        return 0
+    return int(Decimal(amount) // 100) * points_per_100
 
 
 async def record_confirmed_sale(
@@ -102,8 +118,16 @@ async def record_declared_sale(
     recorded_by: str,
     occurred_at: datetime | None,
     now: datetime,
+    customer_id: str | None = None,
+    points_per_100: int | None = None,
 ) -> tuple[models.SaleEvent, bool]:
     """A cash sale the merchant recorded. Returns (event, already_existed).
+
+    With a `customer_id` (a phone key), the customer earns the venue's points on
+    the sale. The ledger entry and the event are added in the same unit of
+    work, and only when the event is new: a retried key returns the original
+    event and grants nothing, and two racing inserts of one key fail together
+    on the event's unique key, so a sale can never pay out points twice.
 
     `occurred_at` is when the merchant says the sale happened, which on an
     offline queue is not when it reached us; `recorded_at` is. The gap is kept
@@ -122,6 +146,19 @@ async def record_declared_sale(
     if existing is not None:
         return existing, True
 
+    entry = None
+    points = cash_sale_points(amount, currency, points_per_100) if customer_id else 0
+    if points > 0:
+        entry = models.LoyaltyEntry(
+            customer_id=customer_id,
+            venue_id=venue_id,
+            points=points,
+            reason="cash_sale",
+            created_at=now,
+        )
+        db.add(entry)
+        await db.flush()
+
     event = models.SaleEvent(
         venue_id=venue_id,
         source=DECLARED,
@@ -131,8 +168,12 @@ async def record_declared_sale(
         type=type_,
         occurred_at=occurred_at or now,
         recorded_at=now,
+        customer_id=customer_id,
+        loyalty_entry_id=entry.id if entry is not None else None,
         idempotency_key=declared_key(client_key),
-        idempotency_hash=declared_hash(amount=amount, currency=currency, type_=type_, occurred_at=occurred_at),
+        idempotency_hash=declared_hash(
+            amount=amount, currency=currency, type_=type_, occurred_at=occurred_at, customer_id=customer_id
+        ),
         recorded_by=recorded_by,
         created_at=now,
     )
