@@ -26,7 +26,7 @@ Prompt patterns:
 - Task: "Implement endpoint `POST /api/transactions/sync` with a bounded batch, token-derived ownership, idempotency keys, per-operation results, tests, and an Alembic migration if needed."
 
 Contributor notes:
-- Keep endpoints small and documented in `backend-api/README.md` or `docs/TECHNICAL-GUIDE.md`.
+- Keep endpoints small and documented in `backend-api/README.md` or `docs/technical/TECHNICAL-GUIDE.md`.
 - Never trust `user_id`, `organizer_id`, or similar identity fields from request bodies.
 - Use `Decimal` for amounts and validate currency, identifiers, lengths, and batch sizes.
 - Make retried writes idempotent and return explicit `accepted`, `already_processed`, or `rejected` states.

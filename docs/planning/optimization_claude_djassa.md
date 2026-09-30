@@ -9,7 +9,7 @@
 >
 > This document proposes; it does not decide. Every figure below marked *illustrative* is an
 > assumption to test with merchants and partners, not a validated number — consistent with the
-> outreach guardrails in [Partners and outreach plan](PARTNERS-AND-OUTREACH.md).
+> outreach guardrails in [Partners and outreach plan](../business/PARTNERS.md).
 
 ## Summary
 
@@ -19,7 +19,7 @@ Three things block monetization today:
 1. **No revenue machinery exists in the code.** No subscription, plan, invoice, fee or commission
    concept. The Phase-1 exit gate is "merchants pay or renew" and the system cannot record a payment.
 2. **Two parallel, unconnected event streams**, which contradicts the single-primitive thesis of
-   [product concept v2](djassa-product-concept-v2.md) — and the credit export is built on the weaker one.
+   [product concept v2](../business/CONCEPT.md) — and the credit export is built on the weaker one.
 3. **The consented export is not correctly authorized**, and it is the exact artifact that would be
    shown to a microfinance partner.
 
@@ -36,20 +36,20 @@ Recorded so that the findings below are not read as a verdict on the whole conce
 
 - **The single-primitive framing is the right one.** One verified transaction, five views on it
   (points, revenue proof, tontine regularity, reliability signal, credit export) is a materially
-  better product thesis than five sequential features. See [djassa-product-concept-v2.md](djassa-product-concept-v2.md).
+  better product thesis than five sequential features. See [djassa-product-concept-v2.md](../business/CONCEPT.md).
 - **The regulatory guardrails are unusually disciplined** for a pre-pilot project: never hold funds,
   never lend directly, no opaque scoring, no cash-out before BCEAO clarity, and the *accelerator,
-  not gatekeeper* positioning on credit access. See [dkassa-inclusion-financiere.md](./dkassa-inclusion-financiere.md).
+  not gatekeeper* positioning on credit access. See [dkassa-inclusion-financiere.md](../business/CONCEPT.md).
   Most teams discover these constraints after building the wrong thing.
 - **The competitive read is sound**: Djamo owns consumer personal finance, so the concept stays out of
   it; tontine digitalization and alternative-data scoring are genuinely under-occupied in Côte d'Ivoire.
 - **Revenue ordering is correct in principle** — merchant value before regulated-finance referrals
-  ([Business model](BUSINESS-MODEL.md)). The problem is execution, not sequencing.
+  ([Business model](../business/BUSINESS-MODEL.md)). The problem is execution, not sequencing.
 
 ### Implementation
 
 - **Append-only loyalty ledger.** A balance is always a `SUM`, never a stored total
-  (`LoyaltyEntry`, [../backend-api/app/models.py](../backend-api/app/models.py)). This is the correct
+  (`LoyaltyEntry`, [../backend-api/app/models.py](../../backend-api/app/models.py)). This is the correct
   shape for anything that will later be audited.
 - **Idempotency on every money path** — client-generated keys on customer payments and on the
   transaction sync, so a retry after a dropped connection cannot charge twice.
@@ -73,9 +73,9 @@ returns nothing related to money owed to Djassa. Only identity *verification tie
 
 Consequences:
 
-- Every unit-economics metric [Business model](BUSINESS-MODEL.md) says to track — MRR, paid conversion,
+- Every unit-economics metric [Business model](../business/BUSINESS-MODEL.md) says to track — MRR, paid conversion,
   renewal rate, gross margin by plan, support cost per active outlet — is currently unmeasurable.
-- The Phase-1 exit criterion "merchants pay or renew" ([Roadmap](ROADMAP.md)) cannot be evaluated,
+- The Phase-1 exit criterion "merchants pay or renew" ([Roadmap](../business/ROADMAP.md)) cannot be evaluated,
   because no record of a merchant paying can exist.
 - The pilot can therefore prove usage but not willingness to pay, which is the more important half.
 
@@ -106,7 +106,7 @@ turn this fix into a commercial asset rather than only a cleanup.
 
 ### Finding 3 — The consented export is not correctly authorized (security; fix before any partner demo)
 
-In [../backend-api/app/api/export.py](../backend-api/app/api/export.py):
+In [../backend-api/app/api/export.py](../../backend-api/app/api/export.py):
 
 - `create_consent` stores `user_id` from the **authenticated caller**, ignoring the payload's `user_id`.
 - `export_transactions_csv` then looks for a consent row belonging to **that same caller**.
@@ -122,7 +122,7 @@ caller owns the merchant, and no check that the customers whose rows are exporte
 `"another-user"`, the caller receives the consent instead, and the export succeeds.
 
 This is the single most sensitive endpoint in the system — it is the artifact intended for a regulated
-lender, and it touches the data [dkassa-inclusion-financiere.md](./dkassa-inclusion-financiere.md)
+lender, and it touches the data [dkassa-inclusion-financiere.md](../business/CONCEPT.md)
 commits to protecting.
 
 **Minimum to fix:** authorize on merchant ownership; require consent from each data subject whose rows
@@ -165,7 +165,7 @@ service charge on each collection.
 
 **Djassa still never touches funds.** The aggregator settles to the merchant's own wallet and pays
 Djassa a commission on its own fee. This is fully compatible with the non-negotiable constraint in
-[dkassa-inclusion-financiere.md](./dkassa-inclusion-financiere.md).
+[dkassa-inclusion-financiere.md](../business/CONCEPT.md).
 
 *Illustrative:* a maquis at 40 sales/day × 2,500 XOF ≈ 3,000,000 XOF/month collected. A 1% share of
 turnover ≈ **30,000 XOF per outlet per month** — plausibly more than the same merchant would agree to
@@ -207,7 +207,7 @@ statement export. Collect by recurring mobile money.
 ### Line 4 — Paid reactivation campaigns
 
 SMS/WhatsApp is already the chosen notification channel. Sell message packs with transparent
-pass-through cost plus margin, as [Business model](BUSINESS-MODEL.md) already anticipates. Requires the
+pass-through cost plus margin, as [Business model](../business/BUSINESS-MODEL.md) already anticipates. Requires the
 Phase-2 campaign feature; not built.
 
 ### Line 5 — Tontine contribution fee
@@ -261,7 +261,7 @@ finding-3 authorization fix — same endpoint, same work.
 ### D. Narrow the pilot from six categories to two
 
 `CATEGORIES` currently spans maquis, supérette, pharmacie, mode, beauté and téléphonie. This
-contradicts the cluster-density thesis in [Product concept](PRODUCT-CONCEPT.md): a customer should
+contradicts the cluster-density thesis in [Product concept](../business/CONCEPT.md): a customer should
 recognize Djassa across several nearby outlets.
 
 Pilot **maquis + supérette in one or two communes**. Both have high repeat frequency and small tickets,
@@ -295,7 +295,7 @@ Add point expiry and a maximum redemption rate per visit or per period.
 
 ### H. Instrument the master metric's denominator
 
-[djassa-product-concept-v2.md](djassa-product-concept-v2.md) states that the share of a merchant's real
+[djassa-product-concept-v2.md](../business/CONCEPT.md) states that the share of a merchant's real
 transactions actually recorded is the one number that governs everything. Nothing currently captures
 **total real sales**, so the number cannot be computed and the phase gate cannot be enforced.
 
@@ -305,7 +305,7 @@ denominator beats none.
 ### I. Resolve the djassa / dkassa naming before institutional outreach
 
 Both names are live across `docs/`, sometimes in the same sentence. Settle it and check trademark
-availability before any partner meeting — this is already an open item in [concept.md](./concept.md).
+availability before any partner meeting — this is already an open item in [concept.md](../business/CONCEPT.md).
 
 ---
 
@@ -341,10 +341,10 @@ long-pole external dependency and should be requested in parallel with item 1, n
 Related documents:
 
 - [Implementation action plan](action_plan_claude_djassa.md) — how to execute the findings above
-- [Concept (FR)](./concept.md)
-- [Product concept](PRODUCT-CONCEPT.md)
-- [Product concept v2 — the event as core primitive](djassa-product-concept-v2.md)
-- [Business model](BUSINESS-MODEL.md)
-- [Financial inclusion scope (FR)](./dkassa-inclusion-financiere.md)
-- [Product roadmap](ROADMAP.md)
-- [Partners and outreach plan](PARTNERS-AND-OUTREACH.md)
+- [Concept (FR)](../business/CONCEPT.md)
+- [Product concept](../business/CONCEPT.md)
+- [Product concept v2 — the event as core primitive](../business/CONCEPT.md)
+- [Business model](../business/BUSINESS-MODEL.md)
+- [Financial inclusion scope (FR)](../business/CONCEPT.md)
+- [Product roadmap](../business/ROADMAP.md)
+- [Partners and outreach plan](../business/PARTNERS.md)

@@ -1,36 +1,49 @@
 # Djassa Documentation
 
-This folder contains the English decision documents for the product and the technical project documents.
+> **Djassa turns everyday sales at neighbourhood shops into proof: a verified business history that the merchant owns and, with consent, can take to a licensed lender.**
 
-## Product and business
+## Business: what Djassa is and why it will work
 
-- [Product concept](PRODUCT-CONCEPT.md): what Djassa is, who it serves, and what it should not do.
-- [Product concept v2 source](djassa-product-concept-v2.md): event-stream framing and product rationale.
-- [Business model](BUSINESS-MODEL.md): customers, value exchange, revenue streams, pricing experiments, and unit economics.
-- [Business model](BUSINESS-MODEL.md): merchant-first monetization, corridor strategy, pricing, and unit economics.
-- [Partner and outreach plan](PARTNERS-AND-OUTREACH.md): who to contact, why, what to ask, and how to run a pilot conversation.
-- [Product roadmap](ROADMAP.md): phases, dependencies, measurements, and exit criteria.
-- [Concept review and optimization proposals](optimization_claude_djassa.md): independent review of the concept as documented and as implemented, revenue options, and optimization proposals.
-- [Implementation action plan](action_plan_claude_djassa.md): ordered workstreams, per-step file changes, test criteria, decision gates, and sequencing for the review's findings.
-- The long-term identity direction is documented in [PRODUCT-CONCEPT.md](PRODUCT-CONCEPT.md) and [ROADMAP.md](ROADMAP.md); it is a federated trust-layer hypothesis, not a current production claim.
+| Document | Answers |
+|---|---|
+| [Concept](business/CONCEPT.md) | What Djassa is, the one-habit idea, the four products, how money moves, identity, the financial-inclusion path, **how to explain it to each audience**, red lines. *Start here.* |
+| [Market](business/MARKET.md) | Sourced figures, regulation (BCEAO, PISPI, ARTCI), competitive landscape and positioning, tontine and SME finance evidence. |
+| [Business model](business/BUSINESS-MODEL.md) | Who pays, revenue streams in order, pricing experiment, unit economics, decision gates. |
+| [Roadmap](business/ROADMAP.md) | Where we stand today, phases 0–6 with exit gates, strategic horizon. |
+| [Partners](business/PARTNERS.md) | Institution directory, contact order, acquisition channels, meeting kit, guardrails. |
 
-## Technical
+## Planning: reviews and action plans
 
-- [Technical guide](TECHNICAL-GUIDE.md): repository map, local development, deployment, configuration, and production gaps.
-- [VPS test server](VPS-TEST-SERVER.md): Ubuntu VPS setup and automated test deployment.
-- [Architecture](../Architecture/README.md): canonical topology, security, secrets, and deployment references.
-- [Security principles](../Architecture/SECURITY.md): application and financial security requirements.
-- [Container security](../Architecture/security-architecture.md): Docker, Kubernetes, supply-chain, and runtime controls.
-- [Contributing](../CONTRIBUTING.md): branches, tests, security, and pull requests.
-- [Monitoring alerts](../monitoring/ALERTS.md): initial operational thresholds and access rules.
+| Document | Answers |
+|---|---|
+| [Concept review and optimization proposals](planning/optimization_claude_djassa.md) | Independent review of the concept as documented and as implemented, revenue options, optimization proposals. Written before the Wave-first revenue decision; where they differ, [Business model](business/BUSINESS-MODEL.md) wins. |
+| [Implementation action plan](planning/action_plan_claude_djassa.md) | Ordered workstreams, per-step file changes, test criteria, decision gates and sequencing for the review's findings. |
 
-## Research and source material
+## Technical: how it is built and run
 
-The original French product research and institutional notes remain available for reference:
+| Document | Answers |
+|---|---|
+| [Technical guide](technical/TECHNICAL-GUIDE.md) | Repository map, local development, sync, payments, identity API, configuration, production gaps. |
+| [VPS test server](technical/VPS-TEST-SERVER.md) | Ubuntu VPS setup and automated test deployment. |
+| [Architecture](../Architecture/README.md) | Topology, application and container security, secrets, Kubernetes. |
+| [Contributing](../CONTRIBUTING.md) | Branches, tests, security checklist, pull requests. |
+| [Monitoring alerts](../monitoring/ALERTS.md) | Operational thresholds and access rules. |
 
-- [Financial inclusion research](dkassa-inclusion-financiere.md)
-- [Institutions and ecosystem](dkassa-institutions.md)
-- [Product concept source](concept.md)
-- [Research notes](Recherche%20approfondie%20:%20Inclusion%20fina.md)
+App-specific docs live with each app: [merchant app architecture](../../djassa-App-retailer/ARCHITECTURE.md), [public site](../../djassa-Web/README.md).
 
-These source documents contain claims and market figures that should be rechecked before external publication.
+## Reading paths by audience
+
+| You are… | Read |
+|---|---|
+| **A merchant or user-facing team member** | Concept §§ 3–6 and § 9 |
+| **An investor** | Concept → Market → Business model → Roadmap |
+| **An institution or regulator** | Concept §§ 6–8 and § 11 → Market § 4 → Roadmap |
+| **A financial or payment partner** | Concept §§ 3, 6 and 9 → Business model → Partners |
+| **A developer** | Concept → Roadmap § Where we stand → Technical guide |
+
+## Keeping documents in sync
+
+- These business documents are the **source of truth**. The public site copy (`djassa-Web/src/content/fr.js` and `en.js`) and app wording must follow them.
+- The roadmap's "Where we stand" table must be updated when a capability ships or a gate is passed.
+- Market figures always carry their source and must be re-verified before external or contractual use.
+- The original French research and the "Dkassa" instruction notes were consolidated into these documents on 30 September 2026. The originals remain in git history.

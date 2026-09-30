@@ -13,25 +13,37 @@ The backend is a FastAPI service with:
 - Webhook signature verification and idempotency handling.
 - Prometheus metrics and OpenTelemetry instrumentation.
 
+API surfaces, by client:
+
+- **Merchant app** (`djassa-App-retailer`): `/api/token`, `/api/transactions` and `/api/transactions/sync`, merchant deals, stats and payment requests.
+- **Customer app** (`djassa-App-user`): venues, categories, on-duty pharmacies, deals, pay-code lookup, customer payments, loyalty balance and redemption.
+- **Admin**: pharmacy duty rotation, venue pay codes, featured deals.
+- **Foundations not exposed to users yet**: tontines, consents, identity verification tiers, exports, payments with refunds and disputes (see [ROADMAP.md § Where we stand](../business/ROADMAP.md#where-we-stand)).
+
+Recorded sales (`Merchant`/`Transaction`) and customer payments (`Venue`/`CustomerPayment`/`LoyaltyEntry`) are currently separate models. Unifying them into one merchant event stream is a Phase 1 requirement.
+
 The implementation is still a prototype. Authentication, resource authorization, financial workflows, and production configuration require further hardening before real financial use.
 
 ## Repository map
 
 | Area | Location | Purpose |
 |---|---|---|
-| Backend API | [backend-api](../backend-api/) | FastAPI application, models, routes, workers, tests |
-| Product concept | [PRODUCT-CONCEPT.md](PRODUCT-CONCEPT.md) | User problem, product boundary, value proposition |
-| Business model | [BUSINESS-MODEL.md](BUSINESS-MODEL.md) | Customers, revenue, unit economics, boundaries |
-| Partner strategy | [PARTNERS-AND-OUTREACH.md](PARTNERS-AND-OUTREACH.md) | Institutions, outreach, pilot questions |
-| Product roadmap | [ROADMAP.md](ROADMAP.md) | Phases, dependencies, exit criteria |
-| Architecture | [Architecture/README.md](../Architecture/README.md) | Canonical architecture index and deployment modes |
-| Security | [Architecture/SECURITY.md](../Architecture/SECURITY.md) | Application and financial-security principles |
-| Container security | [Architecture/security-architecture.md](../Architecture/security-architecture.md) | Compose/Kubernetes hardening |
+| Backend API | [backend-api](../../backend-api/) | FastAPI application, models, routes, workers, tests |
+| Merchant app | [djassa-App-retailer](../../../djassa-App-retailer/ARCHITECTURE.md) | Flutter, offline-first sale recording |
+| Customer app | [djassa-App-user](../../../djassa-App-user/) | Flutter, discovery, QR payment, loyalty |
+| Public site | [djassa-Web](../../../djassa-Web/README.md) | React/Vite investor and partner site |
+| Product concept | [CONCEPT.md](../business/CONCEPT.md) | What Djassa is, the four products, boundaries |
+| Business model | [BUSINESS-MODEL.md](../business/BUSINESS-MODEL.md) | Customers, revenue, unit economics, boundaries |
+| Partner strategy | [PARTNERS.md](../business/PARTNERS.md) | Institutions, outreach, pilot questions |
+| Product roadmap | [ROADMAP.md](../business/ROADMAP.md) | Current state, phases, exit criteria |
+| Architecture | [Architecture/README.md](../../Architecture/README.md) | Canonical architecture index and deployment modes |
+| Security | [Architecture/SECURITY.md](../../Architecture/SECURITY.md) | Application and financial-security principles |
+| Container security | [Architecture/security-architecture.md](../../Architecture/security-architecture.md) | Compose/Kubernetes hardening |
 | VPS test deployment | [VPS-TEST-SERVER.md](VPS-TEST-SERVER.md) | Test-server setup and automated deployment |
-| Database migrations | [backend-api/MIGRATIONS.md](../backend-api/MIGRATIONS.md) | Schema changes, rollback, and deployment rules |
-| Contributions | [CONTRIBUTING.md](../CONTRIBUTING.md) | Branches, tests, and security checklist |
-| Contributor guidance | [skills](../skills/) | Implementation and writing guidance |
-| Jenkins CI/CD | [Jenkinsfile](../Jenkinsfile) | Validation, image supply-chain checks, publishing, and gated deployment |
+| Database migrations | [backend-api/MIGRATIONS.md](../../backend-api/MIGRATIONS.md) | Schema changes, rollback, and deployment rules |
+| Contributions | [CONTRIBUTING.md](../../CONTRIBUTING.md) | Branches, tests, and security checklist |
+| Contributor guidance | [skills](../../skills/) | Implementation and writing guidance |
+| Jenkins CI/CD | [Jenkinsfile](../../Jenkinsfile) | Validation, image supply-chain checks, publishing, and gated deployment |
 
 ## Local development
 
@@ -53,7 +65,7 @@ Run tests with:
 pytest -q
 ```
 
-Schema changes follow [MIGRATIONS.md](../backend-api/MIGRATIONS.md). Apply migrations explicitly before starting a new deployment.
+Schema changes follow [MIGRATIONS.md](../../backend-api/MIGRATIONS.md). Apply migrations explicitly before starting a new deployment.
 
 Run the worker in a second terminal:
 

@@ -1,6 +1,6 @@
 # Djassa Backend — HOWTO
 
-This document explains local development and CI for the backend. For the project overview, start with [the root README](../README.md). For the complete technical map, see [the technical guide](../docs/TECHNICAL-GUIDE.md).
+This document explains local development and CI for the backend. For the project overview, start with [the root README](../README.md). For the complete technical map, see [the technical guide](../docs/technical/TECHNICAL-GUIDE.md).
 
 Do not commit credentials. Use environment variables, a private `.env`, or a managed secret store.
 

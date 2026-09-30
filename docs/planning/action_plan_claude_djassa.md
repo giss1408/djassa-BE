@@ -24,8 +24,8 @@ opened on day one** because it is the only long-pole external dependency.
 
 ## Standing rules for every step
 
-Carried over from [dkassa-inclusion-financiere.md](./dkassa-inclusion-financiere.md) and
-[djassa-product-concept-v2.md](djassa-product-concept-v2.md). A step that breaks one of these is wrong
+Carried over from [dkassa-inclusion-financiere.md](../business/CONCEPT.md) and
+[djassa-product-concept-v2.md](../business/CONCEPT.md). A step that breaks one of these is wrong
 even if it ships:
 
 1. **Djassa never holds funds** — not even in transit, not even "technically". Commission is paid *to*
@@ -94,7 +94,7 @@ a price list. Recommend: 2 slots per commune per category, priced weekly.
 
 ## W1-2 — Subscription and billing records — **DONE**
 
-Without this the Phase-1 exit gate "merchants pay or renew" ([Roadmap](ROADMAP.md)) cannot be evaluated.
+Without this the Phase-1 exit gate "merchants pay or renew" ([Roadmap](../business/ROADMAP.md)) cannot be evaluated.
 Build the *record* now; automated collection waits for W3-4 (aggregator).
 
 **Schema** — migration `0012_merchant_billing`:
@@ -444,7 +444,7 @@ server on Postgres 15.
 revenue lines 1, 3 and 5. **The sandbox request is the single most time-critical non-code action in this
 plan** — it should be sent before W1-1 starts, because the waiting is the cost, not the coding.
 
-Ask for, per [Partners and outreach plan](PARTNERS-AND-OUTREACH.md): sandbox credentials, webhook
+Ask for, per [Partners and outreach plan](../business/PARTNERS.md): sandbox credentials, webhook
 signature scheme, settlement timing, transaction limits, reconciliation and incident support, **and the
 commission split for a partner-reseller arrangement**. Negotiate the split *before* volume exists —
 after, the leverage is gone.
@@ -478,7 +478,7 @@ These are the "best steps to optimize the concept" and none of them wait for cod
 ## W4-1 — Narrow the pilot from six categories to two *(decision, this week)*
 
 `CATEGORIES` spans maquis, supérette, pharmacie, mode, beauté, téléphonie — which contradicts the
-cluster-density thesis in [Product concept](PRODUCT-CONCEPT.md).
+cluster-density thesis in [Product concept](../business/CONCEPT.md).
 
 - Pilot **maquis + supérette, one or two communes**: high repeat frequency, small tickets, exactly what
   the recording habit needs.
@@ -497,7 +497,7 @@ sponsorable (pharmacy group, health insurer, mutual).
 
 ## W4-3 — Instrument the master metric's denominator *(with W3-1)*
 
-[djassa-product-concept-v2.md](djassa-product-concept-v2.md) says the share of real transactions
+[djassa-product-concept-v2.md](../business/CONCEPT.md) says the share of real transactions
 recorded governs everything — but nothing captures **total real sales**, so it cannot be computed and
 the phase gate cannot be enforced.
 
@@ -507,7 +507,7 @@ the phase gate cannot be enforced.
 
 ## W4-4 — Test pricing and revenue share with merchants *(before W1-2 hardens)*
 
-Per [Business model](BUSINESS-MODEL.md), pricing is an experiment, not a decision. Ask 5–10 pilot
+Per [Business model](../business/BUSINESS-MODEL.md), pricing is an experiment, not a decision. Ask 5–10 pilot
 merchants directly:
 
 - Featured-slot price per week (W1-1 needs a number).
@@ -524,8 +524,8 @@ decide it before merchants accumulate balances under the old rules.
 
 ## W4-6 — Resolve djassa / dkassa, and update the concept docs *(before institutional outreach)*
 
-- Settle the name, check trademark availability — already an open item in [concept.md](./concept.md).
-- Once W3-1 lands, correct [djassa-product-concept-v2.md](djassa-product-concept-v2.md) so its
+- Settle the name, check trademark availability — already an open item in [concept.md](../business/CONCEPT.md).
+- Once W3-1 lands, correct [djassa-product-concept-v2.md](../business/CONCEPT.md) so its
   single-primitive claim matches the implementation. Right now the document describes an intent, not the
   system; after W3-1 it describes both.
 - State finding 4 explicitly in the concept: **loyalty points are the incentive that buys the
@@ -554,7 +554,7 @@ Everything else can slip without blocking anything downstream.
 # Decision gates
 
 Do not pass a gate on partial evidence — the whole point of the phasing in
-[Roadmap](ROADMAP.md) is that each gate is load-bearing.
+[Roadmap](../business/ROADMAP.md) is that each gate is load-bearing.
 
 **Gate A — before any partner demo:** W2-1 merged; no path to another merchant's customer data; exports
 audited. *Do not demo the export before this.*
@@ -578,7 +578,7 @@ Restating the non-scope so this plan cannot be read as licence to build it:
 - Selling identifiable transaction data.
 - Charging the customer a fee to pay — cash wins instantly.
 - The federated identity layer. It remains a strategic hypothesis; entry conditions are in
-  [Roadmap](ROADMAP.md) and none are met.
+  [Roadmap](../business/ROADMAP.md) and none are met.
 - Tontine beyond what exists, until the merchant product shows willingness to pay.
 - A second country.
 
@@ -598,8 +598,8 @@ Restating the non-scope so this plan cannot be read as licence to build it:
 Related documents:
 
 - [Concept review and optimization proposals](optimization_claude_djassa.md) — the findings this plan acts on
-- [Product concept v2](djassa-product-concept-v2.md) · [Product concept](PRODUCT-CONCEPT.md)
-- [Business model](BUSINESS-MODEL.md) · [Product roadmap](ROADMAP.md)
-- [Financial inclusion scope (FR)](./dkassa-inclusion-financiere.md) — the non-negotiable constraints
-- [Partners and outreach plan](PARTNERS-AND-OUTREACH.md) — what to ask the aggregator and the IMF
-- [Technical guide](TECHNICAL-GUIDE.md) — local development and migration workflow
+- [Product concept v2](../business/CONCEPT.md) · [Product concept](../business/CONCEPT.md)
+- [Business model](../business/BUSINESS-MODEL.md) · [Product roadmap](../business/ROADMAP.md)
+- [Financial inclusion scope (FR)](../business/CONCEPT.md) — the non-negotiable constraints
+- [Partners and outreach plan](../business/PARTNERS.md) — what to ask the aggregator and the IMF
+- [Technical guide](../technical/TECHNICAL-GUIDE.md) — local development and migration workflow

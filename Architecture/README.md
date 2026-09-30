@@ -51,4 +51,4 @@ Uses the manifests in `k8s/` with an ingress, External Secrets, restricted pod s
 - Backup/restore, incident response, image signing, and admission enforcement need operational setup.
 - Kubernetes manifests contain example hostnames, registry values, and provider references that must be replaced.
 
-See the [technical guide](../docs/TECHNICAL-GUIDE.md) for implementation and deployment navigation.
+See the [technical guide](../docs/technical/TECHNICAL-GUIDE.md) for implementation and deployment navigation.

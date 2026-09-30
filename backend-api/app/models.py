@@ -114,7 +114,7 @@ class ExportAudit(Base):
 
     A partner will ask who took what and under which consent, and an export that
     cannot answer that is an undocumented transfer of other people's transaction
-    data rather than a consented one (docs/dkassa-inclusion-financiere.md).
+    data rather than a consented one (docs/business/CONCEPT.md § 8).
     Append-only: an audit trail that can be edited is not one.
     """
 
@@ -233,7 +233,7 @@ class Venue(Base):
 
     `payout_provider`/`payout_account` are the merchant's OWN mobile-money
     wallet. A customer payment goes straight there through the licensed
-    aggregator; Djassa never holds the money (docs/dkassa-inclusion-financiere.md).
+    aggregator; Djassa never holds the money (docs/business/CONCEPT.md § 6).
     """
 
     __tablename__ = "venues"
