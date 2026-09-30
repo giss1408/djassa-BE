@@ -4,7 +4,9 @@ Djassa never holds funds, and during the pilot has no Wave account of its own.
 Each merchant, in THEIR Wave Business portal (business.wave.com, Developer
 section):
 
-1. creates an API key with "Checkout API" access and pastes it into Djassa Pro;
+1. creates an API key with ONLY "Checkout API" access (never "Payout API":
+   the key is a bearer secret, and with Payout a leak could move their money
+   out) and pastes it into Djassa Pro;
 2. creates a webhook pointing to the `webhook_url` Djassa returns, with
    "signing secret" authentication, subscribed to checkout.session.completed,
    checkout.session.payment_failed and merchant.payment_received, and pastes

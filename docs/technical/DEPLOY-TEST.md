@@ -84,12 +84,15 @@ Register one Android app per package: `ci.djassa.djassa_merchant` and `ci.djassa
 
 Djassa does not need a Wave account: each pilot merchant uses **theirs**, and the money goes straight to their wallet.
 
-1. The merchant opens [business.wave.com](https://business.wave.com) → **Developer** → **API keys** → creates a key with **Checkout API** access, and copies it (Wave shows it once).
+1. The merchant opens [business.wave.com](https://business.wave.com) → **Developer** → **API keys** → creates a key with **only Checkout API** ticked, and copies it (Wave shows it once).
+
+   > ⚠️ **Never tick Payout API** (or any other permission). The key is a private secret: whoever holds it acts on the merchant's account within its permissions. With Checkout only, a leaked key can at worst create payment requests *into* the merchant's account; with Payout, it could send their money away.
+
 2. In Djassa Pro → **Wave** → pastes the key. Djassa tests it and shows a webhook address.
 3. Back in the Wave portal → **Webhooks** → adds that address, authentication **Signing secret**, events `checkout.session.completed`, `checkout.session.payment_failed`, `merchant.payment_received`; copies the signing secret into Djassa Pro.
 4. Test with a real 100 F payment from a customer phone, then check the points.
 
-The key can create payments into the merchant's wallet, never withdraw from it; it is sealed in the database and the merchant can revoke it in Wave at any time. Until a merchant connects Wave, payments at their venue stay simulated.
+With Checkout access only, the key can create payments into the merchant's wallet, never withdraw from it; it is sealed in the database and the merchant can revoke it in Wave at any time. Until a merchant connects Wave, payments at their venue stay simulated.
 
 ## Before real users
 
