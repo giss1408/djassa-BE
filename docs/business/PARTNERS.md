@@ -98,7 +98,7 @@ Bring to every meeting:
 - Privacy, consent, security and incident controls.
 - Pilot duration, success metrics, exit criteria.
 - The specific decision or introduction you are asking for.
-- A two-page concept note; the public site for context.
+- The [investor brief](INVESTOR-BRIEF.md) (fill its placeholders first); the public site for context.
 
 ## Questions to ask
 

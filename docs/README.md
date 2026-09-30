@@ -11,6 +11,7 @@
 | [Business model](business/BUSINESS-MODEL.md) | Who pays, revenue streams in order, pricing experiment, unit economics, decision gates. |
 | [Roadmap](business/ROADMAP.md) | Where we stand today, phases 0–6 with exit gates, strategic horizon. |
 | [Partners](business/PARTNERS.md) | Institution directory, contact order, acquisition channels, meeting kit, guardrails. |
+| [Investor brief](business/INVESTOR-BRIEF.md) | The two-page summary for investors: problem, product, model, traction, milestones, team, company status and the ask. *Contains placeholders to fill before sending.* |
 
 ## Planning: reviews and action plans
 
@@ -36,7 +37,7 @@ App-specific docs live with each app: [merchant app architecture](../../djassa-A
 | You are… | Read |
 |---|---|
 | **A merchant or user-facing team member** | Concept §§ 3–6 and § 9 |
-| **An investor** | Concept → Market → Business model → Roadmap |
+| **An investor** | Investor brief first; then Concept → Market → Business model → Roadmap |
 | **An institution or regulator** | Concept §§ 6–8 and § 11 → Market § 4 → Roadmap |
 | **A financial or payment partner** | Concept §§ 3, 6 and 9 → Business model → Partners |
 | **A developer** | Concept → Roadmap § Where we stand → Technical guide |
