@@ -51,6 +51,9 @@ services:
       # later starts detect them and add nothing.
       - key: DJASSA_SEED_SAMPLE
         value: "1"
-      # Browser origins allowed to call the API (native apps are unaffected).
+      # Browser origins allowed to call the API. The native apps are not
+      # affected and the public site does not call the API, so only the future
+      # custom domain is listed. Never list a guessed onrender.com name: Render
+      # names are global and may belong to someone else.
       - key: CORS_ORIGINS
-        value: https://djassa.onrender.com,https://djassa.co
+        value: https://djassa.co
