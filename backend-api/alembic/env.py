@@ -10,7 +10,7 @@ fileConfig(config.config_file_name)
 
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from app.db import DATABASE_URL, Base
+from app.db import _CONNECT_ARGS, DATABASE_URL, Base
 
 target_metadata = Base.metadata
 
@@ -28,7 +28,7 @@ def do_run_migrations(connection):
 
 
 async def run_migrations_online():
-    connectable = create_async_engine(DATABASE_URL, poolclass=pool.NullPool)
+    connectable = create_async_engine(DATABASE_URL, poolclass=pool.NullPool, connect_args=_CONNECT_ARGS)
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
     await connectable.dispose()

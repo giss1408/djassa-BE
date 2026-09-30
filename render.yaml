@@ -1,0 +1,56 @@
+# Render Blueprint: the Djassa API for field testing, on Render's free plan,
+# with the database on Neon's free plan.
+# Render dashboard → New → Blueprint → pick this repository.
+#
+# Free-plan behaviour to expect:
+#   * The service sleeps after ~15 minutes without traffic; the first request
+#     after that takes up to about a minute. The merchant app queues sales
+#     offline and retries, so nothing is lost; the customer app shows "Retry".
+#   * No background worker: Celery tasks do not run. The API does not need
+#     them to serve the apps.
+#
+# This is a TEST environment: fake mobile-money provider (no real money moves)
+# and the demo logins (demo/demo123, client/client123). Never point real users
+# or real payments at it. See docs/technical/DEPLOY-TEST.md.
+
+services:
+  - type: web
+    runtime: python
+    name: djassa-api
+    plan: free
+    # Frankfurt: the lowest-latency Render region from Abidjan.
+    region: frankfurt
+    rootDir: backend-api
+    # Deploys from the default branch; the latest work is on `integration`.
+    # Merge it first, or set the branch this service should follow.
+    # branch: integration
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    # Migrations run on every start (a free instance has no pre-deploy step).
+    # `upgrade head` is a no-op when the schema is current, so a wake-up from
+    # sleep costs nothing extra.
+    startCommand: alembic -c alembic.ini upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*'
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      # Paste Neon's connection string exactly as Neon shows it
+      # (postgresql://...?sslmode=require). app/db.py adapts it for asyncpg.
+      # Prefer the direct endpoint; the pooled "-pooler" one also works.
+      - key: DATABASE_URL
+        sync: false
+      # Signs login tokens. Generated once by Render; never commit one.
+      - key: DJASSA_SECRET_KEY
+        generateValue: true
+      # Test environment only.
+      - key: DJASSA_ENV
+        value: test
+      - key: MOBILE_MONEY_PROVIDER
+        value: fake
+      # Seeds the sample venues, pharmacies and deals the apps show, once;
+      # later starts detect them and add nothing.
+      - key: DJASSA_SEED_SAMPLE
+        value: "1"
+      # Browser origins allowed to call the API (native apps are unaffected).
+      - key: CORS_ORIGINS
+        value: https://djassa.onrender.com,https://djassa.co

@@ -25,6 +25,7 @@
 | Document | Answers |
 |---|---|
 | [Technical guide](technical/TECHNICAL-GUIDE.md) | Repository map, local development, sync, payments, identity API, configuration, production gaps. |
+| [Test deployment (free)](technical/DEPLOY-TEST.md) | API on Render free + Neon, signed APKs on GitHub Releases, the WhatsApp install link, Firebase App Distribution. |
 | [VPS test server](technical/VPS-TEST-SERVER.md) | Ubuntu VPS setup and automated test deployment. |
 | [Architecture](../Architecture/README.md) | Topology, application and container security, secrets, Kubernetes. |
 | [Contributing](../CONTRIBUTING.md) | Branches, tests, security checklist, pull requests. |
