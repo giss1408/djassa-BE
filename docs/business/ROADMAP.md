@@ -15,7 +15,10 @@ A phase is complete when **real users have validated it**, not when the code shi
 | Customer app: venues, search by dish or commune | Prototype | Demo data |
 | Customer app: on-duty pharmacies | Prototype | Weekly rotation entered by an admin from the official list; no official API exists |
 | Customer app: QR payment, receipt, points, rewards | Prototype, **sandbox only** | No live payment provider; money would flow wallet to merchant wallet |
-| Deals with a paid featured slot | Prototype | Admin endpoint to feature a deal |
+| Deals with a paid featured slot | Prototype *(integration)* | Sold as a placement with a time window, price and paid status; expires on its own; slots capped per commune and category |
+| **One sale stream** (`SaleEvent`) | Prototype *(integration)* | Every sale labelled `mobile_money_confirmed` or `cash_declared`, never summed into one unqualified total; merchant taken from the login, not from the request; legacy sales without a clear owner held in quarantine rather than guessed |
+| Merchant subscriptions and billing ledger | Prototype *(integration)* | Plans, append-only billing events, admin revenue report (MRR, conversion, renewal); payment collected manually for the pilot. Recording sales and earning points are never behind a paywall |
+| Consented revenue export with audit | Prototype *(integration)* | Default export names no customer; customer-level export needs each customer's consent; every export audited; consent can be withdrawn |
 | Loyalty ledger and redemption | Prototype | Points awarded on customer payments |
 | Tontine groups, cycles, contributions, export | Foundation only | Built early; **not to be exposed before the Phase 3 gate** |
 | Consent records, verification tiers (request only) | Foundation only | Tier 1 and 2 cannot be self-approved; they need a licensed KYC adapter |
@@ -26,8 +29,8 @@ A phase is complete when **real users have validated it**, not when the code shi
 **Known gaps blocking the pilot:**
 
 1. **Authentication is a hardcoded demo user.** No registration, no phone/OTP Tier 0 login, no refresh token.
-2. **Two data models are not yet linked.** Sales recorded in the merchant app (`Merchant`/`Transaction`) and customer payments (`Venue`/`CustomerPayment`) are separate. Loyalty points exist only for payments. The "one event stream" in the concept requires one merchant identity and one history covering both entry points.
-3. No outlet registration (the merchant id is hardcoded in the merchant app); no loyalty for sales recorded at the counter with the customer's phone number.
+2. ~~Two data models are not yet linked.~~ **In progress on `integration`:** recorded sales and customer payments now write one `SaleEvent` stream, and the merchant app posts to it. Remaining: automatic Wave capture as a third source (gap 7), and resolving the quarantined legacy sales.
+3. No outlet registration or onboarding flow (on `integration` the merchant is derived from the login, but accounts are still created by hand); no loyalty for sales recorded at the counter with the customer's phone number.
 4. No live payment provider (sandbox adapter only); no reconciliation with settlement reports.
 5. No per-resource authorisation model; no production secrets or backups; no independent security review.
 6. Dioula and other local-language support not started; no gzip on the API.
