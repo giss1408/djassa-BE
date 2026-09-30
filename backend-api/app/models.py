@@ -244,6 +244,12 @@ class Venue(Base):
     address = Column(String(255), nullable=True)
     latitude = Column(Numeric, nullable=True)
     longitude = Column(Numeric, nullable=True)
+    # Where the coordinates came from, so anyone reading them can tell a GPS
+    # fix taken inside the shop from a guess: "merchant_gps" (the merchant app,
+    # standing in the shop) or "admin".
+    location_source = Column(String(16), nullable=True)
+    location_accuracy_m = Column(Integer, nullable=True)
+    location_set_at = Column(DateTime, nullable=True)
     phone = Column(String(32), nullable=True)
     description = Column(Text, nullable=True)
     specialties = Column(String(255), nullable=True)
