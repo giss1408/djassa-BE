@@ -3,7 +3,7 @@
 Djassa is an orchestrator, not a holder of funds: a provider moves money from
 the customer's wallet directly to the venue's own payout wallet through a
 licensed aggregator (CinetPay covers Wave, Orange Money, MTN MoMo and Moov in
-one API — see docs/concept.md). Nothing in here may route money through an
+one API — see docs/business/CONCEPT.md § 6). Nothing in here may route money through an
 account Djassa controls; that would be deposit-taking without a BCEAO licence.
 
 `MOBILE_MONEY_PROVIDER` selects the implementation. (Distinct from

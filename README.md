@@ -1,16 +1,17 @@
 # Djassa
 
-Djassa is a mobile-money-native platform for independent merchants and communities in West Africa. It starts with merchant loyalty and structured transaction history, then connects users to regulated financial partners for digital tontines, savings, and credit.
+Djassa turns everyday sales at neighbourhood shops into proof: a verified business history that the merchant owns and, with consent, can take to a licensed lender. It starts in Abidjan with merchant sales recording, loyalty and QR payments, then connects merchants and customers to licensed partners for digital tontines, savings and credit. Djassa never holds funds or lends.
 
-The financial-inclusion product direction is referred to as **Dkassa** in some source documents. The final product name is still to be confirmed.
+This repository is the platform behind the merchant app (`djassa-App-retailer`), the customer app (`djassa-App-user`) and the public site (`djassa-Web`).
 
 ## Start here
 
-- [Product concept](docs/PRODUCT-CONCEPT.md): what we are building and for whom.
-- [Business model](docs/BUSINESS-MODEL.md): how the project creates and earns value.
-- [Partners and outreach](docs/PARTNERS-AND-OUTREACH.md): who to contact and what to ask.
-- [Product roadmap](docs/ROADMAP.md): phases and validation gates.
-- [Technical guide](docs/TECHNICAL-GUIDE.md): local development, deployment, and technical boundaries.
+- [Concept](docs/business/CONCEPT.md): what Djassa is, for whom, and how to explain it to each audience.
+- [Market](docs/business/MARKET.md): sourced figures, regulation and positioning.
+- [Business model](docs/business/BUSINESS-MODEL.md): how the project creates and earns value.
+- [Partners](docs/business/PARTNERS.md): who to contact and what to ask.
+- [Roadmap](docs/business/ROADMAP.md): where we stand, phases and validation gates.
+- [Technical guide](docs/technical/TECHNICAL-GUIDE.md): local development, deployment, and technical boundaries.
 - [Contributing](CONTRIBUTING.md): branches, tests, security, and pull requests.
 - [Documentation index](docs/README.md): complete product and technical documentation map.
 
@@ -37,7 +38,7 @@ alembic -c alembic.ini upgrade head
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Run tests with `pytest -q`. Run the Celery worker separately as described in [TECHNICAL-GUIDE.md](docs/TECHNICAL-GUIDE.md).
+Run tests with `pytest -q`. Run the Celery worker separately as described in [TECHNICAL-GUIDE.md](docs/technical/TECHNICAL-GUIDE.md).
 
 ## VPS test deployment
 
@@ -48,7 +49,7 @@ cd backend-api
 ./deploy-vps-test.sh
 ```
 
-See [VPS-TEST-SERVER.md](docs/VPS-TEST-SERVER.md) for firewall, SSH, secrets, migration, and access guidance.
+See [VPS-TEST-SERVER.md](docs/technical/VPS-TEST-SERVER.md) for firewall, SSH, secrets, migration, and access guidance.
 
 ## Jenkins CI/CD
 

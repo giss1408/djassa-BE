@@ -197,7 +197,7 @@ class Venue(Base):
 
     `payout_provider`/`payout_account` are the merchant's OWN mobile-money
     wallet. A customer payment goes straight there through the licensed
-    aggregator; Djassa never holds the money (docs/dkassa-inclusion-financiere.md).
+    aggregator; Djassa never holds the money (docs/business/CONCEPT.md § 6).
     """
 
     __tablename__ = "venues"
