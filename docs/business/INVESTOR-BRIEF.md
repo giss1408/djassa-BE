@@ -77,7 +77,7 @@ No geographic expansion before one corridor passes the gate.
 | | Role | Responsible for |
 |---|---|---|
 | **Stanislas Regisse** | CEO | Technical implementation and security |
-| **Bienvenue Kluadio** | Marketing | Partner and investor contact, finances, marketing strategy |
+| **Bienvenue Kouadio** | Marketing | Partner and investor contact, finances, marketing strategy |
 
 ## Company status
 
@@ -86,7 +86,7 @@ No geographic expansion before one corridor passes the gate.
 | Legal entity | `[PLACEHOLDER]` Djassa SAS, Abidjan, Côte d'Ivoire (OHADA) |
 | Registration (RCCM) | `[PLACEHOLDER]` CI-ABJ-2026-B-00000 |
 | Share capital | `[PLACEHOLDER]` 1,000,000 FCFA |
-| Ownership | `[PLACEHOLDER]` Stanislas Regisse 50% · Bienvenue Kluadio 50% |
+| Ownership | `[PLACEHOLDER]` Stanislas Regisse 50% · Bienvenue Kouadio 50% |
 | Prior funding | `[PLACEHOLDER]` None (founder-funded) |
 | IP | `[PLACEHOLDER]` Code and brand assigned to the company |
 | Final brand name | To be confirmed legally before public launch |
@@ -107,6 +107,6 @@ No loan promise. No deposits held by Djassa. No data shared without consent. No 
 
 ## Contact
 
-Bienvenue Kluadio (partner and investor contact) · ptck2e@duck.mail
+Bienvenue Kouadio (partner and investor contact) · ptck2e@duck.mail
 
 *Information document. Not an offer of financial services or of securities. Figures from public sources are cited in [MARKET.md](MARKET.md); illustrative economics are labelled as such.*

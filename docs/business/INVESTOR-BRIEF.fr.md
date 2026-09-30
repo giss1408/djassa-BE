@@ -77,7 +77,7 @@ Aucune expansion géographique avant qu'un corridor ait franchi ce seuil.
 | | Rôle | Responsabilités |
 |---|---|---|
 | **Stanislas Regisse** | CEO | Mise en œuvre technique et sécurité |
-| **Bienvenue Kluadio** | Marketing | Contact partenaires et investisseurs, finances, stratégie marketing |
+| **Bienvenue Kouadio** | Marketing | Contact partenaires et investisseurs, finances, stratégie marketing |
 
 ## La société
 
@@ -86,7 +86,7 @@ Aucune expansion géographique avant qu'un corridor ait franchi ce seuil.
 | Entité juridique | `[À COMPLÉTER]` Djassa SAS, Abidjan, Côte d'Ivoire (OHADA) |
 | Immatriculation (RCCM) | `[À COMPLÉTER]` CI-ABJ-2026-B-00000 |
 | Capital social | `[À COMPLÉTER]` 1 000 000 FCFA |
-| Actionnariat | `[À COMPLÉTER]` Stanislas Regisse 50 % · Bienvenue Kluadio 50 % |
+| Actionnariat | `[À COMPLÉTER]` Stanislas Regisse 50 % · Bienvenue Kouadio 50 % |
 | Financement antérieur | `[À COMPLÉTER]` Aucun (fonds propres des fondateurs) |
 | Propriété intellectuelle | `[À COMPLÉTER]` Code et marque cédés à la société |
 | Nom de marque définitif | À confirmer juridiquement avant le lancement public |
@@ -107,6 +107,6 @@ Aucune promesse de prêt. Aucun dépôt détenu par Djassa. Aucune donnée parta
 
 ## Contact
 
-Bienvenue Kluadio (contact partenaires et investisseurs) · ptck2e@duck.mail
+Bienvenue Kouadio (contact partenaires et investisseurs) · ptck2e@duck.mail
 
 *Document d'information. Ne constitue ni une offre de services financiers, ni une offre de titres. Les chiffres issus de sources publiques sont cités dans [MARKET.md](MARKET.md) ; les calculs illustratifs sont signalés comme tels.*
