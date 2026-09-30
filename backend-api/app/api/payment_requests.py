@@ -15,7 +15,7 @@ from .. import models
 from ..core.entitlements import max_stats_days
 from ..core.security import require_role
 from ..db import get_db
-from ..schemas.customer import DayTotal, MerchantStatsOut, PaymentRequestIn, PaymentRequestOut
+from ..schemas.customer import DayTotal, MerchantStatsOut, PayCodeOut, PaymentRequestIn, PaymentRequestOut
 from ..services import revenue as revenue_service
 from .customer import new_pay_code, qr_payload, utcnow
 
@@ -103,6 +103,30 @@ async def cancel_request(request_id: int, db: AsyncSession = Depends(get_db), us
     elif r.status in ("processing", "paid"):
         raise HTTPException(status_code=409, detail="Trop tard : le client est en train de payer ou a paye")
     return _out(await _load(db, r.id, user))
+
+
+@router.get("/merchant/pay-code", response_model=PayCodeOut)
+async def my_pay_code(db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
+    """The shop's fixed QR, to print and stick on the counter.
+
+    The customer scans it and types the amount; the per-sale QR above carries
+    the amount instead. Issued on first request when the shop has none yet.
+    Replacing a code (lost or tampered sticker) stays an admin action,
+    `POST /admin/venues/{id}/pay-code`, so a mis-tap cannot silently void the
+    sticker already on the counter.
+    """
+    venue = await _my_venue(db, user)
+    if not venue.pay_code:
+        for _ in range(3):
+            venue.pay_code = new_pay_code()
+            try:
+                await db.commit()
+                break
+            except IntegrityError:
+                await db.rollback()
+                venue = await _my_venue(db, user)
+        await db.refresh(venue)
+    return PayCodeOut(venue_id=venue.id, name=venue.name, pay_code=venue.pay_code, qr_payload=qr_payload(venue.pay_code))
 
 
 @router.get("/merchant/stats", response_model=MerchantStatsOut)

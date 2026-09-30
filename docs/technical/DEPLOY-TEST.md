@@ -63,7 +63,7 @@ The APKs keep **fixed names**, so these links always serve the latest release:
 | Merchant | `…/djassa-App-retailer/releases/latest/download/djassa-marchand-arm64.apk` | `…-armv7.apk` | `…-universel.apk` |
 | Customer | `…/djassa-App-user/releases/latest/download/djassa-client-arm64.apk` | `…-armv7.apk` | `…-universel.apk` |
 
-Sizes: about 16/13/28 MB (merchant) and 17/14/29 MB (customer).
+Sizes: about 8/7/14 MB (merchant) and 9/8/15 MB (customer). Native libraries are compressed inside the APK (`useLegacyPackaging = true`), which halves the download at the cost of about 8 MB more storage after install.
 
 ## 4. The WhatsApp link
 

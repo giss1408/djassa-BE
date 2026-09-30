@@ -132,3 +132,27 @@ async def test_merchant_stats_count_only_money_actually_received(client):
     assert stats["average_basket"] == stats["revenue"] // stats["payments"]
 
     assert (await client.get("/api/merchant/stats", headers=customer)).status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_merchant_gets_the_shop_fixed_qr_and_a_customer_can_pay_it(client):
+    """The fixed QR for the counter sticker: stable across calls, and payable."""
+    merchant = await _auth(client, "demo", "demo123")
+    first = await client.get("/api/merchant/pay-code", headers=merchant)
+    assert first.status_code == 200, first.text
+    body = first.json()
+    assert body["qr_payload"] == f"djassa://pay/{body['pay_code']}"
+    # The same code every time: the sticker on the counter must keep working.
+    again = (await client.get("/api/merchant/pay-code", headers=merchant)).json()
+    assert again["pay_code"] == body["pay_code"]
+
+    customer = await _auth(client, "client", "client123")
+    target = await client.get(f"/api/customer/pay-codes/{body['pay_code']}", headers=customer)
+    assert target.status_code == 200
+    assert target.json()["name"] == body["name"]
+
+
+@pytest.mark.asyncio
+async def test_customers_cannot_read_a_merchant_pay_code(client):
+    customer = await _auth(client, "client", "client123")
+    assert (await client.get("/api/merchant/pay-code", headers=customer)).status_code == 403
