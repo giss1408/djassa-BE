@@ -44,7 +44,7 @@ A phase is complete when **real users have validated it**, not when the code shi
 - 5 to 10 merchant interviews in one Abidjan corridor; one segment (pharmacies and maquis are the current candidates, matching the customer app) and one acquisition channel.
 - A narrow pilot agreement.
 - **Operator capabilities**: whether Orange Money and MTN MoMo can notify payments to a merchant's static QR (not only payments Djassa starts), their merchant rates, and activation times.
-- **PI-SPI status in Côte d'Ivoire**: how far interoperable merchant QR has rolled out, and which licensed payment institution could connect Djassa to it.
+- **PI-SPI status in Côte d'Ivoire** (the BCEAO's instant-payment interoperability platform, see [MARKET.md](MARKET.md#what-pi-spi-is)): how far interoperable merchant QR has rolled out, and which licensed payment institution could connect Djassa to it.
 - **Wave Business API access for pilot merchants**: can a small merchant enable the `merchant.payment_received` webhook for Djassa, and may the customer phone number be used for loyalty (Wave terms, ARTCI)? This decides the Phase 1 architecture.
 - Payment aggregator sandbox access (CinetPay or equivalent) as the fallback route, and confirmed PI-SPI compliance.
 - Real cost per loyalty notification: local bulk SMS and WhatsApp Business rates for Côte d'Ivoire.

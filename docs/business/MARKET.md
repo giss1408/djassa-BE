@@ -38,8 +38,36 @@ Microfinance is growing fast but concentrated in Abidjan and poorly adapted to s
 
 - Any fintech operating in UEMOA needs a BCEAO status: **electronic money institution (EME)**, **payment institution (EP)**, or technical partner of a licensed institution. Djassa operates as a **technology and distribution partner** of licensed institutions and holds no licence itself.
 - 2023 regulation encourages fintechs to target unbanked populations and eases multi-country expansion under common rules. About 200 fintechs were registered by BCEAO at the time.
-- **PI-SPI** (instant-payment interoperability platform) launched on 30 September 2025. Connection has been mandatory for all financial institutions since 30 June 2026. Any payment partner we sign must be PI-SPI-compliant. Its interoperable merchant QR (one QR accepting any wallet or bank) is the long-term operator-neutral rail for Djassa (see § 9).
+- **PI-SPI**, the BCEAO's instant-payment interoperability platform, connects every bank, mobile-money operator and MFI in the zone. Connection has been mandatory since 30 June 2026 (see [What PI-SPI is](#what-pi-spi-is) below).
 - BCEAO has an open workstream on **credit scoring** and has discussed a **regulatory sandbox**. Any third-party scoring must go through that route rather than launch in a grey zone.
+
+### What PI-SPI is
+
+**PI-SPI** stands for *Plateforme d'Interopérabilité du Système de Paiement Instantané*: the instant-payment interoperability platform run by the **BCEAO**, the central bank shared by the eight UEMOA countries (Côte d'Ivoire, Senegal, Mali, Burkina Faso, Niger, Togo, Benin, Guinea-Bissau).
+
+**What it does**
+
+- **Connects everyone.** Banks, mobile-money operators (Wave, Orange Money, MTN, Moov…) and microfinance institutions are linked, so money moves instantly between any two of them, even across operators or countries in the zone.
+- **Instant, 24/7.** Payments settle in real time, around the clock.
+- **Interoperable merchant QR.** A merchant can display **one QR code** and accept payment from any wallet or bank account, whatever app the customer uses. Today a merchant usually needs one QR per operator.
+
+**Timeline**
+
+| Date | Milestone |
+|---|---|
+| 30 September 2025 | Officially launched by the BCEAO in Dakar |
+| March 2026 | Progressive onboarding continues, e.g. four more institutions authorised in Togo |
+| 30 June 2026 | Deadline for every financial institution in UEMOA to connect |
+| To confirm | How far merchant QR adoption has actually spread in Côte d'Ivoire (a Phase 0 check) |
+
+**Why it matters for Djassa**
+
+- **It ends the "which operator?" question.** It is step 3 of the operator-neutral order ([CONCEPT.md § 3](CONCEPT.md#3-the-idea-one-habit-five-uses)): Wave first, then MTN or Orange, then PI-SPI. With one interoperable QR, Djassa would no longer need a separate integration per operator.
+- **Djassa cannot connect directly.** Only licensed financial institutions can. Djassa would reach it through a licensed partner (a bank or payment institution), consistent with its role as a technology partner.
+- **It is a partner requirement.** Any payment partner Djassa signs must be PI-SPI-connected.
+- **Roadmap:** Phase 0 checks its status in Côte d'Ivoire and identifies a licensed participant; Phase 2 adds it through that partner ([ROADMAP.md](ROADMAP.md)).
+
+Sources: [AllAfrica, PI-SPI launch](https://fr.allafrica.com/stories/202602120405.html) · [Ecofin, 30 June deadline](https://www.ecofinagency.com/news-finances/0404-54418-bceao-imposes-june-30-deadline-to-complete-instant-payments-integration) · [CDPI, interoperable QR](https://docs.cdpi.dev/fr/notes-techniques/payments/code-qr-interoperable) · [AllAfrica, Togo onboarding](https://fr.allafrica.com/stories/202603060731.html)
 
 ### National: Côte d'Ivoire
 

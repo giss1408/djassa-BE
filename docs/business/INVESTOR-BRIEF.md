@@ -20,7 +20,7 @@
 
 One habit, recording the sale, produces five uses: loyalty, revenue history, tontine regularity, a reliability indicator and a financing case for a licensed partner.
 
-- **Zero extra effort on mobile money.** Djassa builds on the wallet the merchant already uses. The merchant's existing QR payments are captured automatically, Wave first, then other operators and the BCEAO's PI-SPI interoperable QR. **No extra fee, no new habit.**
+- **Zero extra effort on mobile money.** Djassa builds on the wallet the merchant already uses. The merchant's existing QR payments are captured automatically, Wave first, then other operators and the interoperable QR of **PI-SPI**, the central bank's platform that links every bank and mobile wallet in the UEMOA zone ([details](MARKET.md#what-pi-spi-is)). **No extra fee, no new habit.**
 - **Cash sales count too.** They take one tap in the merchant app, even offline. With the customer's phone number, the customer earns points.
 - **Loyalty the merchant can see.** Points, rewards handed over at the counter, deals, and a weekly "customers who came back" figure.
 - **Proof for credit, with consent.** Each sale is labelled *confirmed by the provider* or *declared by the merchant*, and exported only with consent to a licensed MFI or guarantee scheme.

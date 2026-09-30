@@ -64,7 +64,7 @@ Djassa is **not tied to Wave**. It builds on whichever wallet the merchant alrea
 |---|---|---|
 | 1 | **Wave**: automatic capture of payments to the merchant's existing QR | Most small merchants, lowest merchant fee (~1%), and a confirmed webhook that notifies payments Djassa did not start |
 | 2 | **MTN MoMo** (request-to-pay) and **Orange Money** (merchant API) | For merchants mainly on those networks. Both confirm payments Djassa starts; whether they can also notify payments to a merchant's static QR is to be confirmed |
-| 3 | **PI-SPI interoperable QR** (BCEAO), through a licensed partner | One QR that accepts any wallet or bank in UEMOA. When it is live for merchants in Côte d'Ivoire, it becomes the single operator-neutral rail and removes the question |
+| 3 | **PI-SPI interoperable QR**, the BCEAO's instant-payment platform linking every bank and wallet in UEMOA ([what it is](MARKET.md#what-pi-spi-is)), through a licensed partner | One QR that accepts any wallet or bank in UEMOA. When it is live for merchants in Côte d'Ivoire, it becomes the single operator-neutral rail and removes the question |
 | Always | **Cash sale + phone number** | Works with any wallet or with cash, today; recorded as merchant-declared |
 
 Whatever the rail, every sale lands in the same history with its evidence label, and the merchant never pays more for a payment than they do today.

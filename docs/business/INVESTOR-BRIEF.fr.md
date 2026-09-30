@@ -20,7 +20,7 @@
 
 Une seule habitude, enregistrer la vente, produit cinq usages : fidélité, historique de revenus, régularité de tontine, indicateur de fiabilité et dossier de financement pour un partenaire agréé.
 
-- **Zéro effort en mobile money.** Djassa s'appuie sur le portefeuille que le commerçant utilise déjà. Les paiements sur son QR existant sont capturés automatiquement, Wave d'abord, puis les autres opérateurs et le QR interopérable PI-SPI de la BCEAO. **Aucun frais en plus, aucune nouvelle habitude.**
+- **Zéro effort en mobile money.** Djassa s'appuie sur le portefeuille que le commerçant utilise déjà. Les paiements sur son QR existant sont capturés automatiquement, Wave d'abord, puis les autres opérateurs et le QR interopérable de **PI-SPI**, la plateforme de la banque centrale (BCEAO) qui relie toutes les banques et tous les portefeuilles mobiles de la zone UEMOA ([détails](MARKET.md#what-pi-spi-is)). **Aucun frais en plus, aucune nouvelle habitude.**
 - **Les espèces comptent aussi.** Un geste dans l'application commerçant, même hors ligne. Avec le numéro du client, celui-ci gagne des points.
 - **Une fidélité visible pour le commerçant.** Points, récompenses remises au comptoir, bons plans, et chaque semaine le nombre de « clients revenus ».
 - **Une preuve pour le crédit, avec consentement.** Chaque vente est étiquetée *confirmée par le prestataire* ou *déclarée par le commerçant*, et n'est exportée qu'avec consentement vers une IMF ou un fonds de garantie agréés.

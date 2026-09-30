@@ -21,7 +21,7 @@ Phase references point to [ROADMAP.md](ROADMAP.md). The one-sentence pitch per a
 
 | Institution | Role | Why contact | When |
 |---|---|---|---|
-| **BCEAO** | Licences EME/EP, credit-scoring workstream, PI-SPI interoperability | Unavoidable for any e-money or scoring feature; ask about the regulatory sandbox and about reaching the PI-SPI interoperable merchant QR through a licensed participant | Before any financial launch; PI-SPI from Phase 0 |
+| **BCEAO** | Licences EME/EP, credit-scoring workstream, PI-SPI (instant-payment interoperability platform, [what it is](MARKET.md#what-pi-spi-is)) | Unavoidable for any e-money or scoring feature; ask about the regulatory sandbox and about reaching the PI-SPI interoperable merchant QR through a licensed participant | Before any financial launch; PI-SPI from Phase 0 |
 | **ARTCI** | Personal-data protection authority | Consent, retention, data transfer, identity data | Phase 0 |
 | **APIF-CI** | Runs the National Financial Inclusion Strategy and financial education | Near-identical mission, including gender and rural inclusion; natural institutional partner | Now |
 | **SGPME** | Partial guarantee on bank and MFI credit to SMEs | Lowers the risk an MFI partner takes on merchants without bank history | Phase 5 |
