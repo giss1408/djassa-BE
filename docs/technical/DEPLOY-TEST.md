@@ -40,10 +40,13 @@ Both app repositories (`djassa-App-retailer`, `djassa-App-user`) have `.github/w
 **Once per app**, create the signing key and give it to GitHub:
 
 ```bash
-scripts/create-signing-key.sh     # needs a JDK; prints the four secrets
+scripts/create-signing-key.sh     # needs a JDK; asks for nothing
+scripts/check-signing-key.sh      # must say OK twice
 ```
 
-Add them under the repository's **Settings → Secrets and variables → Actions**: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. **Back up the `.jks` file and its password**: Android refuses an update signed with another key, so losing it forces every tester to uninstall and reinstall. The workflow refuses to publish without the key; it never falls back to an unsigned or debug-signed build.
+`create-signing-key.sh` generates the password itself (32 letters and digits), creates and verifies the key, backs both up in `pass` if it is installed, and writes the four values to `~/<alias>-github-secrets.txt` (readable only by you). No password is ever typed or pasted into a terminal, which is what broke the first merchant key: a password re-entered at a hidden prompt can differ from the real one, especially in terminals that add invisible characters on paste. `check-signing-key.sh` tests the key exactly as the workflow does and confirms the base64 in the file is this key.
+
+Copy each value from that file into the repository's **Settings → Secrets and variables → Actions**: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. Then delete the file. **Back up the `.jks` file and its password**: Android refuses an update signed with another key, so losing it forces every tester to uninstall and reinstall. The workflow refuses to publish without the key; it never falls back to an unsigned or debug-signed build.
 
 **For each release:**
 
