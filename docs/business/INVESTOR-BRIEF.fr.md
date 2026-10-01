@@ -42,7 +42,7 @@ Logiciel marchand d'abord, infrastructure financière ensuite.
 | Source de revenu | Quand |
 |---|---|
 | Abonnement commerçant : formule gratuite plafonnée, puis ~5 000 F et ~10 000–15 000 F / mois / point de vente *(hypothèses à tester)* | Pilote |
-| Bons plans à la une (emplacement payant dans l'application client) et campagnes | Pilote |
+| Bons plans sponsorisés et campagnes : emplacement ponctuel et limité dans le temps pour promouvoir un produit, un service ou une offre dans l'application client ; réservation assistée par l'équipe pendant le pilote, prix à tester | Pilote |
 | Contrats multi-points de vente et réseaux | Après preuve |
 | Commissions d'apport consenties (crédit, épargne, tontine) : Djassa perçoit une commission de distribution, sans jamais porter le risque de crédit | Après partenariat |
 

@@ -12,7 +12,7 @@ The go-to-market unit is not a country but a **merchant cluster**: one dense cor
 
 | Party | Who | What they get | What they give |
 |---|---|---|---|
-| **Merchants** (paying customer) | Repeat-purchase outlets: pharmacies, maquis and restaurants, neighbourhood groceries, salons, service shops | Loyalty and deals without building software; daily totals and repeat-customer visibility; a revenue history they own; optional access to partner finance | Monthly subscription; optional featured placement and campaigns |
+| **Merchants** (paying customer) | Repeat-purchase outlets: pharmacies, maquis and restaurants, neighbourhood groceries, salons, service shops | Loyalty and deals without building software; daily totals and repeat-customer visibility; a revenue history they own; optional access to partner finance; paid visibility for a product, service or special offer | Monthly subscription; one-off sponsored placement; optional campaigns |
 | **Customers** (free) | Residents of the pilot corridor | A daily-use app (food, on-duty pharmacies, deals, payment); points and rewards; a view of their own activity; access to tontines and savings through partners later | Usage, and payment-confirmed events that strengthen merchant histories |
 | **Financial partners** | MFIs, banks, guarantee schemes | Distribution into small merchants and communities; consented, structured histories; lower onboarding friction | Referral and distribution commissions |
 | **Payment partners** | Aggregators, mobile-money operators | Repeat merchant QR-payment volume on their rails | Integration, settlement; possibly revenue share where licensing permits |
@@ -25,11 +25,24 @@ Avoid starting with businesses whose purchase frequency is too low to prove rete
 | # | Stream | Detail | When |
 |---|---|---|---|
 | 01 | **Merchant subscription** | Monthly per outlet, tiered by activity, paid in mobile money. Primary MVP revenue. | MVP |
-| 02 | **Campaigns, messaging and featured deals** | Merchants publish deals for free; the **featured ("sponsored") slot** on the customer app home carousel is paid. SMS/WhatsApp campaigns are sold with costs passed through transparently. | MVP |
+| 02 | **Sponsored deals and campaigns** | Basic deals remain free. A merchant can buy a one-off, fixed-price, time-limited placement to promote a product, dish, service or special price in the customer app, shown to people browsing the relevant commune/category. Placements are visibly labelled sponsored, capped per commune/category, and admin-assisted during the pilot. The fee buys placement, not guaranteed sales; price and demand must be tested. SMS/WhatsApp campaigns are optional and their messaging costs are passed through transparently. | MVP |
 | 03 | **Multi-outlet and network contracts** | Merchant networks, pharmacy groups, associations; priced separately from single outlets. | After proof |
 | 04 | **Payment orchestration** *(minor)* | An aggregator revenue share on payments made through the Djassa route only, where the licensed provider permits it. **Never priced above what the merchant pays on their existing wallet today (~1% on Wave).** This is not a core stream, because Djassa builds on the merchant's existing wallet (see [CONCEPT.md § 3](CONCEPT.md#3-the-idea-one-habit-five-uses)). | After proof |
 | 05 | **Consented partner commissions** | Paid by a licensed partner for a qualified, consented referral: credit (working capital, stock, revenue advance), savings accounts opened and funded, tontine processing fees. Djassa never touches the funds, only the distribution commission. Moniepoint (36% transaction lift after loans) and Kopo Kopo (42%) show this is where merchant platforms create the most value, as long as responsible-lending safeguards are in place (see below). | After partnership |
 | 06 | **Institutional services** | Reporting, reconciliation and aggregated, anonymised, consented insight for institutions. Never casual sale of personal data. | After partnership |
+
+## Additional revenue experiments (not in the forecast)
+
+These are options to test after the core merchant pilot; none is committed revenue. Keep the basic merchant and customer services useful without requiring these purchases.
+
+| Option | Who pays and what they buy | Timing and conditions |
+|---|---|---|
+| **Done-for-you offer creation** | A merchant pays a one-off service fee for Djassa to prepare the photo, copy, local-language version, and schedule for a sponsored offer. Ordinary deal publishing remains free. | Can be tested manually during the pilot. Price from actual staff time and merchant willingness to pay; do not add a fee that costs more than the promotion itself without clear value. |
+| **Brand- or distributor-funded local campaigns** | A consumer-goods brand or distributor pays a flat campaign fee to promote a product or funded offer at participating merchants. The merchant approves the offer; any discount/reward funding is explicit. | After a corridor has enough active merchants and customer attention to offer reliable placement. Label advertising clearly; share no customer-level data and do not let sponsors influence pharmacy-duty or safety information. |
+| **Association or chain setup contracts** | A merchant association, pharmacy group, or small chain pays a one-time setup/training fee plus an agreed per-outlet service fee for onboarding, configuration, and group reporting. | After one corridor proves onboarding and support costs. Keep terms transparent and do not imply access to credit is included. |
+| **Opt-in supplier introductions** | A distributor or business-service provider pays a disclosed fee for a merchant-requested introduction or qualified inquiry (for example, a wholesaler quote request). Djassa does not take orders or handle the purchase payment. | Later, after merchants trust the service and a written partner agreement exists. The merchant chooses whether to share contact details; no sales history is passed to suppliers. |
+
+Prioritize the first three before supplier referrals. Track paid conversion, delivery cost, renewal/repeat booking, and merchant benefit separately for every experiment. Reject any offer that needs hidden advertising, sale of identifiable data, a new regulated role, or merchant payments routed through Djassa.
 
 **Referral revenue is not the model's first assumption.** It depends on a partner agreement, regulatory review, user consent and measurable financial outcomes. Commissions must never create pressure on users or condition access to basic service. We earn the value of the credit generated without carrying its risk. Djassa does not lend.
 
@@ -71,6 +84,8 @@ Pricing is tested with merchants, not fixed. The first experiment, informed by B
 | **Network** | Negotiated | Multiple outlets, association or pharmacy-group dashboards, partner-finance workflows. |
 
 Rules: local currency (XOF), paid in mobile money; state whether messaging, payment and partner fees are included; **a paid pilot, not a permanently free product** (the free tier is a funnel with a cap, not the business); a short trial only once the merchant has onboarded and recorded real activity; network contracts priced separately; financial referral revenue kept outside the subscription; never sell credit access as part of a plan.
+
+**Sponsored-deal pilot offer.** Keep ordinary deal listings free, then offer a fixed-fee placement for a defined time window in the customer app. The merchant supplies the offer and commune/category; Djassa checks it, records the fee and dates, and labels it sponsored. Pilot requests and sales are handled by the team, not self-service checkout. Test 7-day placement prices of **XOF 1,000, 2,000, and 3,000** with comparable merchants; these are starting hypotheses, not researched market rates or a published tariff. Track paid bookings and direct delivery costs before forecasting this revenue. Do not promise a number of views, visits or sales, and never let payment affect official pharmacy-duty or other safety-critical information.
 
 **Acquisition through resellers.** Commission associations, distributors and field agents on the subscriptions they bring in (Bumpa pays partners 20%). This is cheaper than direct sales and fits the cluster strategy.
 
