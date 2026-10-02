@@ -325,7 +325,8 @@ async def _merchants(db: AsyncSession, rows, since: datetime) -> list[MerchantOu
             props = _props(row)
             count[row.name] += row.count
             if row.name == "sale_recorded" and isinstance(props.get("seconds"), (int, float)):
-                durations.append(float(props["seconds"]))
+                # The app sends 5-second buckets with a count: weight by it.
+                durations.extend([float(props["seconds"])] * row.count)
             elif row.name == "daily_report" and isinstance(props.get("sales_estimate"), int):
                 estimates[row.occurred_at.date()] = props["sales_estimate"]
             elif row.name == "data_used":
