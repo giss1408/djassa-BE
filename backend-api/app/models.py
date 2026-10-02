@@ -721,6 +721,39 @@ class ClientEvent(Base):
     received_at = Column(DateTime, nullable=False)
 
 
+class UsageEvent(Base):
+    """What people do in our apps, for the pilot's product questions.
+
+    Separate from `client_events` on purpose: errors are anonymous, usage is
+    tied to an *install* (a random id the app makes on first launch, not a
+    device id or phone number) so installs and active users can be counted.
+    For the merchant app the shop (`venue_id`) is attached when signed in,
+    because the pilot is measured per merchant. Customers are never linked
+    to an account: the install id is all we keep for them.
+
+    Same-day repeats of one event arrive as one row with a `count`.
+    """
+
+    __tablename__ = "usage_events"
+    __table_args__ = (
+        Index("ix_usage_events_app_occurred", "app", "occurred_at"),
+        Index("ix_usage_events_install", "install_id"),
+    )
+    id = Column(Integer, primary_key=True, index=True)
+    app = Column(String(16), nullable=False)  # "user" | "retailer"
+    install_id = Column(String(40), nullable=False)
+    venue_id = Column(Integer, ForeignKey("venues.id", ondelete="SET NULL"), nullable=True, index=True)
+    name = Column(String(32), nullable=False)
+    # JSON object of at most a few short, scrubbed values (see the API).
+    props = Column(Text, nullable=True)
+    count = Column(Integer, nullable=False, default=1)
+    app_version = Column(String(32), nullable=False)
+    platform = Column(String(16), nullable=False)
+    os_version = Column(String(64), nullable=True)
+    occurred_at = Column(DateTime, nullable=False)
+    received_at = Column(DateTime, nullable=False)
+
+
 class AccountNumberChange(Base):
     """Every time an account moved to another phone number, and how.
 

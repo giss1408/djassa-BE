@@ -45,3 +45,11 @@ AUTH_EVENTS = Counter('djassa_auth_events_total', 'Sign-in events', ['event', 'r
 CLIENT_EVENTS = Counter(
     'djassa_client_events_total', 'Errors reported by Djassa apps', ['app', 'platform', 'kind', 'app_version']
 )
+
+# App usage (POST /api/usage-events). `name` is an allow-listed enum, so the
+# label stays bounded; screens and content ids live in the table, not here.
+USAGE_EVENTS = Counter('djassa_usage_events_total', 'Usage events reported by Djassa apps', ['app', 'name'])
+
+# First launches, i.e. installs (a reinstall counts again: the install id is
+# kept in the app's own storage).
+APP_INSTALLS = Counter('djassa_app_installs_total', 'First launches of Djassa apps', ['app'])

@@ -56,7 +56,7 @@ async def test_purge_keeps_what_is_still_useful():
         ])
         await db.commit()
 
-    assert await purge_expired(now) == {"otp_challenges": 1, "refresh_tokens": 2, "client_events": 1}
+    assert await purge_expired(now) == {"otp_challenges": 1, "refresh_tokens": 2, "client_events": 1, "usage_events": 0}
 
     async with AsyncSessionLocal() as db:
         left = {t.token_hash.rstrip("0") for t in (await db.execute(select(models.RefreshToken))).scalars()}

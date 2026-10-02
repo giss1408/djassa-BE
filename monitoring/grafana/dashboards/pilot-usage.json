@@ -1,0 +1,169 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "schemaVersion": 36,
+  "title": "Djassa pilot usage",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Installs, last 30 days (first launches)",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum by (app) (increase(djassa_app_installs_total[30d]))",
+          "legendFormat": "{{app}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Merchant sales recorded in the app, last 7 days",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(djassa_usage_events_total{app=\"retailer\",name=\"sale_recorded\"}[7d]))",
+          "legendFormat": "sales",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Sale form abandon rate, last 7 days",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(djassa_usage_events_total{app=\"retailer\",name=\"sale_abandoned\"}[7d])) / clamp_min(sum(increase(djassa_usage_events_total{app=\"retailer\",name=~\"sale_recorded|sale_abandoned\"}[7d])), 1)",
+          "legendFormat": "abandoned",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Customer app: venues opened, last 7 days",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(djassa_usage_events_total{app=\"user\",name=\"venue_viewed\"}[7d]))",
+          "legendFormat": "venue views",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "New installs per day, by app",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "expr": "sum by (app) (increase(djassa_app_installs_total[1d]))",
+          "legendFormat": "{{app}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "App opens per day, by app",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "targets": [
+        {
+          "expr": "sum by (app) (increase(djassa_usage_events_total{name=\"app_open\"}[1d]))",
+          "legendFormat": "{{app}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Merchant app: sale flow per day",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 13
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(djassa_usage_events_total{app=\"retailer\",name=\"sale_form_opened\"}[1d]))",
+          "legendFormat": "form opened",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(increase(djassa_usage_events_total{app=\"retailer\",name=\"sale_recorded\"}[1d]))",
+          "legendFormat": "recorded",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(increase(djassa_usage_events_total{app=\"retailer\",name=\"sale_abandoned\"}[1d]))",
+          "legendFormat": "abandoned",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Customer app: what is opened, per day",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 13
+      },
+      "targets": [
+        {
+          "expr": "sum by (name) (increase(djassa_usage_events_total{app=\"user\",name=~\"venue_viewed|deal_opened|media_viewed|scan_opened|payment_started|payment_completed\"}[1d]))",
+          "legendFormat": "{{name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "title": "Per merchant, per screen, per venue",
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Prometheus only holds totals. Install-level and per-merchant detail (active installs, screens, venues and deals seen, median time to record a sale, the **recorded share** master metric, data used per day) is served by the API:\n\n`GET /api/admin/usage?app=retailer&days=30` and `GET /api/admin/usage?app=user&days=30` (admin token).\n\nCounters restart with each deploy; `increase()` accounts for that."
+      }
+    }
+  ]
+}

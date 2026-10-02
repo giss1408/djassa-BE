@@ -138,6 +138,39 @@ obfuscated: symbolize a stack with `flutter symbolize` and the symbols that
 `scripts/build-release.sh` archived for that version. Native (Java/engine)
 crashes are not covered; use Play Console's Android vitals for those.
 
+## App usage analytics (pilot)
+
+Our own pipeline again, no analytics SDK: merchants and customers pay per
+byte, and nothing goes to a third party. Both apps keep a small aggregated
+queue (`lib/core/monitoring/usage_tracker.dart`) and send it to
+`POST /api/usage-events` (`app/api/usage_events.py`) in one request at
+start-up or when the app returns to the foreground, never on a timer.
+
+* **Identity.** Every event carries an *install id*: random, created on
+  first launch, kept in the app's storage (not a device id, not a phone
+  number). It counts installs and active users. The merchant app's events
+  are tied to the shop (`venue_id`, from the token) because the pilot is
+  measured per merchant; the customer app's events are **never** tied to an
+  account, even when the customer is signed in.
+* **What is sent.** Allow-listed event names only (`EVENT_NAMES`), at most 8
+  short props, digit runs scrubbed. Merchant app: `app_open`, `screen_view`,
+  `sale_form_opened`, `sale_recorded` (seconds taken), `sale_abandoned`
+  (step), `daily_report` (the W4-3 end-of-day estimate), `data_used`.
+  Customer app: `app_open`, `tab_view`, `screen_view`, `venue_viewed`,
+  `deal_opened`, `media_viewed`, `scan_opened`, `payment_started`,
+  `payment_completed`, `data_used`.
+* **Where to read it.** The *Djassa pilot usage* Grafana dashboard
+  (Prometheus totals) and `GET /api/admin/usage?app=retailer|user&days=30`
+  for installs, active installs, screens, venues and deals seen, and per
+  merchant: active days, median seconds to record a sale, abandons, data
+  used per day and the **recorded share** (sales the server holds ÷ the
+  merchant's own estimate), the pilot's master metric.
+* **Not here, on purpose.** How long sales waited offline is already in
+  `sale_events` (`recorded_at` − `occurred_at`). Native crashes: Play
+  Console's Android vitals.
+* **Retention.** `USAGE_EVENTS_RETENTION_DAYS` (default 400), purged by
+  `app/services/purge.py`.
+
 ## Repository map
 
 | Area | Location | Purpose |

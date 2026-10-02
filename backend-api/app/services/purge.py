@@ -6,6 +6,8 @@
   but unexpired tokens stay: presenting one again is how stolen-token reuse is
   detected (`app/api/auth.py`).
 * `client_events` older than `CLIENT_EVENTS_RETENTION_DAYS` (default 90).
+* `usage_events` older than `USAGE_EVENTS_RETENTION_DAYS` (default 400: the
+  pilot compares retention at 30/60/90 days and a full year of seasons).
 """
 
 import os
@@ -22,6 +24,10 @@ REVOKED_RETENTION = timedelta(days=30)
 
 def client_events_retention() -> timedelta:
     return timedelta(days=int(os.getenv("CLIENT_EVENTS_RETENTION_DAYS", "90")))
+
+
+def usage_events_retention() -> timedelta:
+    return timedelta(days=int(os.getenv("USAGE_EVENTS_RETENTION_DAYS", "400")))
 
 
 async def purge_expired(now: datetime | None = None) -> dict[str, int]:
@@ -42,11 +48,15 @@ async def purge_expired(now: datetime | None = None) -> dict[str, int]:
         events = await session.execute(
             delete(models.ClientEvent).where(models.ClientEvent.received_at < now - client_events_retention())
         )
+        usage = await session.execute(
+            delete(models.UsageEvent).where(models.UsageEvent.received_at < now - usage_events_retention())
+        )
         await session.commit()
         return {
             "otp_challenges": otp.rowcount,
             "refresh_tokens": tokens.rowcount,
             "client_events": events.rowcount,
+            "usage_events": usage.rowcount,
         }
 
 
