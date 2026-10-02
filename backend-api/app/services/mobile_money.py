@@ -123,7 +123,13 @@ async def provider_for(db, venue, wallet_provider: str) -> MobileMoneyProvider:
         account = (
             await db.execute(select(models.WaveAccount).where(models.WaveAccount.venue_id == venue.id))
         ).scalar_one_or_none()
-        if account is not None:
+        if account is not None and account.api_key_sealed is None and os.getenv("DJASSA_ENV") == "production":
+            # Points-only connection: no key to create a checkout with. The
+            # customer pays the shop's own Wave QR and the points still come.
+            raise ProviderUnavailable(
+                "Payez avec le QR Wave du commerce : vos points arrivent automatiquement."
+            )
+        if account is not None and account.api_key_sealed is not None:
             try:
                 return WaveProvider(unseal(account.api_key_sealed))
             except SecretUnavailable as exc:

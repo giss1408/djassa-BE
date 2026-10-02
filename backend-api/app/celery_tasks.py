@@ -2,6 +2,7 @@ import logging
 
 from .celery_app import celery_app
 from .services import placements as placements_service
+from .services import purge as purge_service
 from .services import sale_events as sale_events_service
 from .services import tontine as tontine_service
 from .celery_app import record_task
@@ -72,4 +73,17 @@ def report_quarantine_task():
         return result
     except Exception:
         record_task('sale_events.report_quarantine', 'failure')
+        raise
+
+
+@celery_app.task(name='maintenance.purge_expired')
+def purge_expired_task():
+    """Delete spent sign-in codes, dead sessions and old app error reports."""
+    try:
+        result = purge_service.purge_expired_sync()
+        logging.getLogger('djassa.purge').info('purge_expired: %s', result)
+        record_task('maintenance.purge_expired', 'success')
+        return result
+    except Exception:
+        record_task('maintenance.purge_expired', 'failure')
         raise

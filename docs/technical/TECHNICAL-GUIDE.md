@@ -9,20 +9,134 @@ The backend is a FastAPI service with:
 - SQLAlchemy models and Alembic migrations.
 - PostgreSQL as the target relational database.
 - Redis and Celery for asynchronous work.
-- JWT-based authentication in the current skeleton.
+- Phone + SMS code sign-in with JWT access tokens and rotating refresh tokens.
+- In-house error reporting from the apps and the site (`/api/client-events`).
 - Webhook signature verification and idempotency handling.
 - Prometheus metrics and OpenTelemetry instrumentation.
 
 API surfaces, by client:
 
-- **Merchant app** (`djassa-App-retailer`): `/api/token`, `/api/merchant/sales` and `/api/merchant/sales/sync` (optional `customer_phone` earns the customer points), `/api/merchant/customers/loyalty` and `/redeem` (balance and reward at the counter, by phone), `/api/merchant/venue/location` (GET/PUT: the shop's position, from the phone's GPS in the shop, for customers' directions), merchant deals, stats and payment requests.
-- **Customer app** (`djassa-App-user`): venues, categories, on-duty pharmacies, deals, pay-code lookup, customer payments, loyalty balance and redemption.
-- **Admin**: pharmacy duty rotation, venue pay codes, featured deals.
+- **Merchant app** (`djassa-App-retailer`): `/api/auth/*` (phone sign-in), `/api/merchant/sales` and `/api/merchant/sales/sync` (optional `customer_phone` earns the customer points), `/api/merchant/customers/loyalty` and `/redeem` (balance and reward at the counter, by phone), `/api/merchant/venue/location` (GET/PUT: the shop's position, from the phone's GPS in the shop, for customers' directions), merchant deals, stats and payment requests.
+- **Customer app** (`djassa-App-user`): `/api/auth/*` (phone sign-in), venues, categories, on-duty pharmacies, deals, pay-code lookup, customer payments, loyalty balance and redemption.
+- **Admin**: pharmacy duty rotation, venue pay codes, featured deals, merchant accounts (`/api/admin/users/roles`), app error reports (`/api/admin/client-events`).
+- **All apps and the site**: `POST /api/client-events` (error reports, no sign-in needed).
 - **Foundations not exposed to users yet**: tontines, consents, identity verification tiers, exports, payments with refunds and disputes (see [ROADMAP.md § Where we stand](../business/ROADMAP.md#where-we-stand)).
 
 Recorded sales (`Merchant`/`Transaction`) and customer payments (`Venue`/`CustomerPayment`/`LoyaltyEntry`) are currently separate models. Unifying them into one merchant event stream is a Phase 1 requirement.
 
 The implementation is still a prototype. Authentication, resource authorization, financial workflows, and production configuration require further hardening before real financial use.
+
+## Sign-in
+
+`app/api/auth.py`. The phone number is the account (CONCEPT.md, Tier 0).
+
+1. `POST /api/auth/otp/request {phone, app}` sends a 6-digit code. Only an HMAC
+   is stored. Codes live 5 minutes and allow 5 guesses; a number gets one code
+   per 60 s and 5 per hour; each IP 10 requests per minute.
+2. `POST /api/auth/otp/verify {phone, code, app}` returns a 60-minute access
+   token (JWT, `sub` = `tel:+225…`, the same key as counter loyalty, so counter
+   points appear on first sign-in) and a 90-day refresh token (stored hashed).
+   `app: "customer"` creates the account on first use. `app: "merchant"`
+   requires the merchant role, granted with
+   `POST /api/admin/users/roles {phone, role: "merchant", venue_id}`.
+3. `POST /api/auth/refresh` rotates the pair. Replaying a used refresh token
+   revokes that whole session (stolen-token detection).
+   `POST /api/auth/logout` revokes it.
+
+SMS delivery is `app/services/otp_sender.py`, chosen by `OTP_SENDER`:
+
+| Variable | Meaning |
+|---|---|
+| `OTP_SENDER=console` | Default outside production. Logs the code. Refused when `DJASSA_ENV=production`. |
+| `OTP_DEV_ECHO=1` | With `console` only, returns the code in the API response so the apps fill it in. Local development only: anyone could sign in as any number. |
+| `OTP_SENDER=africastalking` | SMS via Africa's Talking with `AT_USERNAME`, `AT_API_KEY`, optional `AT_SENDER_ID`, `AT_SANDBOX=1`. |
+
+Sending SMS is the only part with a cost: a few cents per message, set by the
+provider. The `OtpSentButNotVerified` alert watches for SMS pumping.
+
+Locally, with sample data seeded, `07 00 00 00 02` is a merchant that runs
+*Chez Tantie Awa*. Any other number signs in to the customer app.
+
+The username/password `POST /api/token` with the `demo`/`client`/`admin`
+accounts remains for development and tests. It answers 404 when
+`DJASSA_ENV=production` or `DJASSA_DEMO_LOGIN=0`. Until a production admin
+signs in by phone, grant the first admin role directly in the database
+(`UPDATE users SET roles = 'admin' WHERE phone_e164 = '+225…'`).
+
+## Merchant onboarding
+
+`app/api/onboarding.py`. There are two ways in, and both end with a shop, a merchant login and a QR:
+
+| Who starts | Path |
+|---|---|
+| An agent or admin | `POST /api/admin/venues {category, name, commune, address, payout_provider, payout_account, merchant_phone, points_per_100…}` creates the shop, makes `merchant_phone` its Djassa Pro login, and issues the payment QR when a wallet is given. |
+| The merchant, from the Djassa Pro sign-in screen (*Inscrire mon commerce*) | `POST /api/partner-requests/code` proves the phone. `POST /api/partner-requests` files the shop details. An admin lists them at `GET /api/admin/partner-requests`, calls the merchant, then calls `/approve` (with corrections) or `/reject`. Approving runs the same creation as above. The merchant is told by SMS. |
+
+One phone number runs one shop (409 otherwise), because Djassa Pro finds "my shop" from the token. After sign-in the merchant sets the shop position from their phone, and connects Wave (points only by default). See [DEPLOY-TEST.md § 6](DEPLOY-TEST.md).
+
+## Shop photos and videos
+
+`app/api/media.py`. Each shop has up to **10 photos and 3 videos of 60 s**. Merchants add them in Djassa Pro (*Photos et vidéos*) and admins in djassa-Admin; customers see them on the shop page (`media` in `GET /api/venues/{id}`).
+
+Uploads are never served as sent (`app/services/media_processing.py`):
+
+| | Kept | Typical size |
+|---|---|---|
+| Photo | WebP at 320, 720 and 1280 px wide; orientation fixed; **all metadata stripped** (GPS, phone model) | thumb ~10–20 KB, 720 px ~40–70 KB |
+| Video | H.264 Main + AAC mono, short side ≤ 480 px, ≤ 600 kbit/s, `faststart`, metadata stripped; plus a 720 px WebP poster | ~4.5 MB a minute |
+
+A photo is processed during the upload request and returns `ready`. A video returns `processing` and is converted after the response, in the API process, one video at a time (`MEDIA_VIDEO_JOBS`). ffmpeg is the system's when installed (the Docker image has it), or else the static build inside the `imageio-ffmpeg` wheel. The wheel is what runs on Render's native Python runtime, where nothing can be apt-installed; `FFMPEG_BINARY` overrides both. On Render's free instance (512 MB, a fraction of a CPU) a 60 s clip takes a few minutes; the list shows `ready`, or `failed` with the reason (too long, unreadable). The apps load only thumbnails by default. A video shows its length and size, and downloads only when tapped; the customer app then streams it in its own player. List endpoints (`GET /api/venues`, on-duty pharmacies) carry `cover_url`, the first photo's 320 px thumbnail, for the cards; the shop page uses the 720 px photo as its header. The merchant app also shrinks photos on the phone before upload (1600 px, JPEG 80).
+
+Storage (`app/services/media_storage.py`), chosen by `MEDIA_STORAGE`:
+
+| Value | Use |
+|---|---|
+| `local` (default) | Development: files under `MEDIA_LOCAL_DIR` (default `./media`), served by the API at `/media/…`. Refused in production; Render's free disk is wiped on deploy. |
+| `r2` | Cloudflare R2: free up to 10 GB, **no bandwidth fees**. Set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` (an R2 API token limited to the bucket), `R2_BUCKET`, and `MEDIA_PUBLIC_BASE_URL` (the bucket's public `r2.dev` URL or a custom domain). |
+
+R2 setup: Cloudflare dashboard → R2 → create bucket `djassa-media` → Settings → enable public access (r2.dev) or connect a custom domain such as `media.djassa.ci`. Then R2 → Manage API tokens → *Object Read & Write* on that bucket only. Keys contain a random part and files never change, so they are served with a one-year immutable cache. Deleting a media item deletes its files.
+
+## Admin screen
+
+`../djassa-Admin`, a React static site for the Djassa team: shops and their media, sign-up requests, account recoveries, users and roles, and app errors. Admins sign in with phone + SMS code using `app: "admin"`; only numbers with the admin role get a session. The supporting endpoints are `GET/PATCH /api/admin/venues[/{id}]`, `GET /api/admin/users?phone=`, `POST /api/admin/users/disable` and `POST /api/admin/users/roles/revoke`. An admin cannot suspend themselves or remove their own admin role. Add the site's origin to `CORS_ORIGINS`.
+
+## Account recovery
+
+`app/api/account.py`. In the apps: *Mon compte* in the menu, and *Numéro perdu ?*
+on the sign-in screen.
+
+| Situation | Path |
+|---|---|
+| Phone lost or stolen, same number (replacement SIM) | Sign in again, then *Déconnecter les autres téléphones*: `POST /api/auth/sessions/revoke-others` ends every other session. Admins can do it for a number with `POST /api/admin/users/revoke-sessions`. |
+| New number, old SIM still works | `POST /api/auth/change-number/request` sends a code to each number. `/confirm` with both codes moves the account at once. A signed-in session alone is not enough, because a phone left unlocked must not be able to give the account away. |
+| Old number lost | `POST /api/auth/recovery/code` proves the new number. `POST /api/auth/recovery` files a request with the old number and details, and the old number is warned by SMS. An admin reviews it at `GET /api/admin/recovery-requests`, which shows roles, shops, loyalty venues and last payment to ask the caller about. The admin then calls `/approve` or `/reject`, and the new number is told by SMS. |
+
+A move (`app/services/account_move.py`) re-keys every column that belongs to
+the person (points, payments, shop, tontines, consents, identity) from the old
+`tel:` key to the new one. It leaves audit columns (who exported, recorded or
+connected something) as history, ends every session, and logs the change in
+`account_number_changes`. A number that already has an account is refused:
+two accounts are never merged automatically. `tests/test_account_recovery.py`
+fails if a new account-key column is added without being classified.
+
+Codes carry a purpose (`sign_in`, `change_number`, `recovery`) and only work
+for it. Access tokens already issued stay valid until they expire (at most
+60 minutes) and then cannot be renewed.
+
+## App error monitoring
+
+The apps and the site report their own uncaught errors to
+`POST /api/client-events` (`app/api/client_events.py`). There is no third-party
+SDK. Reports are batched on the device and sent at start-up or when the app
+returns to the foreground, never on a timer. Digit runs in messages and tokens
+are scrubbed on the device and again on the server. Each report increments
+`djassa_client_events_total{app, platform, kind, app_version}`. The
+*Djassa apps and sign-in* Grafana dashboard and the `AppErrorSpike` and
+`AppCrashAfterRelease` alerts read that counter. Admins read grouped stacks
+with `GET /api/admin/client-events?app=user&days=7`. Release builds are
+obfuscated: symbolize a stack with `flutter symbolize` and the symbols that
+`scripts/build-release.sh` archived for that version. Native (Java/engine)
+crashes are not covered; use Play Console's Android vitals for those.
 
 ## Repository map
 
@@ -161,7 +275,7 @@ During the pilot Djassa has no Wave account and never holds funds. Each merchant
 
 | Endpoint | Who | What |
 |---|---|---|
-| `PUT /api/merchant/wave` | merchant | Saves the Wave API key (Checkout access) and the webhook signing secret. The key is tested first with a search that moves no money. Both are sealed with Fernet under `DJASSA_ENCRYPTION_KEY` (`app/core/secretbox.py`) and never returned; only a hint (`…a1B2`) is. The response gives the `webhook_url` to paste into the Wave portal. |
+| `PUT /api/merchant/wave` | merchant | Creates or updates the connection; only the fields sent change. An empty body creates the `webhook_url` to paste into the Wave portal. `webhook_secret` alone is enough for points (points only, the default). `api_key` (Checkout access only) is optional and enables in-app payment. It is tested first with a search that moves no money. Secrets are sealed with Fernet under `DJASSA_ENCRYPTION_KEY` (`app/core/secretbox.py`) and never returned; only a hint (`…a1B2`) is. `payments_enabled` says whether a key is connected. |
 | `GET` / `DELETE /api/merchant/wave` | merchant | Status (key hint, webhook configured, last event) / disconnect. |
 | `POST /webhooks/wave/{token}` | Wave | Signed events (`Wave-Signature`, HMAC-SHA256, 5-minute replay window). The random token identifies the venue. |
 | `GET /api/customer/payments/{id}` | customer | Re-reads a pending checkout from Wave, so a late webhook does not block the app. |
@@ -170,7 +284,9 @@ Flow: the customer pays with Wave → `POST /api/customer/payments` creates a Wa
 
 `merchant.payment_received` (someone paid the merchant's ordinary Wave QR, outside Djassa) grants the venue's points on the sender's phone number (`tel:+225…`, the counter key) and records a confirmed sale keyed `wave:<transaction id>`. It is skipped when the same money is a Djassa checkout (same transaction id, or a pending checkout from the same number for the same amount).
 
-`MOBILE_MONEY_PROVIDER=wave`: venues with a connected account use Wave for Wave payments; other payments stay simulated in test and are refused (422, "payez au comptoir") in production. Wave has no sandbox: tests use a mock transport (`tests/test_wave.py`); the first live check is a small real payment.
+A points-only venue (no key) gets no checkout: in production a Wave payment in the app is refused with "Payez avec le QR Wave du commerce", and the payment to the shop's own QR still earns the points through `merchant.payment_received`.
+
+`MOBILE_MONEY_PROVIDER=wave`: venues with a connected key use Wave for Wave payments; other payments stay simulated in test and are refused (422, "payez au comptoir") in production. Wave has no sandbox: tests use a mock transport (`tests/test_wave.py`); the first live check is a small real payment.
 
 ## VPS test deployment
 
@@ -193,6 +309,8 @@ Required production-like variables:
 | `DJASSA_SECRET_KEY` | JWT signing key; never use a placeholder |
 | `MOBILE_MONEY_SECRETS` | Comma-separated webhook signing keys |
 | `DJASSA_ENCRYPTION_KEY` | Seals merchants' Wave keys at rest; changing it forces merchants to reconnect |
+| `MEDIA_STORAGE=r2` + `R2_*`, `MEDIA_PUBLIC_BASE_URL` | Shop photos and videos (see Shop photos and videos) |
+| `OTP_SENDER` + provider keys | Sign-in codes by SMS (see Sign-in) |
 | `CELERY_BROKER_URL` | Redis broker URL |
 
 Do not use the demo credentials or placeholder secrets on an Internet-accessible server.
@@ -210,10 +328,10 @@ Do not use the demo credentials or placeholder secrets on an Internet-accessible
 
 The following remain mandatory work:
 
-- Replace demo authentication with a real identity and user store.
-- Implement role and resource authorization.
+- Configure a real `OTP_SENDER` (and a funded SMS account) and set `DJASSA_ENV=production`, which disables the demo login and the console sender.
+- Implement resource authorization beyond roles.
 - Remove default secrets and fail closed at startup.
-- Add refresh-token or session revocation strategy.
+- Schedule `maintenance.purge_expired` daily (see `backend-api/README-CELERY.md`).
 - Complete payment reconciliation and financial state transitions.
 - Add backup and restore procedures.
 - Enforce immutable image versions and blocking vulnerability scans.

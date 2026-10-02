@@ -327,3 +327,59 @@ async def test_without_a_connected_account_production_refuses_wave(client, fake_
     assert "Payez au comptoir" in r.json()["detail"]
     async with AsyncSessionLocal() as db:
         assert (await db.execute(select(models.CustomerPayment))).first() is None
+
+
+# --- Points only: no payment key --------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_points_only_needs_no_key_and_still_earns_points(client, fake_wave):
+    merchant = await _auth(client, "demo", "demo123")
+    # An empty body creates the webhook address first, before Wave gives the secret.
+    started = (await client.put("/api/merchant/wave", json={}, headers=merchant)).json()
+    assert started["connected"] is True
+    assert started["payments_enabled"] is False
+    assert started["webhook_configured"] is False
+    assert started["webhook_url"]
+
+    connected = (await client.put("/api/merchant/wave", json={"webhook_secret": SECRET}, headers=merchant)).json()
+    assert connected["webhook_configured"] is True
+    assert connected["payments_enabled"] is False
+    assert connected["webhook_url"] == started["webhook_url"]
+    async with AsyncSessionLocal() as db:
+        account = (await db.execute(select(models.WaveAccount))).scalar_one()
+        assert account.api_key_sealed is None
+
+    event = {"id": "EV_P1", "type": "merchant.payment_received",
+             "data": {"id": "T_POINTS1", "amount": "1500", "currency": "XOF", "sender_mobile": "+2250701020304"}}
+    assert (await _post_event(client, _hook_path(connected), event)).status_code == 200
+    r = await client.post("/api/merchant/customers/loyalty", json={"phone": "07 01 02 03 04"}, headers=merchant)
+    assert r.json()["points"] == 30
+
+
+@pytest.mark.asyncio
+async def test_a_key_can_be_added_later_without_touching_the_secret(client, fake_wave):
+    merchant = await _auth(client, "demo", "demo123")
+    await client.put("/api/merchant/wave", json={"webhook_secret": SECRET}, headers=merchant)
+    r = (await client.put("/api/merchant/wave", json={"api_key": GOOD_KEY}, headers=merchant)).json()
+    assert r["payments_enabled"] is True
+    assert r["webhook_configured"] is True
+
+
+@pytest.mark.asyncio
+async def test_points_only_shop_sends_wave_payers_to_the_shop_qr(client, fake_wave, monkeypatch):
+    merchant = await _auth(client, "demo", "demo123")
+    customer = await _auth(client, "client", "client123")
+    await client.put("/api/merchant/wave", json={"webhook_secret": SECRET}, headers=merchant)
+    code = (await client.get("/api/merchant/pay-code", headers=merchant)).json()["pay_code"]
+    monkeypatch.setenv("DJASSA_ENV", "production")
+    monkeypatch.setenv("DJASSA_ENCRYPTION_KEY", "test-key")
+    r = await client.post(
+        "/api/customer/payments",
+        json={"pay_code": code, "amount": 1000, "wallet_provider": "wave", "payer_msisdn": "0712345678",
+              "idempotency_key": uuid.uuid4().hex},
+        headers=customer,
+    )
+    assert r.status_code == 422
+    assert "QR Wave du commerce" in r.json()["detail"]
+    assert fake_wave.created == []

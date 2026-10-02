@@ -13,6 +13,10 @@ Monitoring configuration lives in this directory. Thresholds must be tuned with 
 | PostgreSQL connections | More than 80% of limit | Check leaks and pool sizing |
 | Redis memory | More than 80% of limit | Inspect queue backlog and retention |
 | Celery queue age | Older than 5 minutes | Check worker health and downstream providers |
+| App errors (`AppErrorSpike`) | More than 50 reports per app version in 30 minutes | Read the stacks with `GET /api/admin/client-events?app=<app>&days=1` |
+| App crashes (`AppCrashAfterRelease`) | More than 10 crashes per app version in 1 hour | Halt the store rollout of that version, then fix |
+| Sign-in codes unverified (`OtpSentButNotVerified`) | Under 30% of codes verified, over 30 sent in an hour | SMS pumping or silent delivery failure: check the provider dashboard, tighten limits |
+| SMS delivery (`OtpDeliveryFailing`) | More than 5 refused sends in 15 minutes | Provider credit, sender ID or outage; nobody can sign in meanwhile |
 
 ## Rules for new alerts
 

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from .api import payments, auth, transactions, export, tontine, webhooks, config, support, identity
-from .api import customer, payment_requests, deals, billing, sales, statements, counter_loyalty, venue_location, wave
+from .api import customer, payment_requests, deals, billing, sales, statements, counter_loyalty, venue_location, wave, client_events, account, onboarding, media
 from .graphql_api import router as graphql_router
 from .db import engine, Base
 from .seed import seed_sample_data, seeding_enabled
@@ -91,6 +91,28 @@ async def prometheus_middleware(request: Request, call_next):
     return response
 
 app.include_router(auth.router, prefix="/api")
+app.include_router(account.router, prefix="/api")
+app.include_router(onboarding.router, prefix="/api")
+app.include_router(media.router, prefix="/api")
+
+# Shop media on local disk (development). In production MEDIA_STORAGE=r2 and
+# the files are served by Cloudflare, never by the API.
+@app.get("/media/{key:path}", include_in_schema=False)
+async def local_media(key: str):
+    from pathlib import Path
+
+    from fastapi import HTTPException
+    from fastapi.responses import FileResponse
+
+    from .services.media_storage import IMMUTABLE, local_dir
+
+    if os.getenv("MEDIA_STORAGE", "local") != "local":
+        raise HTTPException(status_code=404)
+    root = Path(local_dir()).resolve()
+    path = (root / key).resolve()
+    if not path.is_relative_to(root) or not path.is_file():
+        raise HTTPException(status_code=404)
+    return FileResponse(path, headers={"Cache-Control": IMMUTABLE})
 app.include_router(payments.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api")
 app.include_router(export.router, prefix="/api")
@@ -109,6 +131,7 @@ app.include_router(webhooks.router)
 app.include_router(config.router, prefix="/api")
 app.include_router(support.router, prefix="/api")
 app.include_router(identity.router, prefix="/api")
+app.include_router(client_events.router, prefix="/api")
 app.include_router(graphql_router, prefix="/graphql")
 
 # Expose /metrics endpoint for Prometheus to scrape (compose local)

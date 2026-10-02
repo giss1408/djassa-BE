@@ -1,27 +1,26 @@
 """Merchants connect their own Wave Business account (pilot option B).
 
 Djassa never holds funds, and during the pilot has no Wave account of its own.
-Each merchant, in THEIR Wave Business portal (business.wave.com, Developer
-section):
+Two levels, the merchant's choice:
 
-1. creates an API key with ONLY "Checkout API" access (never "Payout API":
-   the key is a bearer secret, and with Payout a leak could move their money
-   out) and pastes it into Djassa Pro;
-2. creates a webhook pointing to the `webhook_url` Djassa returns, with
-   "signing secret" authentication, subscribed to checkout.session.completed,
-   checkout.session.payment_failed and merchant.payment_received, and pastes
-   the signing secret into Djassa Pro.
+**Points only (the default, no payment key).** In THEIR Wave Business portal
+(business.wave.com, Developer section) the merchant creates a webhook pointing
+to the `webhook_url` Djassa returns (`PUT /api/merchant/wave` with an empty
+body creates it), with "signing secret" authentication and the
+merchant.payment_received event, and pastes the signing secret into Djassa
+Pro. Every customer who pays the merchant's ordinary Wave QR then earns the
+venue's points on their phone number (`tel:+225...`, the counter key), and the
+sale counts as confirmed. The signing secret can only verify Wave's messages;
+it cannot create or move a payment.
 
-From then on:
+**In-app payment (optional).** The merchant also pastes an API key with ONLY
+"Checkout API" access (never "Payout API": the key is a bearer secret, and
+with Payout a leak could move their money out), and subscribes the webhook to
+checkout.session.completed and checkout.session.payment_failed too. Customers
+can then pay the shop from the Djassa app: a Wave checkout is created with the
+merchant's key and the money goes straight to the merchant's wallet.
 
-* A customer who pays this venue with Wave in the Djassa app gets a Wave
-  checkout created with the merchant's key: the money goes straight to the
-  merchant's wallet. The webhook settles the payment and grants the points.
-* A customer who pays the merchant's ordinary Wave QR, outside Djassa, still
-  earns the venue's points on their phone number (`tel:+225...`), the same key
-  the counter uses, because Wave tells us the sender's number.
-
-Both secrets are sealed at rest (app/core/secretbox.py) and never returned.
+Secrets are sealed at rest (app/core/secretbox.py) and never returned.
 """
 
 from __future__ import annotations
@@ -54,15 +53,20 @@ public_router = APIRouter()   # mounted at the root (Wave calls these)
 
 
 class WaveConnectIn(BaseModel):
-    api_key: str = Field(min_length=16, max_length=512)
-    # Optional at first: without it payments still settle when the customer's
-    # app refreshes the status, but nothing arrives by webhook.
+    """Every field is optional and only what is sent changes: an empty body
+    creates the connection and its webhook address, so the merchant has the
+    address before Wave gives them the secret."""
+
+    # Only for in-app payment. Points need no key.
+    api_key: str | None = Field(default=None, min_length=16, max_length=512)
     webhook_secret: str | None = Field(default=None, min_length=8, max_length=512)
 
 
 class WaveAccountOut(BaseModel):
     connected: bool
     api_key_hint: str | None = None
+    # Customers can pay this shop from the Djassa app (a key is connected).
+    payments_enabled: bool = False
     webhook_configured: bool = False
     webhook_url: str | None = None
     last_event_at: str | None = None
@@ -78,6 +82,7 @@ def _out(account: models.WaveAccount | None) -> WaveAccountOut:
     return WaveAccountOut(
         connected=True,
         api_key_hint=account.api_key_hint,
+        payments_enabled=account.api_key_sealed is not None,
         webhook_configured=account.webhook_secret_sealed is not None,
         webhook_url=_webhook_url(account),
         last_event_at=account.last_event_at.isoformat() if account.last_event_at else None,
@@ -100,15 +105,16 @@ async def my_wave(db: AsyncSession = Depends(get_db), user=Depends(require_role(
 async def connect_wave(
     payload: WaveConnectIn, db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))
 ):
-    """Connect (or replace) the venue's Wave key. The key is tested first, with
-    a search that moves no money, so a typo is caught here and not at the
-    customer's first payment."""
+    """Create or update the venue's Wave connection. A key, when given, is
+    tested first with a search that moves no money, so a typo is caught here
+    and not at the customer's first payment."""
     venue = await _my_venue(db, user, require_wallet=False)
-    api_key = payload.api_key.strip()
-    try:
-        await wave.client_for(api_key).check_key()
-    except wave.WaveError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    api_key = payload.api_key.strip() if payload.api_key else None
+    if api_key:
+        try:
+            await wave.client_for(api_key).check_key()
+        except wave.WaveError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     now = utcnow()
     account = await _account(db, venue.id)
@@ -119,8 +125,9 @@ async def connect_wave(
             created_at=now,
         )
         db.add(account)
-    account.api_key_sealed = seal(api_key)
-    account.api_key_hint = hint(api_key)
+    if api_key:
+        account.api_key_sealed = seal(api_key)
+        account.api_key_hint = hint(api_key)
     if payload.webhook_secret:
         account.webhook_secret_sealed = seal(payload.webhook_secret.strip())
     account.connected_by = user["username"]
@@ -135,7 +142,7 @@ async def connect_wave(
 
 @router.delete("/merchant/wave", status_code=204)
 async def disconnect_wave(db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
-    """Forget the key and secret. The merchant should also revoke the key in
+    """Forget the connection: key, secret and webhook address. The merchant should also revoke the key in
     their Wave portal; Djassa cannot do that for them."""
     venue = await _my_venue(db, user, require_wallet=False)
     account = await _account(db, venue.id)
@@ -171,7 +178,7 @@ async def refresh_payment(db: AsyncSession, payment: models.CustomerPayment) -> 
     if payment.status != "pending" or not payment.checkout_url or not payment.provider_reference:
         return
     account = await _account(db, payment.venue_id)
-    if account is None:
+    if account is None or account.api_key_sealed is None:
         return
     try:
         session = await wave.client_for(unseal(account.api_key_sealed)).get_checkout(payment.provider_reference)

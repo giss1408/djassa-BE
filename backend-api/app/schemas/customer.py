@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from .media import MediaOut
+
 WalletProvider = Literal["wave", "orange", "mtn", "moov"]
 
 
@@ -30,6 +32,8 @@ class VenueOut(BaseModel):
     points_per_100: int
     accepts_payment: bool
     is_sample: bool
+    # The first photo's 320 px thumbnail, for list cards. None without photos.
+    cover_url: str | None = None
 
 
 class CategoryOut(BaseModel):
@@ -111,6 +115,8 @@ class VenueDetailOut(VenueOut):
     rewards: list[RewardOut] = []
     deals: list[DealOut] = []
     my_points: int = 0
+    # Photos and videos, ready ones only, in the shop's order.
+    media: list[MediaOut] = []
 
 
 class OnDutyPharmacyOut(VenueOut):

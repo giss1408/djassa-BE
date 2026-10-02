@@ -35,3 +35,13 @@ def record_db_query(query, duration):
 def metrics_endpoint():
     data = generate_latest()
     return CONTENT_TYPE_LATEST, data
+
+# Sign-in. A spike in otp_request/sent with no matching otp_verify/ok is SMS
+# pumping: someone spending our SMS budget on numbers they never verify.
+AUTH_EVENTS = Counter('djassa_auth_events_total', 'Sign-in events', ['event', 'result'])
+
+# Errors reported by the apps themselves (POST /api/client-events). Labels are
+# bounded: app and kind are enums, versions are validated before use.
+CLIENT_EVENTS = Counter(
+    'djassa_client_events_total', 'Errors reported by Djassa apps', ['app', 'platform', 'kind', 'app_version']
+)

@@ -48,3 +48,6 @@ __pycache__/
 .venv
 venv/
 /.pytest_cache
+
+# Shop media in development (MEDIA_STORAGE=local)
+media/

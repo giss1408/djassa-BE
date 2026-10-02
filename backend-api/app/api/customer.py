@@ -113,6 +113,18 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+async def _covers(db: AsyncSession, venue_ids: list[int]) -> dict[int, str]:
+    from .media import cover_urls  # local: media imports this module's neighbours
+
+    return await cover_urls(db, venue_ids)
+
+
+async def _ready_media(db: AsyncSession, venue_id: int):
+    from .media import ready_media  # local: media imports this module's neighbours
+
+    return await ready_media(db, venue_id)
+
+
 def _venue_out(venue: models.Venue, cls=VenueOut, **extra):
     data = {c: getattr(venue, c) for c in VenueOut.model_fields if hasattr(venue, c)}
     data["latitude"] = float(venue.latitude) if venue.latitude is not None else None
@@ -205,7 +217,8 @@ async def list_venues(
             )
         )
     venues = (await db.execute(stmt.order_by(models.Venue.name))).scalars().all()
-    return [_venue_out(v) for v in venues]
+    covers = await _covers(db, [v.id for v in venues])
+    return [_venue_out(v, cover_url=covers.get(v.id)) for v in venues]
 
 
 @router.get("/venues/{venue_id}", response_model=VenueDetailOut)
@@ -232,6 +245,8 @@ async def get_venue(venue_id: int, db: AsyncSession = Depends(get_db), user=Depe
         rewards=sorted(rewards, key=lambda r: r.cost_points),
         deals=[deal_out(d) for d in deals],
         my_points=await _balance(db, user["username"], venue.id),
+        media=await _ready_media(db, venue.id),
+        cover_url=(await _covers(db, [venue.id])).get(venue.id),
     )
 
 
@@ -255,8 +270,10 @@ async def on_duty_pharmacies(
     if commune:
         stmt = stmt.where(func.lower(models.Venue.commune) == commune.lower())
     rows = (await db.execute(stmt.order_by(models.Venue.commune, models.Venue.name))).all()
+    covers = await _covers(db, [venue.id for _, venue in rows])
     return [
-        _venue_out(venue, OnDutyPharmacyOut, duty_starts_at=duty.starts_at, duty_ends_at=duty.ends_at)
+        _venue_out(venue, OnDutyPharmacyOut, duty_starts_at=duty.starts_at, duty_ends_at=duty.ends_at,
+                   cover_url=covers.get(venue.id))
         for duty, venue in rows
     ]
 

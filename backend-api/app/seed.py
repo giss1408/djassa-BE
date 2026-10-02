@@ -15,7 +15,12 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import func, select
 
 from . import models
+from .core.phone import phone_key
 from .db import DATABASE_URL, AsyncSessionLocal
+
+DEV_MERCHANT_PHONE = "+2250700000002"
+# Phone sign-in for djassa-Admin in development (sample data only).
+DEV_ADMIN_PHONE = "+2250700000009"
 
 _MAQUIS = [
     # name, commune, address, specialties, hours, points_per_100, payout
@@ -93,6 +98,20 @@ async def _backfill_pay_codes(db) -> None:
     ).scalar_one_or_none()
     if baobab is not None:
         baobab.owner_username = "demo"
+    # Phone sign-in for the merchant app: 07 00 00 00 02 runs the second
+    # sample maquis. Locally the code comes back in the API response
+    # (OTP_DEV_ECHO=1), so the app can be driven without a SIM.
+    tantie = (
+        await db.execute(select(models.Venue).where(models.Venue.name == _MAQUIS[1][0], models.Venue.owner_username.is_(None)))
+    ).scalar_one_or_none()
+    if tantie is not None:
+        tantie.owner_username = phone_key(DEV_MERCHANT_PHONE)
+        if (await db.execute(select(models.User).where(models.User.phone_e164 == DEV_MERCHANT_PHONE))).scalar_one_or_none() is None:
+            db.add(models.User(phone_e164=DEV_MERCHANT_PHONE, roles="merchant", disabled=False,
+                               created_at=datetime.now(timezone.utc).replace(tzinfo=None)))
+    if (await db.execute(select(models.User).where(models.User.phone_e164 == DEV_ADMIN_PHONE))).scalar_one_or_none() is None:
+        db.add(models.User(phone_e164=DEV_ADMIN_PHONE, roles="admin", disabled=False,
+                           created_at=datetime.now(timezone.utc).replace(tzinfo=None)))
     await db.commit()
 
 

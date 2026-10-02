@@ -6,10 +6,11 @@ merchant must be able to tell them their balance and hand over a reward from
 the merchant app. That is the whole loop the concept asks for: the customer is
 recognised by phone, and comes back (docs/business/CONCEPT.md § 5).
 
-Deliberately *not* merged into customer accounts yet. A Tier 0 identity profile
-declares a phone number without proving it (`app/api/identity.py`), so merging
-phone-keyed points into whichever account claims the number would let anyone
-collect someone else's points. That waits for an OTP-verified phone login.
+Not merged into accounts that merely *declare* a number: a Tier 0 identity
+profile does not prove it (`app/api/identity.py`), so that would let anyone
+collect someone else's points. Phone + code sign-in (`app/api/auth.py`) does
+prove it, and its token subject is this same `tel:` key, so a customer who
+signs in that way sees these points with no merge step.
 
 Scoped to the merchant's own venue in both directions: points are per venue
 (a maquis funds its own rewards), so a merchant can read and spend only the

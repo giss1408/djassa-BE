@@ -59,9 +59,36 @@ services:
       # later starts detect them and add nothing.
       - key: DJASSA_SEED_SAMPLE
         value: "1"
+      # Phone sign-in codes (app/services/otp_sender.py). "console" writes the
+      # code to the service log; set "africastalking" plus AT_USERNAME and
+      # AT_API_KEY to send real SMS. OTP_DEV_ECHO=1 would return the code in
+      # the API response so testers need no SIM, but then anyone can sign in
+      # as any number: never on a deployment holding real data.
+      - key: OTP_SENDER
+        value: console
+      # Shop photos and videos (app/services/media_storage.py). Videos are
+      # converted by the ffmpeg bundled in the imageio-ffmpeg wheel (no system
+      # ffmpeg on this runtime), one at a time, in the API process: a 60 s
+      # clip takes a few minutes on the free instance. Render's free
+      # disk is wiped on deploy, so media goes to Cloudflare R2 (free 10 GB,
+      # no bandwidth fees). Until these are set, uploads use the local disk
+      # and vanish on the next deploy.
+      # - key: MEDIA_STORAGE
+      #   value: r2
+      # - key: R2_ACCOUNT_ID
+      #   sync: false
+      # - key: R2_ACCESS_KEY_ID
+      #   sync: false
+      # - key: R2_SECRET_ACCESS_KEY
+      #   sync: false
+      # - key: R2_BUCKET
+      #   value: djassa-media
+      # - key: MEDIA_PUBLIC_BASE_URL
+      #   sync: false
       # Browser origins allowed to call the API. The native apps are not
-      # affected and the public site does not call the API, so only the future
-      # custom domain is listed. Never list a guessed onrender.com name: Render
+      # affected; the public site calls only /api/client-events (error reports,
+      # when built with VITE_DJASSA_API_BASE), so only its custom domain is
+      # listed. Never list a guessed onrender.com name: Render
       # names are global and may belong to someone else.
       - key: CORS_ORIGINS
         value: https://djassa.co

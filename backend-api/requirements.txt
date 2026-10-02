@@ -25,3 +25,10 @@ opentelemetry-instrumentation-fastapi
 opentelemetry-instrumentation-sqlalchemy
 opentelemetry-instrumentation-logging
 strawberry-graphql[fastapi]
+# Shop photos: resized and re-encoded to WebP (app/services/media_processing.py).
+pillow
+# Shop media storage on Cloudflare R2 through its S3 API (app/services/media_storage.py).
+boto3
+# A static ffmpeg (with H.264) inside the wheel, for shop videos where ffmpeg
+# cannot be installed, such as Render's native Python runtime.
+imageio-ffmpeg

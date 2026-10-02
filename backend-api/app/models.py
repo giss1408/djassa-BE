@@ -386,19 +386,26 @@ class CustomerPayment(Base):
 class WaveAccount(Base):
     """A merchant's own Wave Business account, connected to Djassa (option B).
 
-    The merchant creates an API key (Checkout access) and a webhook in THEIR
-    Wave Business portal and gives both to Djassa. Payments then go from the
-    customer's wallet straight into the merchant's; Djassa only reads the
-    outcome and grants the customer's points. Both secrets are stored sealed
-    (app/core/secretbox.py). `webhook_token` is the random part of the webhook
-    URL given to Wave, and identifies the venue without exposing its id.
+    Two levels, the merchant's choice:
+
+    * **Points only** (the default): a webhook in the merchant's Wave Business
+      portal tells Djassa about every payment to their ordinary Wave QR, and
+      the payer earns points. Djassa stores only the webhook signing secret,
+      which can verify messages but cannot create or move any payment.
+    * **In-app payment** (optional): the merchant also gives an API key with
+      Checkout access, so customers can pay the shop from the Djassa app.
+
+    Secrets are stored sealed (app/core/secretbox.py). `webhook_token` is the
+    random part of the webhook URL given to Wave, and identifies the venue
+    without exposing its id.
     """
 
     __tablename__ = "wave_accounts"
     id = Column(Integer, primary_key=True, index=True)
     venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, unique=True, index=True)
-    api_key_sealed = Column(Text, nullable=False)
-    api_key_hint = Column(String(8), nullable=False)
+    # Null for a points-only connection: no key that can create payments.
+    api_key_sealed = Column(Text, nullable=True)
+    api_key_hint = Column(String(8), nullable=True)
     webhook_secret_sealed = Column(Text, nullable=True)
     webhook_token = Column(String(48), nullable=False, unique=True, index=True)
     connected_by = Column(String(128), nullable=False)
@@ -623,3 +630,184 @@ class SaleEvent(Base):
 
     venue = relationship("Venue")
     payment = relationship("CustomerPayment")
+
+
+class User(Base):
+    """A person who signs in with a phone number they proved they hold.
+
+    The token subject is `phone_key(phone_e164)` ("tel:+225..."), the same key
+    the counter uses for loyalty (`app/core/phone.py`), so points a customer
+    earned at a counter before installing the app are theirs on first sign-in.
+    One person, one row: a merchant who also shops holds both roles.
+    """
+
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    phone_e164 = Column(String(16), nullable=False, unique=True, index=True)
+    # Comma-separated subset of "customer,merchant,admin". "merchant" and
+    # "admin" are granted by an admin, never by signing in.
+    roles = Column(String(64), nullable=False, default="customer")
+    disabled = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, nullable=False)
+    last_login_at = Column(DateTime, nullable=True)
+
+    def role_set(self) -> set[str]:
+        return {role for role in (self.roles or "").split(",") if role}
+
+
+class OtpChallenge(Base):
+    """One code sent to one phone. Only an HMAC of the code is stored."""
+
+    __tablename__ = "otp_challenges"
+    __table_args__ = (Index("ix_otp_challenges_phone_created", "phone_e164", "created_at"),)
+    id = Column(Integer, primary_key=True, index=True)
+    phone_e164 = Column(String(16), nullable=False)
+    # "sign_in", "change_number" or "recovery": a code only works for what it
+    # was sent for, so a number-change code can never open a session.
+    purpose = Column(String(16), nullable=False, default="sign_in")
+    code_hash = Column(String(64), nullable=False)
+    attempts = Column(Integer, nullable=False, default=0)
+    expires_at = Column(DateTime, nullable=False)
+    consumed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False)
+
+
+class RefreshToken(Base):
+    """A long-lived, single-use, revocable credential that mints access tokens.
+
+    Only a SHA-256 of the token is stored. Each use rotates it; presenting an
+    already-rotated token means it was copied, and revokes the whole family.
+    """
+
+    __tablename__ = "refresh_tokens"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, unique=True, index=True)
+    # Every token descended from one sign-in shares a family, so theft
+    # detection can revoke that device's session without touching the others.
+    family = Column(String(32), nullable=False, index=True)
+    # The role this session was opened for ("customer" or "merchant").
+    role = Column(String(16), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    rotated_at = Column(DateTime, nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False)
+
+    user = relationship("User")
+
+
+class ClientEvent(Base):
+    """An error reported by one of our own apps (mobile or web).
+
+    No user id, no phone number, no amounts: a stack trace and the build that
+    produced it is enough to fix a bug, and anything more is a liability.
+    Identical errors from one device arrive as one row with a `count`.
+    """
+
+    __tablename__ = "client_events"
+    __table_args__ = (Index("ix_client_events_app_received", "app", "received_at"),)
+    id = Column(Integer, primary_key=True, index=True)
+    app = Column(String(16), nullable=False)  # "user" | "retailer" | "web"
+    app_version = Column(String(32), nullable=False)
+    platform = Column(String(16), nullable=False)  # "android" | "ios" | "web"
+    os_version = Column(String(64), nullable=True)
+    kind = Column(String(16), nullable=False)  # "crash" | "error"
+    # Hash of kind + first stack lines, so one bug groups into one line.
+    fingerprint = Column(String(64), nullable=False, index=True)
+    message = Column(String(512), nullable=False)
+    stack = Column(Text, nullable=True)
+    count = Column(Integer, nullable=False, default=1)
+    occurred_at = Column(DateTime, nullable=False)
+    received_at = Column(DateTime, nullable=False)
+
+
+class AccountNumberChange(Base):
+    """Every time an account moved to another phone number, and how.
+
+    Kept for support and disputes: "my points vanished" is answered here.
+    """
+
+    __tablename__ = "account_number_changes"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    old_phone_e164 = Column(String(16), nullable=False, index=True)
+    new_phone_e164 = Column(String(16), nullable=False, index=True)
+    method = Column(String(16), nullable=False)  # "self_service" | "recovery"
+    recovery_request_id = Column(Integer, ForeignKey("recovery_requests.id"), nullable=True)
+    created_at = Column(DateTime, nullable=False)
+
+
+class RecoveryRequest(Base):
+    """Someone lost their number and asks for their account on a new one.
+
+    The new number is proven by SMS code when the request is filed; the claim
+    on the old one is checked by a person (an admin), never automatically.
+    """
+
+    __tablename__ = "recovery_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    old_phone_e164 = Column(String(16), nullable=False, index=True)
+    new_phone_e164 = Column(String(16), nullable=False, index=True)
+    # What the person says to prove it is theirs: shop name, last purchase...
+    details = Column(Text, nullable=False)
+    status = Column(String(16), nullable=False, default="pending", index=True)  # pending | approved | rejected
+    decision_note = Column(String(500), nullable=True)
+    decided_by = Column(String(128), nullable=True)
+    decided_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False)
+
+
+class PartnerRequest(Base):
+    """A merchant asking to join, from the Djassa Pro sign-in screen.
+
+    The phone is proven by SMS code when the request is filed, and becomes the
+    merchant's login once an admin approves and the shop is created.
+    """
+
+    __tablename__ = "partner_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    phone_e164 = Column(String(16), nullable=False, index=True)
+    country_code = Column(String(2), nullable=False, default="CI")
+    contact_name = Column(String(120), nullable=False)
+    shop_name = Column(String(255), nullable=False)
+    category = Column(String(32), nullable=False)
+    commune = Column(String(64), nullable=False)
+    address = Column(String(255), nullable=True)
+    # The wallet customers pay into: provider and number. Optional.
+    wallet_provider = Column(String(16), nullable=True)
+    wallet_number = Column(String(16), nullable=True)
+    notes = Column(Text, nullable=True)
+    status = Column(String(16), nullable=False, default="pending", index=True)  # pending | approved | rejected
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=True)
+    decision_note = Column(String(500), nullable=True)
+    decided_by = Column(String(128), nullable=True)
+    decided_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False)
+
+
+class VenueMedia(Base):
+    """A photo or short video of a shop, as customers see it.
+
+    Uploads are never served as sent. Photos become three WebP sizes with
+    their metadata (GPS included) stripped; videos become one small H.264 MP4
+    (short side 480 px, ~600 kbit/s) plus a WebP poster. The original is
+    deleted once processed. `variants` (JSON) maps each size to its storage
+    key, pixel size and byte count, so the apps can show the cost before
+    downloading a video on prepaid data.
+    """
+
+    __tablename__ = "venue_media"
+    __table_args__ = (Index("ix_venue_media_venue_position", "venue_id", "position"),)
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False)
+    kind = Column(String(8), nullable=False)  # "image" | "video"
+    status = Column(String(12), nullable=False, default="processing")  # processing | ready | failed
+    position = Column(Integer, nullable=False, default=0)
+    variants = Column(Text, nullable=True)
+    duration_s = Column(Integer, nullable=True)
+    error = Column(String(255), nullable=True)
+    # Who added it: the merchant's `tel:` key or an admin. History, not ownership.
+    uploaded_by = Column(String(128), nullable=False)
+    created_at = Column(DateTime, nullable=False)
+
+    venue = relationship("Venue")

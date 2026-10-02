@@ -1,0 +1,40 @@
+{
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "App errors per minute, by app and version",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "sum by (app, app_version) (rate(djassa_client_events_total[5m])) * 60", "legendFormat": "{{app}} {{app_version}}", "refId": "A" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Crashes per hour, by app",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "sum by (app) (increase(djassa_client_events_total{kind=\"crash\"}[1h]))", "legendFormat": "{{app}}", "refId": "A" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Sign-in codes: sent vs verified (per hour)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "sum(increase(djassa_auth_events_total{event=\"otp_request\",result=\"sent\"}[1h]))", "legendFormat": "sent", "refId": "A" },
+        { "expr": "sum(increase(djassa_auth_events_total{event=\"otp_verify\",result=\"ok\"}[1h]))", "legendFormat": "verified", "refId": "B" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Sign-in failures by reason (per hour)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        { "expr": "sum by (event, result) (increase(djassa_auth_events_total{result!~\"ok|sent\"}[1h]))", "legendFormat": "{{event}} {{result}}", "refId": "A" }
+      ]
+    }
+  ],
+  "schemaVersion": 36,
+  "title": "Djassa apps and sign-in"
+}

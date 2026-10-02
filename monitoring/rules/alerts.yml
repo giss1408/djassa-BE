@@ -16,3 +16,45 @@ groups:
           severity: critical
         annotations:
           summary: "Instance {{ $labels.instance }} is down"
+
+      # Apps (djassa-App-user, djassa-App-retailer, djassa-Web) report their own
+      # errors to POST /api/client-events. See ALERTS.md.
+      - alert: AppErrorSpike
+        expr: sum by (app, app_version) (increase(djassa_client_events_total[30m])) > 50
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.app }} {{ $labels.app_version }} reported more than 50 errors in 30 minutes"
+          runbook: "GET /api/admin/client-events?app={{ $labels.app }}&days=1 lists the failing stacks"
+
+      - alert: AppCrashAfterRelease
+        expr: sum by (app, app_version) (increase(djassa_client_events_total{kind="crash"}[1h])) > 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.app }} {{ $labels.app_version }} is crashing; consider halting the rollout"
+
+      # Codes sent that nobody verifies: SMS pumping spends the SMS budget on
+      # numbers an attacker never reads. Also fires when the SMS provider
+      # silently stops delivering.
+      - alert: OtpSentButNotVerified
+        expr: |
+          sum(increase(djassa_auth_events_total{event="otp_request",result="sent"}[1h])) > 30
+          and
+          sum(increase(djassa_auth_events_total{event="otp_verify",result="ok"}[1h]))
+            < 0.3 * sum(increase(djassa_auth_events_total{event="otp_request",result="sent"}[1h]))
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Under 30% of sign-in codes sent in the last hour were verified (SMS pumping or delivery failure)"
+
+      - alert: OtpDeliveryFailing
+        expr: sum(increase(djassa_auth_events_total{event="otp_request",result="delivery_failed"}[15m])) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "The SMS provider is refusing sign-in codes; nobody can sign in"

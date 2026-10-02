@@ -7,6 +7,13 @@ ENV PYTHONUNBUFFERED=1
 # Create a non-root user and group
 RUN groupadd -r app && useradd --no-log-init -r -g app app
 
+# ffmpeg re-encodes shop videos for low bandwidth (app/services/media_processing.py).
+# Preferred over the one bundled in imageio-ffmpeg: it brings ffprobe and
+# security updates with the base image.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
