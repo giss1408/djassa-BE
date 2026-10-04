@@ -69,7 +69,7 @@ services:
       # Shared test accounts: these numbers sign in with their fixed code, no
       # SMS, no log line. 07 00 00 00 01 is a customer; 07 00 00 00 02 is the
       # seeded merchant of the second sample maquis, 07 00 00 00 03 its
-      # cashier, 07 00 00 00 04 a field agent (djassa-Admin). Shown on the public
+      # cashier, 07 00 00 00 04 a field agent (djassa-installer). Shown on the public
       # download page, so anyone can use them: only with DJASSA_ENV=test (the
       # API refuses to start with it in production, ignores it elsewhere).
       - key: TEST_OTP_NUMBERS

@@ -76,7 +76,7 @@ One phone number runs one shop (409 otherwise), because Djassa Pro finds "my sho
 
 ## Shop photos and videos
 
-`app/api/media.py`. Each shop has up to **10 photos and 3 videos of 60 s**. Merchants add them in Djassa Pro (*Photos et vidéos*) and admins in djassa-Admin; customers see them on the shop page (`media` in `GET /api/venues/{id}`).
+`app/api/media.py`. Each shop has up to **10 photos and 3 videos of 60 s**. Merchants add them in Djassa Pro (*Photos et vidéos*) and admins in djassa-installer; customers see them on the shop page (`media` in `GET /api/venues/{id}`).
 
 Uploads are never served as sent (`app/services/media_processing.py`):
 
@@ -98,7 +98,7 @@ R2 setup: Cloudflare dashboard → R2 → create bucket `djassa-media` → Setti
 
 ## Admin screen
 
-`../djassa-Admin`, a React static site for the Djassa team: shops and their media, sign-up requests, account recoveries, users and roles, and app errors. Admins sign in with phone + SMS code using `app: "admin"`; only numbers with the admin role get a session. The supporting endpoints are `GET/PATCH /api/admin/venues[/{id}]`, `GET /api/admin/users?phone=`, `POST /api/admin/users/disable` and `POST /api/admin/users/roles/revoke`. An admin cannot suspend themselves or remove their own admin role. Add the site's origin to `CORS_ORIGINS`.
+`../djassa-installer`, a React static site for the Djassa team: shops and their media, sign-up requests, account recoveries, users and roles, and app errors. Admins sign in with phone + SMS code using `app: "admin"`; only numbers with the admin role get a session. The supporting endpoints are `GET/PATCH /api/admin/venues[/{id}]`, `GET /api/admin/users?phone=`, `POST /api/admin/users/disable` and `POST /api/admin/users/roles/revoke`. An admin cannot suspend themselves or remove their own admin role. Add the site's origin to `CORS_ORIGINS`.
 
 ## Account recovery
 

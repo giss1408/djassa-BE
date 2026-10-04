@@ -9,7 +9,7 @@ Everyone signs in the same way: a phone number and a 6-digit SMS code, with no p
 - **Customers** need no enrollment. The first successful code in Djassa creates the account.
 - **Merchants** never create their own shop. Djassa enrolls the shop on site, or approves a request the merchant sends from Djassa Pro.
 - **Cashiers** are shop staff invited by the owner from Djassa Pro. They record sales and serve customers, but cannot touch money settings.
-- **Field agents** are Djassa staff who enroll shops on site from djassa-Admin. They see only the shops they enrolled.
+- **Field agents** are Djassa staff who enroll shops on site from djassa-installer. They see only the shops they enrolled.
 - **Admins** grant the merchant, agent and admin roles, and review merchant requests against a 3-point checklist.
 
 One phone number is one account. A person can hold several roles; the app they open decides which session they get.
@@ -20,13 +20,13 @@ Five roles, each tied to one app. Only the customer role is self-service; every 
 
 | Role | App | Who gives it | Can do | Cannot do |
 | --- | --- | --- | --- | --- |
-| Customer | Djassa | Self, on first sign-in | Find shops and pharmacies, see deals, pay, earn and spend points | Anything in Djassa Pro or djassa-Admin |
+| Customer | Djassa | Self, on first sign-in | Find shops and pharmacies, see deals, pay, earn and spend points | Anything in Djassa Pro or djassa-installer |
 | Merchant (owner) | Djassa Pro | Admin or field agent, at enrollment | Everything for their one shop: sales, payments, points, deals, photos, location, Wave, statements, staff | Run a second shop from the same number |
 | Cashier | Djassa Pro | The shop owner | Record sales, request payments, show the pay QR, look up and redeem points, see deals | Wave, payouts, stats, deals, photos, location, statements, export, staff |
-| Field agent | djassa-Admin | Admin | Enroll a shop on site, see the shops they enrolled | Approve requests, see other shops, users, payments or billing |
-| Admin | djassa-Admin | Another admin | Everything, including granting roles and approving requests | Remove their own admin role |
+| Field agent | djassa-installer | Admin | Enroll a shop on site, see the shops they enrolled | Approve requests, see other shops, users, payments or billing |
+| Admin | djassa-installer | Another admin | Everything, including granting roles and approving requests | Remove their own admin role |
 
-The server picks the session from the person's roles (`session_role` in `backend-api/app/api/auth.py`). In Djassa Pro, an owner gets a merchant session and a cashier gets a cashier session. In djassa-Admin, an admin gets an admin session and a field agent gets an agent session.
+The server picks the session from the person's roles (`session_role` in `backend-api/app/api/auth.py`). In Djassa Pro, an owner gets a merchant session and a cashier gets a cashier session. In djassa-installer, an admin gets an admin session and a field agent gets an agent session.
 
 ## Customers (Djassa)
 
@@ -45,13 +45,13 @@ Identity checks stay out of sign-up. A liveness check comes only with tontine, a
 
 A merchant account issues payment QR codes and receives money, so a shop is always checked by Djassa before it goes live. There are two ways in, and both end the same way: a shop record, the owner's number linked to it, and a QR code if a wallet was given.
 
-**1. Enrolled on site.** A field agent or admin visits the shop and creates it in djassa-Admin, entering the shop details and the owner's number. Being there is the check. The shop records who enrolled it.
+**1. Enrolled on site.** A field agent or admin visits the shop and creates it in djassa-installer, entering the shop details and the owner's number. Being there is the check. The shop records who enrolled it.
 
-**2. The merchant asks to join.** From the Djassa Pro sign-in screen, the merchant verifies their number with a code, then sends the shop name, category, commune, address and wallet. An admin reviews it in djassa-Admin and approves or rejects it. The merchant gets an SMS either way and signs in with the same number.
+**2. The merchant asks to join.** From the Djassa Pro sign-in screen, the merchant verifies their number with a code, then sends the shop name, category, commune, address and wallet. An admin reviews it in djassa-installer and approves or rejects it. The merchant gets an SMS either way and signs in with the same number.
 
 ```mermaid
 flowchart LR
-  visit[Agent or admin visits<br/>standing in the shop] --> enrol[Enrolls the shop<br/>djassa-Admin form]
+  visit[Agent or admin visits<br/>standing in the shop] --> enrol[Enrolls the shop<br/>djassa-installer form]
   ask[Merchant asks to join<br/>from Djassa Pro] --> checks[Admin checks<br/>call, wallet name, shop seen]
   enrol --> live[Shop goes live<br/>owner's number is the login<br/>QR code if a wallet is given]
   checks -- approved --> live
@@ -88,9 +88,9 @@ Rules:
 
 ## Field agents
 
-Field agents enroll shops in person without holding admin powers. An admin grants the role by phone number in djassa-Admin (Utilisateurs), and can take it back at any time.
+Field agents enroll shops in person without holding admin powers. An admin grants the role by phone number in djassa-installer (Utilisateurs), and can take it back at any time.
 
-- The agent signs in to djassa-Admin on their phone's browser, with their number and a code. They see two pages only: **Inscrire un commerce** and **Mes commerces**.
+- The agent signs in to djassa-installer on their phone's browser, with their number and a code. They see two pages only: **Inscrire un commerce** and **Mes commerces**.
 - Enrolling a shop is the same form admins use: shop details, the owner's number (required for agents), and the wallet if the owner has one. The shop goes live straight away, because the agent is standing in it.
 - Each shop records which agent enrolled it (`venues.enrolled_by`). Admins see that in the shop list, which supports paying agents per enrollment.
 - An agent cannot approve merchant requests, edit shops after enrollment, or see users, payments, billing or other agents' shops.
@@ -117,7 +117,7 @@ On the test server, shared numbers sign in with the fixed code `000000`, with no
 | 07 00 00 00 01 | Djassa | Customer |
 | 07 00 00 00 02 | Djassa Pro | Owner of "Chez Tantie Awa (exemple)" |
 | 07 00 00 00 03 | Djassa Pro | Cashier at "Chez Tantie Awa (exemple)" |
-| 07 00 00 00 04 | djassa-Admin | Field agent |
+| 07 00 00 00 04 | djassa-installer | Field agent |
 
 The roles come from the sample data (`DJASSA_SEED_SAMPLE=1`). The admin test number, 07 00 00 00 09, is seeded too but has no fixed code: it signs in with a real code from the server log, so the public download page never opens admin access.
 

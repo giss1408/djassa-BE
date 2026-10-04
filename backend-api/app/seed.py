@@ -19,10 +19,10 @@ from .core.phone import phone_key
 from .db import DATABASE_URL, AsyncSessionLocal
 
 DEV_MERCHANT_PHONE = "+2250700000002"
-# A cashier at the merchant's maquis, and a field agent (djassa-Admin).
+# A cashier at the merchant's maquis, and a field agent (djassa-installer).
 DEV_CASHIER_PHONE = "+2250700000003"
 DEV_AGENT_PHONE = "+2250700000004"
-# Phone sign-in for djassa-Admin in development (sample data only).
+# Phone sign-in for djassa-installer in development (sample data only).
 DEV_ADMIN_PHONE = "+2250700000009"
 
 _MAQUIS = [

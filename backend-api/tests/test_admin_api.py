@@ -1,4 +1,4 @@
-"""What the djassa-Admin screen relies on: admin phone sign-in, shops, users."""
+"""What the djassa-installer screen relies on: admin phone sign-in, shops, users."""
 
 import pytest
 import pytest_asyncio

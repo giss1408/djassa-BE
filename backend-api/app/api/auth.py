@@ -109,7 +109,7 @@ def test_numbers() -> dict[str, str]:
 AppName = Literal["customer", "merchant", "admin"]
 
 # The session each app opens, best first: Djassa Pro opens an owner's session
-# for an owner and a cashier's for a cashier, djassa-Admin an admin's or a
+# for an owner and a cashier's for a cashier, djassa-installer an admin's or a
 # field agent's. Customer sessions need no grant.
 _APP_ROLES = {
     "customer": ("customer",),
