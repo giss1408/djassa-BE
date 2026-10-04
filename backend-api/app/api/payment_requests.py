@@ -13,7 +13,7 @@ from sqlalchemy.orm import selectinload
 
 from .. import models
 from ..core.entitlements import max_stats_days
-from ..core.security import require_role
+from ..core.security import SHOP_STAFF, require_role
 from ..db import get_db
 from ..schemas.customer import DayTotal, MerchantStatsOut, PayCodeOut, PaymentRequestIn, PaymentRequestOut
 from ..services import revenue as revenue_service
@@ -27,9 +27,18 @@ REQUEST_TTL = timedelta(minutes=10)
 
 
 async def _my_venue(db: AsyncSession, user, require_wallet: bool = True) -> models.Venue:
-    venue = (
-        await db.execute(select(models.Venue).where(models.Venue.owner_username == user["username"]))
-    ).scalars().first()
+    """The shop this Djassa Pro session works for: the one the owner runs, or
+    the one a cashier was added to. Looked up on every request, so a removed
+    cashier is out at once, whatever their token says."""
+    if user["role"] == "cashier":
+        query = (
+            select(models.Venue)
+            .join(models.VenueStaff, models.VenueStaff.venue_id == models.Venue.id)
+            .where(models.VenueStaff.user_key == user["username"], models.VenueStaff.removed_at.is_(None))
+        )
+    else:
+        query = select(models.Venue).where(models.Venue.owner_username == user["username"])
+    venue = (await db.execute(query)).scalars().first()
     if venue is None:
         raise HTTPException(status_code=404, detail="Votre compte n'est lie a aucun commerce")
     if require_wallet and not (venue.payout_provider and venue.payout_account):
@@ -61,8 +70,8 @@ async def _load(db: AsyncSession, request_id: int, user) -> models.PaymentReques
             .where(models.PaymentRequest.id == request_id)
         )
     ).scalar_one_or_none()
-    # Another merchant's request answers exactly like a missing one.
-    if r is None or r.venue.owner_username != user["username"]:
+    # Another shop's request answers exactly like a missing one.
+    if r is None or r.venue_id != (await _my_venue(db, user, require_wallet=False)).id:
         raise HTTPException(status_code=404, detail="request not found")
     if r.status == "open" and r.expires_at <= utcnow():
         r.status = "expired"
@@ -71,7 +80,7 @@ async def _load(db: AsyncSession, request_id: int, user) -> models.PaymentReques
 
 
 @router.post("/merchant/payment-requests", response_model=PaymentRequestOut, status_code=201)
-async def create_request(payload: PaymentRequestIn, db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
+async def create_request(payload: PaymentRequestIn, db: AsyncSession = Depends(get_db), user=Depends(require_role(*SHOP_STAFF))):
     venue = await _my_venue(db, user)
     now = utcnow()
     for _ in range(3):  # a code collision is ~impossible; retry rather than 500 if it happens
@@ -89,13 +98,13 @@ async def create_request(payload: PaymentRequestIn, db: AsyncSession = Depends(g
 
 
 @router.get("/merchant/payment-requests/{request_id}", response_model=PaymentRequestOut)
-async def get_request(request_id: int, db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
+async def get_request(request_id: int, db: AsyncSession = Depends(get_db), user=Depends(require_role(*SHOP_STAFF))):
     """Polled by the merchant's QR screen until the status leaves `open`."""
     return _out(await _load(db, request_id, user))
 
 
 @router.post("/merchant/payment-requests/{request_id}/cancel", response_model=PaymentRequestOut)
-async def cancel_request(request_id: int, db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
+async def cancel_request(request_id: int, db: AsyncSession = Depends(get_db), user=Depends(require_role(*SHOP_STAFF))):
     r = await _load(db, request_id, user)
     if r.status == "open":
         r.status = "cancelled"
@@ -106,7 +115,7 @@ async def cancel_request(request_id: int, db: AsyncSession = Depends(get_db), us
 
 
 @router.get("/merchant/pay-code", response_model=PayCodeOut)
-async def my_pay_code(db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
+async def my_pay_code(db: AsyncSession = Depends(get_db), user=Depends(require_role(*SHOP_STAFF))):
     """The shop's fixed QR, to print and stick on the counter.
 
     The customer scans it and types the amount; the per-sale QR above carries

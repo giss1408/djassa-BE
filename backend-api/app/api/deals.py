@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from .. import models
-from ..core.security import get_current_user, require_role
+from ..core.security import get_current_user, SHOP_STAFF, require_role
 from ..db import get_db
 from ..schemas.customer import DealIn, DealOut, PlacementIn, PlacementOut, PlacementPaidIn
 from .customer import CATEGORIES, deal_out, live_deals_filter, utcnow
@@ -66,7 +66,7 @@ async def list_deals(
 
 
 @router.get("/merchant/deals", response_model=list[DealOut])
-async def my_deals(db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
+async def my_deals(db: AsyncSession = Depends(get_db), user=Depends(require_role(*SHOP_STAFF))):
     venue = await _my_venue(db, user, require_wallet=False)
     rows = (
         await db.execute(

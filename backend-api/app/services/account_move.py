@@ -31,6 +31,8 @@ OWNED = [
     (models.IdentityProfile, "user_id"),
     (models.SaleEvent, "customer_id"),
     (models.Venue, "owner_username"),
+    (models.Venue, "enrolled_by"),
+    (models.VenueStaff, "user_key"),
 ]
 
 # Who did something, as it was at the time. Left on the old key.
@@ -43,6 +45,8 @@ AUDIT = [
     (models.RecoveryRequest, "decided_by"),
     (models.PartnerRequest, "decided_by"),
     (models.VenueMedia, "uploaded_by"),
+    (models.VenueStaff, "added_by"),
+    (models.VenueStaff, "removed_by"),
 ]
 
 
@@ -97,4 +101,14 @@ async def revoke_all_sessions(db: AsyncSession, user_id: int, now: datetime, kee
         if kept is not None:
             query = query.where(models.RefreshToken.family != kept)
     result = await db.execute(query.values(revoked_at=now))
+    return result.rowcount
+
+
+async def revoke_role_sessions(db: AsyncSession, user_id: int, role: str, now: datetime) -> int:
+    """Revokes the user's refresh tokens for one role, e.g. a removed cashier."""
+    result = await db.execute(
+        update(models.RefreshToken)
+        .where(models.RefreshToken.user_id == user_id, models.RefreshToken.role == role, models.RefreshToken.revoked_at.is_(None))
+        .values(revoked_at=now)
+    )
     return result.rowcount

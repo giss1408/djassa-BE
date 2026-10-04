@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
 from ..core.phone import InvalidPhone, PHONE_KEY_PREFIX, mask_phone, normalize_phone, phone_key
-from ..core.security import require_role
+from ..core.security import SHOP_STAFF, require_role
 from ..db import get_db
 from ..schemas.customer import SaleIn, SaleOut, SaleSyncIn, SaleSyncOut, SaleSyncResult
 from ..services import sale_events
@@ -122,7 +122,7 @@ async def _record(
 
 
 @router.post("/merchant/sales", response_model=SaleOut, status_code=201)
-async def record_sale(payload: SaleIn, db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
+async def record_sale(payload: SaleIn, db: AsyncSession = Depends(get_db), user=Depends(require_role(*SHOP_STAFF))):
     """Record one cash sale. Idempotent on `idempotency_key`."""
     venue = await _my_venue(db, user, require_wallet=False)
     event, _ = await _record(db, venue.id, venue.points_per_100, payload, user["username"])
@@ -132,7 +132,7 @@ async def record_sale(payload: SaleIn, db: AsyncSession = Depends(get_db), user=
 
 
 @router.post("/merchant/sales/sync", response_model=SaleSyncOut)
-async def sync_sales(payload: SaleSyncIn, db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
+async def sync_sales(payload: SaleSyncIn, db: AsyncSession = Depends(get_db), user=Depends(require_role(*SHOP_STAFF))):
     """Drain the device's offline queue in one request.
 
     Each operation is committed separately and reported separately, so one bad

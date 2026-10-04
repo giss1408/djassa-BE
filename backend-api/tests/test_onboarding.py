@@ -119,10 +119,18 @@ async def test_merchant_asks_to_join_and_an_admin_approves(client):
     assert request["phone"] == E164
     assert request["wallet_number"] == E164  # defaults to the phone
 
-    r = await client.post(f"/api/admin/partner-requests/{request['id']}/approve",
-                          json={"name": "Maquis Chez Awa", "points_per_100": 3}, headers=admin)
+    # The checklist comes first; the wallet check because the request has one.
+    url = f"/api/admin/partner-requests/{request['id']}/approve"
+    r = await client.post(url, json={"checks": ["called", "shop_seen"]}, headers=admin)
+    assert r.status_code == 422
+    assert "Nom du titulaire" in r.json()["detail"]
+
+    r = await client.post(url, json={"name": "Maquis Chez Awa", "points_per_100": 3,
+                                     "checks": ["called", "wallet_name_matches", "shop_seen"]}, headers=admin)
     assert r.status_code == 200, r.text
     venue = r.json()
+    approved = (await client.get("/api/admin/partner-requests?status=approved", headers=admin)).json()
+    assert approved[0]["review_checks"] == ["called", "wallet_name_matches", "shop_seen"]
     assert venue["name"] == "Maquis Chez Awa"
     assert venue["pay_code"]
 

@@ -258,6 +258,9 @@ class Venue(Base):
     # The login that runs this venue from the merchant app. Skeleton auth has
     # no user table, so the username is the link.
     owner_username = Column(String(128), nullable=True, index=True)
+    # The field agent or admin who enrolled the shop (`tel:` key), for an
+    # agent's "my shops" and per-enrollment pay. Follows them to a new number.
+    enrolled_by = Column(String(128), nullable=True, index=True)
     payout_provider = Column(String(16), nullable=True)
     payout_account = Column(String(32), nullable=True)
     # Printed in the venue's payment QR code (see app/api/customer.py). Random
@@ -644,8 +647,9 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     phone_e164 = Column(String(16), nullable=False, unique=True, index=True)
-    # Comma-separated subset of "customer,merchant,admin". "merchant" and
-    # "admin" are granted by an admin, never by signing in.
+    # Comma-separated subset of "customer,merchant,cashier,agent,admin".
+    # "merchant", "agent" and "admin" are granted by an admin (or an agent, for
+    # "merchant" at enrollment); "cashier" by a shop owner. Never by signing in.
     roles = Column(String(64), nullable=False, default="customer")
     disabled = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=False)
@@ -813,9 +817,35 @@ class PartnerRequest(Base):
     status = Column(String(16), nullable=False, default="pending", index=True)  # pending | approved | rejected
     venue_id = Column(Integer, ForeignKey("venues.id"), nullable=True)
     decision_note = Column(String(500), nullable=True)
+    # The checks the approving admin confirmed, comma-separated (see
+    # app/api/onboarding.py APPROVAL_CHECKS).
+    review_checks = Column(String(96), nullable=True)
     decided_by = Column(String(128), nullable=True)
     decided_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, nullable=False)
+
+
+class VenueStaff(Base):
+    """A cashier: someone the owner lets work the shop from Djassa Pro.
+
+    A cashier records sales, requests payments and serves points, but never
+    reaches Wave, payouts, deals, photos, location, statements or staff. A
+    number works at one shop at a time; removal sets `removed_at` and keeps the
+    row, so sales recorded by that number still say who they were.
+    """
+
+    __tablename__ = "venue_staff"
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    user_key = Column(String(128), nullable=False, index=True)  # `tel:` key
+    name = Column(String(80), nullable=True)
+    role = Column(String(16), nullable=False, default="cashier")
+    added_by = Column(String(128), nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    removed_by = Column(String(128), nullable=True)
+    removed_at = Column(DateTime, nullable=True)
+
+    venue = relationship("Venue")
 
 
 class VenueMedia(Base):

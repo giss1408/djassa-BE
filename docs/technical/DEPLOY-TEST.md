@@ -37,6 +37,8 @@ Every start runs `alembic upgrade head` (a no-op when current), then the server.
 |---|---|---|
 | Djassa (customer) | `07 00 00 00 01` | `000000` |
 | Djassa Pro (merchant) | `07 00 00 00 02` | `000000` |
+| Djassa Pro (cashier at that shop) | `07 00 00 00 03` | `000000` |
+| djassa-Admin (field agent) | `07 00 00 00 04` | `000000` |
 
 The merchant number runs the second sample maquis (seeded by `DJASSA_SEED_SAMPLE=1`). Fixed codes work only with `DJASSA_ENV=test`; the API refuses to start with them in production. Any other number gets a real code, which with `OTP_SENDER=console` appears only in the Render service log.
 

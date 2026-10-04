@@ -53,6 +53,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return {"username": subject, "role": payload.get("role", "merchant")}
 
 
+# Djassa Pro sessions: the shop owner, and the cashiers the owner added.
+# Routes a cashier may use take `require_role(*SHOP_STAFF)`; owner-only routes
+# (money settings, deals, photos, location, statements, staff) keep "merchant".
+SHOP_STAFF = ("merchant", "cashier")
+
+
 def require_role(*roles: str):
     """Dependency factory: 403 unless the caller's token carries one of `roles`."""
 

@@ -19,6 +19,9 @@ from .core.phone import phone_key
 from .db import DATABASE_URL, AsyncSessionLocal
 
 DEV_MERCHANT_PHONE = "+2250700000002"
+# A cashier at the merchant's maquis, and a field agent (djassa-Admin).
+DEV_CASHIER_PHONE = "+2250700000003"
+DEV_AGENT_PHONE = "+2250700000004"
 # Phone sign-in for djassa-Admin in development (sample data only).
 DEV_ADMIN_PHONE = "+2250700000009"
 
@@ -109,9 +112,25 @@ async def _backfill_pay_codes(db) -> None:
         if (await db.execute(select(models.User).where(models.User.phone_e164 == DEV_MERCHANT_PHONE))).scalar_one_or_none() is None:
             db.add(models.User(phone_e164=DEV_MERCHANT_PHONE, roles="merchant", disabled=False,
                                created_at=datetime.now(timezone.utc).replace(tzinfo=None)))
-    if (await db.execute(select(models.User).where(models.User.phone_e164 == DEV_ADMIN_PHONE))).scalar_one_or_none() is None:
-        db.add(models.User(phone_e164=DEV_ADMIN_PHONE, roles="admin", disabled=False,
-                           created_at=datetime.now(timezone.utc).replace(tzinfo=None)))
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    for phone, role in ((DEV_ADMIN_PHONE, "admin"), (DEV_AGENT_PHONE, "agent")):
+        if (await db.execute(select(models.User).where(models.User.phone_e164 == phone))).scalar_one_or_none() is None:
+            db.add(models.User(phone_e164=phone, roles=role, disabled=False, created_at=now))
+    # The cashier works at whichever venue the dev merchant runs, also on a
+    # database seeded before cashiers existed.
+    await db.flush()
+    merchant_venue = (
+        await db.execute(select(models.Venue.id).where(models.Venue.owner_username == phone_key(DEV_MERCHANT_PHONE)))
+    ).scalars().first()
+    cashier_key = phone_key(DEV_CASHIER_PHONE)
+    has_cashier = (
+        await db.execute(select(models.VenueStaff.id).where(models.VenueStaff.user_key == cashier_key))
+    ).scalars().first()
+    if merchant_venue is not None and has_cashier is None:
+        db.add(models.VenueStaff(venue_id=merchant_venue, user_key=cashier_key, name="Caissier (exemple)",
+                                 role="cashier", added_by=phone_key(DEV_MERCHANT_PHONE), created_at=now))
+        if (await db.execute(select(models.User).where(models.User.phone_e164 == DEV_CASHIER_PHONE))).scalar_one_or_none() is None:
+            db.add(models.User(phone_e164=DEV_CASHIER_PHONE, roles="cashier", disabled=False, created_at=now))
     await db.commit()
 
 

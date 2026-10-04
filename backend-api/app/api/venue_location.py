@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..core.security import require_role
+from ..core.security import SHOP_STAFF, require_role
 from ..db import get_db
 from .customer import utcnow
 from .payment_requests import _my_venue
@@ -63,7 +63,7 @@ def _out(venue) -> VenueLocationOut:
 
 
 @router.get("/merchant/venue/location", response_model=VenueLocationOut)
-async def my_venue_location(db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
+async def my_venue_location(db: AsyncSession = Depends(get_db), user=Depends(require_role(*SHOP_STAFF))):
     """Whether the shop has a position yet, and how good it is."""
     return _out(await _my_venue(db, user, require_wallet=False))
 

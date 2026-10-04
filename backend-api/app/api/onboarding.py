@@ -2,14 +2,16 @@
 
 Two doors to the same room:
 
-* **An agent or admin enrols the merchant** in one call:
+* **A field agent or admin enrols the merchant** in one call:
       POST /api/admin/venues
   creates the shop, makes the merchant's phone its login, and issues the
-  Djassa QR code when a wallet is given.
+  Djassa QR code when a wallet is given. The shop records who enrolled it;
+  an agent sees their own shops at
+      GET  /api/agent/venues
 * **The merchant asks to join** from the Djassa Pro sign-in screen:
       POST /api/partner-requests/code   code to their phone
       POST /api/partner-requests        what the shop is
-  and an admin reviews it:
+  and an admin reviews it, confirming APPROVAL_CHECKS before approving:
       GET  /api/admin/partner-requests
       POST /api/admin/partner-requests/{id}/approve   (same as POST /admin/venues)
       POST /api/admin/partner-requests/{id}/reject
@@ -97,7 +99,7 @@ def _venue_out(venue: models.Venue) -> VenueOut:
     )
 
 
-async def create_venue(db: AsyncSession, payload: VenueIn, now: datetime) -> models.Venue:
+async def create_venue(db: AsyncSession, payload: VenueIn, now: datetime, enrolled_by: str | None = None) -> models.Venue:
     """Creates the shop, links its merchant and issues its QR. The caller commits."""
     if bool(payload.payout_provider) != bool(payload.payout_account):
         raise HTTPException(status_code=422, detail="payout_provider and payout_account go together")
@@ -110,6 +112,7 @@ async def create_venue(db: AsyncSession, payload: VenueIn, now: datetime) -> mod
         payout_account=wallet, is_sample=False,
         # The Djassa QR only makes sense when there is a wallet to pay into.
         pay_code=new_pay_code() if wallet else None,
+        enrolled_by=enrolled_by,
     )
     db.add(venue)
     await db.flush()
@@ -119,10 +122,29 @@ async def create_venue(db: AsyncSession, payload: VenueIn, now: datetime) -> mod
 
 
 @router.post("/admin/venues", response_model=VenueOut, status_code=201)
-async def admin_create_venue(payload: VenueIn, db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))):
-    venue = await create_venue(db, payload, utcnow())
+async def admin_create_venue(
+    payload: VenueIn, db: AsyncSession = Depends(get_db), user=Depends(security.require_role("admin", "agent"))
+):
+    """Enrols a shop on site. A field agent must give the owner's number: a
+    shop enrolled in person without its merchant would wait for an admin."""
+    if user["role"] == "agent" and not payload.merchant_phone:
+        raise HTTPException(status_code=422, detail="Indiquez le numero du gerant")
+    venue = await create_venue(db, payload, utcnow(), enrolled_by=user["username"])
     await db.commit()
+    if venue.owner_username and venue.owner_username.startswith("tel:"):
+        await _notify(venue.owner_username[4:], f"Djassa Pro : {venue.name} est inscrit. Connectez-vous a Djassa Pro avec ce numero.")
     return _venue_out(venue)
+
+
+@router.get("/agent/venues", response_model=list[VenueOut])
+async def agent_my_venues(db: AsyncSession = Depends(get_db), user=Depends(security.require_role("agent", "admin"))):
+    """The shops this field agent (or admin) enrolled, newest first."""
+    rows = (
+        await db.execute(
+            select(models.Venue).where(models.Venue.enrolled_by == user["username"]).order_by(models.Venue.id.desc()).limit(300)
+        )
+    ).scalars().all()
+    return [_venue_out(v) for v in rows]
 
 
 # --- The merchant asks to join -----------------------------------------------
@@ -161,6 +183,7 @@ class PartnerRequestOut(BaseModel):
     venue_id: int | None
     decision_note: str | None
     decided_by: str | None
+    review_checks: list[str]
     created_at: datetime
     decided_at: datetime | None
 
@@ -170,7 +193,8 @@ def _request_out(r: models.PartnerRequest) -> PartnerRequestOut:
         id=r.id, phone=r.phone_e164, contact_name=r.contact_name, shop_name=r.shop_name, category=r.category,
         commune=r.commune, address=r.address, wallet_provider=r.wallet_provider, wallet_number=r.wallet_number,
         notes=r.notes, status=r.status, venue_id=r.venue_id, decision_note=r.decision_note,
-        decided_by=r.decided_by, created_at=r.created_at, decided_at=r.decided_at,
+        decided_by=r.decided_by, review_checks=(r.review_checks or "").split(",") if r.review_checks else [],
+        created_at=r.created_at, decided_at=r.decided_at,
     )
 
 
@@ -242,10 +266,20 @@ async def list_partner_requests(
     return [_request_out(r) for r in rows]
 
 
-class ApproveIn(BaseModel):
-    """Corrections the agent makes after the call; anything left out comes
-    from the request."""
+# What the admin confirms before a shop asked for from the app goes live.
+# "wallet_name_matches" applies only when the request names a wallet.
+APPROVAL_CHECKS = {
+    "called": "Appel au gerant",
+    "wallet_name_matches": "Nom du titulaire du compte mobile money",
+    "shop_seen": "Commerce vu (photo, position GPS ou visite)",
+}
 
+
+class ApproveIn(BaseModel):
+    """Corrections the admin makes after the call; anything left out comes
+    from the request. `checks` lists the APPROVAL_CHECKS confirmed."""
+
+    checks: list[str] = Field(default_factory=list, max_length=8)
     name: str | None = Field(default=None, min_length=2, max_length=255)
     commune: str | None = Field(default=None, min_length=2, max_length=64)
     address: str | None = Field(default=None, max_length=255)
@@ -273,6 +307,10 @@ async def approve_partner_request(
     request_id: int, payload: ApproveIn, db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))
 ):
     r = await _pending(db, request_id)
+    required = {"called", "shop_seen"} | ({"wallet_name_matches"} if r.wallet_number else set())
+    missing = [APPROVAL_CHECKS[k] for k in APPROVAL_CHECKS if k in required - set(payload.checks)]
+    if missing:
+        raise HTTPException(status_code=422, detail="Verifications manquantes : " + ", ".join(missing))
     now = utcnow()
     venue = await create_venue(
         db,
@@ -286,6 +324,7 @@ async def approve_partner_request(
         now,
     )
     r.status, r.venue_id, r.decided_at, r.decided_by, r.decision_note = "approved", venue.id, now, admin["username"], payload.note
+    r.review_checks = ",".join(k for k in APPROVAL_CHECKS if k in required)
     await db.commit()
     await _notify(r.phone_e164, f"Djassa Pro : {venue.name} est inscrit. Connectez-vous a Djassa Pro avec ce numero.")
     return _venue_out(venue)
@@ -312,6 +351,9 @@ class VenueRowOut(PublicVenueOut):
     has_merchant: bool
     images: int
     videos: int
+    # The field agent or admin who enrolled it (full number), None for shops
+    # from before attribution and for approved requests.
+    enrolled_by: str | None = None
 
 
 class VenueDetailAdminOut(VenueRowOut):
@@ -354,7 +396,8 @@ async def _media_counts(db: AsyncSession, venue_ids: list[int]) -> dict[tuple[in
 def _row(venue: models.Venue, counts: dict, cls=VenueRowOut, **extra):
     return _public_venue_out(
         venue, cls, payout_provider=venue.payout_provider, has_merchant=bool(venue.owner_username),
-        images=counts.get((venue.id, "image"), 0), videos=counts.get((venue.id, "video"), 0), **extra,
+        images=counts.get((venue.id, "image"), 0), videos=counts.get((venue.id, "video"), 0),
+        enrolled_by=venue.enrolled_by[4:] if (venue.enrolled_by or "").startswith("tel:") else venue.enrolled_by, **extra,
     )
 
 

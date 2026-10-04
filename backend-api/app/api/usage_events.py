@@ -124,11 +124,18 @@ async def _merchant_venue_id(request: Request, db: AsyncSession) -> int | None:
     if not header.lower().startswith("bearer "):
         return None
     payload = decode_access_token(header[7:].strip())
-    if not payload or payload.get("role", "merchant") != "merchant" or not isinstance(payload.get("sub"), str):
+    if not payload or not isinstance(payload.get("sub"), str):
         return None
-    return (
-        await db.execute(select(models.Venue.id).where(models.Venue.owner_username == payload["sub"]))
-    ).scalars().first()
+    role = payload.get("role", "merchant")
+    if role == "cashier":
+        query = select(models.VenueStaff.venue_id).where(
+            models.VenueStaff.user_key == payload["sub"], models.VenueStaff.removed_at.is_(None)
+        )
+    elif role == "merchant":
+        query = select(models.Venue.id).where(models.Venue.owner_username == payload["sub"])
+    else:
+        return None
+    return (await db.execute(query)).scalars().first()
 
 
 @router.post("/usage-events", status_code=202)

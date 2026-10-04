@@ -26,7 +26,7 @@ from sqlalchemy.orm import selectinload
 
 from .. import models
 from ..core.phone import InvalidPhone, mask_phone, normalize_phone, phone_key
-from ..core.security import require_role
+from ..core.security import SHOP_STAFF, require_role
 from ..db import get_db
 from ..schemas.customer import CounterCustomerIn, CounterLoyaltyOut, CounterRedeemIn, RedeemOut, RewardOut
 from .customer import _VOUCHER_ALPHABET, _balance, utcnow
@@ -44,7 +44,7 @@ def _phone(raw: str) -> str:
 
 @router.post("/merchant/customers/loyalty", response_model=CounterLoyaltyOut)
 async def counter_balance(
-    payload: CounterCustomerIn, db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))
+    payload: CounterCustomerIn, db: AsyncSession = Depends(get_db), user=Depends(require_role(*SHOP_STAFF))
 ):
     """The customer's points at this venue, and the rewards they can take."""
     venue = await _my_venue(db, user, require_wallet=False)
@@ -65,7 +65,7 @@ async def counter_balance(
 
 @router.post("/merchant/customers/redeem", response_model=RedeemOut, status_code=201)
 async def counter_redeem(
-    payload: CounterRedeemIn, db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))
+    payload: CounterRedeemIn, db: AsyncSession = Depends(get_db), user=Depends(require_role(*SHOP_STAFF))
 ):
     """Hand a reward to a phone-identified customer at the counter.
 

@@ -30,7 +30,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
-from ..core.security import require_role
+from ..core.security import SHOP_STAFF, require_role
 from ..db import AsyncSessionLocal, get_db
 from ..schemas.media import MediaOut
 from ..services.media_processing import MediaRejected, process_image, process_video
@@ -267,7 +267,7 @@ async def _reorder(db: AsyncSession, venue_id: int, ids: list[int]) -> list[Medi
 
 
 @router.get("/merchant/media", response_model=list[MediaOut])
-async def my_media(db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
+async def my_media(db: AsyncSession = Depends(get_db), user=Depends(require_role(*SHOP_STAFF))):
     venue = await _my_venue(db, user, require_wallet=False)
     return await _all_media(db, venue.id)
 

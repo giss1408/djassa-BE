@@ -33,7 +33,7 @@ from ..core import otp, security
 from ..core.phone import mask_phone, phone_key
 from ..db import get_db
 from ..rate_limiter import limiter
-from ..services.account_move import NumberTaken, move_account, revoke_all_sessions
+from ..services.account_move import NumberTaken, move_account, revoke_all_sessions, revoke_role_sessions
 from ..services.otp_sender import OtpDeliveryFailed, get_sender
 from .auth import (
     TokenPairOut, check_code, dev_code, issue_tokens, phone_or_422, send_code, utcnow,
@@ -386,7 +386,7 @@ class DisableIn(PhoneIn):
 
 
 class RevokeRoleIn(PhoneIn):
-    role: str = Field(pattern=r"^(merchant|admin)$")
+    role: str = Field(pattern=r"^(merchant|agent|admin)$")
 
 
 async def _user_out(db: AsyncSession, account: models.User) -> UserOut:
@@ -437,11 +437,12 @@ async def admin_disable_user(payload: DisableIn, db: AsyncSession = Depends(get_
 
 @router.post("/admin/users/roles/revoke", response_model=UserOut)
 async def admin_revoke_role(payload: RevokeRoleIn, db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))):
-    """Removes merchant or admin access. Open sessions for that role end at
-    their next renewal (within the hour)."""
+    """Removes merchant, field agent or admin access. Sessions for that role
+    cannot renew; an access token already issued lives out its hour."""
     account = await _user_by_phone(db, payload.phone, payload.country_code)
     if payload.role == "admin" and admin["username"] == phone_key(account.phone_e164):
         raise HTTPException(status_code=422, detail="You cannot remove your own admin access")
     account.roles = ",".join(sorted(account.role_set() - {payload.role})) or "customer"
+    await revoke_role_sessions(db, account.id, payload.role, utcnow())
     await db.commit()
     return await _user_out(db, account)

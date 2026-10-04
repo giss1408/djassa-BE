@@ -108,9 +108,27 @@ def test_numbers() -> dict[str, str]:
 
 AppName = Literal["customer", "merchant", "admin"]
 
+# The session each app opens, best first: Djassa Pro opens an owner's session
+# for an owner and a cashier's for a cashier, djassa-Admin an admin's or a
+# field agent's. Customer sessions need no grant.
+_APP_ROLES = {
+    "customer": ("customer",),
+    "merchant": ("merchant", "cashier"),
+    "admin": ("admin", "agent"),
+}
+
+
+def session_role(user: models.User, app: str) -> str | None:
+    """The role `user` signs in to `app` with, or None when they hold none."""
+    if app == "customer":
+        return "customer"
+    held = user.role_set()
+    return next((role for role in _APP_ROLES[app] if role in held), None)
+
+
 # A session for these apps needs the role already: granted by an admin.
 _GRANTED_ONLY = {
-    "merchant": "Ce numero n'est pas enregistre comme commercant. Contactez Djassa.",
+    "merchant": "Ce numero n'est enregistre dans aucun commerce. Contactez Djassa, ou le gerant si vous y travaillez.",
     "admin": "Ce numero n'a pas acces a l'administration Djassa.",
 }
 
@@ -313,16 +331,17 @@ async def verify_code(request: Request, payload: OtpVerifyIn, db: AsyncSession =
         await db.commit()
         AUTH_EVENTS.labels(event="otp_verify", result="disabled").inc()
         raise HTTPException(status_code=403, detail="Ce compte est suspendu. Contactez Djassa.")
-    if payload.app not in user.role_set():
-        if payload.app in _GRANTED_ONLY:
-            await db.commit()
-            AUTH_EVENTS.labels(event="otp_verify", result=f"not_{payload.app}").inc()
-            raise HTTPException(status_code=403, detail=_GRANTED_ONLY[payload.app])
+    role = session_role(user, payload.app)
+    if role is None:
+        await db.commit()
+        AUTH_EVENTS.labels(event="otp_verify", result=f"not_{payload.app}").inc()
+        raise HTTPException(status_code=403, detail=_GRANTED_ONLY[payload.app])
+    if role == "customer" and "customer" not in user.role_set():
         # Proving a number is all a customer account needs.
         user.roles = ",".join(sorted(user.role_set() | {"customer"}))
 
     user.last_login_at = now
-    pair = await issue_tokens(db, user, payload.app, otp.new_family(), now)
+    pair = await issue_tokens(db, user, role, otp.new_family(), now)
     await db.commit()
     AUTH_EVENTS.labels(event="otp_verify", result="ok").inc()
     return pair
@@ -391,13 +410,13 @@ async def me(user=Depends(security.get_current_user)):
     return MeOut(sub=sub, role=user["role"], phone_masked=masked)
 
 
-# --- Admin: who may run a shop ---------------------------------------------
+# --- Admin: who may run a shop, enroll shops, administer --------------------
 
 
 class GrantRoleIn(BaseModel):
     phone: str = Field(min_length=6, max_length=32)
     country_code: str = Field(default="CI", min_length=2, max_length=2)
-    role: Literal["merchant", "admin"]
+    role: Literal["merchant", "agent", "admin"]
     # With role=merchant: the venue this number will run from the merchant app.
     venue_id: int | None = None
 
@@ -451,6 +470,17 @@ async def link_merchant(db: AsyncSession, e164: str, venue: models.Venue, now: d
     ).scalars().first()
     if other is not None:
         raise HTTPException(status_code=409, detail=f"Ce numero gere deja un commerce : {other}")
+    # Djassa Pro opens the owner's session first, so a cashier made owner
+    # would silently lose their cashier shop. The owner there removes them first.
+    employer = (
+        await db.execute(
+            select(models.Venue.name)
+            .join(models.VenueStaff, models.VenueStaff.venue_id == models.Venue.id)
+            .where(models.VenueStaff.user_key == key, models.VenueStaff.removed_at.is_(None))
+        )
+    ).scalars().first()
+    if employer is not None:
+        raise HTTPException(status_code=409, detail=f"Ce numero est caissier chez {employer}. Le gerant doit d'abord le retirer de son equipe.")
     user = await ensure_role(db, e164, "merchant", now)
     venue.owner_username = key
     return user
