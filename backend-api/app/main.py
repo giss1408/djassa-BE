@@ -9,8 +9,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from .rate_limiter import limiter
-from .metrics import record_request
-import time
+from .observability import metrics_authorized, observe_request, setup_logging
 import os
 
 # OpenTelemetry tracing setup (OTLP exporter)
@@ -21,6 +20,8 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
+setup_logging()
 
 # Configure tracer provider with basic service resource
 resource = Resource.create({"service.name": "djassa-backend"})
@@ -83,15 +84,9 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.state.limiter = limiter
 
 
-@app.middleware("http")
-async def prometheus_middleware(request: Request, call_next):
-    start = time.time()
-    response = await call_next(request)
-    duration = time.time() - start
-    # normalize path for metrics
-    path = request.url.path
-    record_request(request.method, path, response.status_code, duration)
-    return response
+# Metrics by route template, and one access log line per request
+# (app/observability.py).
+app.middleware("http")(observe_request)
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(account.router, prefix="/api")
@@ -139,15 +134,18 @@ app.include_router(usage_events.router, prefix="/api")
 app.include_router(staff.router, prefix="/api")
 app.include_router(graphql_router, prefix="/graphql")
 
-# Expose /metrics endpoint for Prometheus to scrape (compose local)
+# Prometheus scrape endpoint: open in development, METRICS_TOKEN elsewhere
+# (app/observability.py).
+from fastapi import HTTPException
 from fastapi.responses import Response
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 
-@app.get("/metrics")
-def metrics():
-    data = generate_latest()
-    return Response(content=data, media_type=CONTENT_TYPE_LATEST)
+@app.get("/metrics", include_in_schema=False)
+def metrics(request: Request):
+    if not metrics_authorized(request.headers.get("authorization")):
+        raise HTTPException(status_code=404)
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/health")

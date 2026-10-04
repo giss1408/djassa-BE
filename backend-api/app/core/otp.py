@@ -7,6 +7,7 @@ the app secret, so a database dump yields neither usable codes nor tokens.
 
 import hashlib
 import hmac
+import os
 import secrets
 from datetime import timedelta
 
@@ -19,6 +20,16 @@ RESEND_AFTER = timedelta(seconds=60)
 # A number receives at most this many codes per hour. SMS pumping fraud
 # (someone triggering sends to premium numbers) is the main cost risk.
 MAX_SENDS_PER_HOUR = 5
+# All numbers together receive at most this many codes in 24 hours
+# (`OTP_DAILY_SMS_BUDGET`). The caps above stop one number or one IP; this
+# stops an attack that rotates both, at a cost known in advance. Past it, sign
+# in waits for the window to roll over and the OtpDailyBudgetReached alert
+# fires. Size it from real traffic: a few times a normal day.
+DEFAULT_DAILY_SMS_BUDGET = 500
+
+
+def daily_sms_budget() -> int:
+    return int(os.getenv("OTP_DAILY_SMS_BUDGET", DEFAULT_DAILY_SMS_BUDGET))
 
 REFRESH_TTL = timedelta(days=90)
 

@@ -20,6 +20,7 @@ development and the test suite, and answers 404 when DJASSA_ENV=production.
 """
 
 import hmac
+import logging
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Literal
@@ -27,7 +28,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
@@ -39,6 +40,7 @@ from ..rate_limiter import limiter
 from ..services.otp_sender import OtpDeliveryFailed, dev_echo_enabled, get_sender
 
 router = APIRouter()
+log = logging.getLogger("djassa.auth")
 
 ACCESS_TTL = timedelta(minutes=60)
 
@@ -214,6 +216,13 @@ async def send_code(db: AsyncSession, e164: str, purpose: str, now: datetime) ->
     if len(recent) >= otp.MAX_SENDS_PER_HOUR:
         AUTH_EVENTS.labels(event="otp_request", result="hourly_cap").inc()
         raise HTTPException(status_code=429, detail="Trop de codes demandes pour ce numero. Reessayez dans une heure.")
+    sent_today = (
+        await db.execute(select(func.count(models.OtpChallenge.id)).where(models.OtpChallenge.created_at > now - timedelta(hours=24)))
+    ).scalar_one()
+    if sent_today >= otp.daily_sms_budget():
+        AUTH_EVENTS.labels(event="otp_request", result="daily_budget").inc()
+        log.error("Daily SMS budget reached (%s codes in 24 h); sign-in codes are paused", sent_today)
+        raise HTTPException(status_code=503, detail="Connexion momentanement indisponible. Reessayez plus tard.")
 
     # A new code voids the previous ones for the same purpose, so only the
     # latest SMS works.
