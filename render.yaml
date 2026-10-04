@@ -95,10 +95,10 @@ services:
       #   sync: false
       # Browser origins allowed to call the API. The native apps are not
       # affected; the public site calls only /api/client-events (error reports,
-      # when built with VITE_DJASSA_API_BASE), so only its custom domain is
-      # listed. djassa-installer is the admin and field-agent site, at the
+      # when built with VITE_DJASSA_API_BASE); add its domain here once it has
+      # one. djassa-installer is the admin and field-agent site, at the
       # address its Render service was given. Never list a guessed
       # onrender.com name: Render names are global and may belong to someone
       # else.
       - key: CORS_ORIGINS
-        value: https://djassa.co,https://djassa-installer.onrender.com
+        value: https://djassa-installer.onrender.com
