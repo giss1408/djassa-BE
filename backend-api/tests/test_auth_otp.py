@@ -230,3 +230,53 @@ async def test_production_refuses_console_codes_and_demo_login(client, monkeypat
         await client.post("/api/auth/otp/request", json={"phone": PHONE})
     r = await client.post("/api/token", data={"username": "demo", "password": "demo123"})
     assert r.status_code == 404
+
+
+TEST_NUMBERS = "+2250700000001:000000,07 00 00 00 02:000000"
+
+
+@pytest.mark.asyncio
+async def test_shared_test_numbers_sign_in_with_their_fixed_code(client, monkeypatch):
+    monkeypatch.setenv("DJASSA_ENV", "test")
+    monkeypatch.setenv("OTP_DEV_ECHO", "0")
+    monkeypatch.setenv("TEST_OTP_NUMBERS", TEST_NUMBERS)
+
+    # Many testers share the number: repeated requests are never throttled,
+    # and an earlier request's code still works after a later one.
+    for _ in range(7):
+        assert (await client.post("/api/auth/otp/request", json={"phone": "0700000001"})).status_code == 202
+    bad = await client.post("/api/auth/otp/verify", json={"phone": "0700000001", "code": "123456"})
+    assert bad.status_code == 401
+    for _ in range(2):
+        r = await client.post("/api/auth/otp/verify", json={"phone": "0700000001", "code": "000000"})
+        assert r.status_code == 200, r.text
+        assert r.json()["role"] == "customer"
+
+    # The seeded merchant number opens the merchant app with the same code.
+    r = await client.post("/api/auth/otp/verify", json={"phone": "0700000002", "code": "000000", "app": "merchant"})
+    assert r.status_code == 200, r.text
+    assert r.json()["role"] == "merchant"
+
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(models.OtpChallenge))).scalars().all() == []
+
+    # Any other number still needs a real code.
+    other = await client.post("/api/auth/otp/verify", json={"phone": PHONE, "code": "000000"})
+    assert other.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_test_numbers_only_apply_in_the_test_environment(client, monkeypatch):
+    monkeypatch.setenv("TEST_OTP_NUMBERS", TEST_NUMBERS)
+    # Unset DJASSA_ENV (local development): ignored.
+    r = await client.post("/api/auth/otp/verify", json={"phone": "0700000001", "code": "000000"})
+    assert r.status_code == 401
+
+    monkeypatch.setenv("DJASSA_ENV", "production")
+    with pytest.raises(RuntimeError):
+        await client.post("/api/auth/otp/verify", json={"phone": "0700000001", "code": "000000"})
+
+    monkeypatch.setenv("DJASSA_ENV", "test")
+    monkeypatch.setenv("TEST_OTP_NUMBERS", "+2250700000001:123")
+    with pytest.raises(RuntimeError):
+        await client.post("/api/auth/otp/verify", json={"phone": "0700000001", "code": "000000"})

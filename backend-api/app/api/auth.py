@@ -19,6 +19,7 @@ merchant session needs the merchant role, which only an admin grants.
 development and the test suite, and answers 404 when DJASSA_ENV=production.
 """
 
+import hmac
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Literal
@@ -71,6 +72,36 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
     access_token = security.create_access_token({"sub": form_data.username, "role": user["role"]})
     return {"access_token": access_token, "token_type": "bearer", "role": user["role"]}
+
+
+# --- Shared test numbers (DJASSA_ENV=test only) ------------------------------
+
+# TEST_OTP_NUMBERS="+2250700000001:000000,+2250700000002:000000": these numbers
+# sign in with their fixed code, so testers share an account the way they
+# shared demo/demo123. Nothing is stored or sent for them, so the per-number
+# cooldown and hourly cap (which bound SMS spend) do not apply, and one
+# tester's request never voids another's code. Sign-in only: recovery and
+# number changes on these numbers still go through real codes.
+
+
+def test_numbers() -> dict[str, str]:
+    raw = os.getenv("TEST_OTP_NUMBERS", "").strip()
+    if not raw:
+        return {}
+    env = os.getenv("DJASSA_ENV")
+    if env == "production":
+        raise RuntimeError("TEST_OTP_NUMBERS is refused when DJASSA_ENV=production")
+    if env != "test":
+        return {}
+    numbers = {}
+    for entry in raw.split(","):
+        phone, _, code = entry.strip().partition(":")
+        if not phone:
+            continue
+        if not (len(code) == otp.CODE_LENGTH and code.isdigit()):
+            raise RuntimeError(f"TEST_OTP_NUMBERS: {phone} needs a {otp.CODE_LENGTH}-digit code after ':'")
+        numbers[normalize_phone(phone, "CI")] = code
+    return numbers
 
 
 # --- Phone + one-time code ---------------------------------------------------
@@ -147,6 +178,10 @@ async def send_code(db: AsyncSession, e164: str, purpose: str, now: datetime) ->
     The per-number cooldown and hourly cap count codes of every purpose: they
     exist to bound SMS spend, whatever the code is for.
     """
+    fixed = test_numbers().get(e164) if purpose == "sign_in" else None
+    if fixed is not None:
+        AUTH_EVENTS.labels(event="otp_request", result="test_number").inc()
+        return fixed
     recent = (
         await db.execute(
             select(models.OtpChallenge)
@@ -197,6 +232,12 @@ async def check_code(db: AsyncSession, e164: str, code: str, purpose: str, now: 
     On success the caller commits; a wrong guess is committed here so the
     attempt counts even though the request fails.
     """
+    fixed = test_numbers().get(e164) if purpose == "sign_in" else None
+    if fixed is not None:
+        if not hmac.compare_digest(code, fixed):
+            AUTH_EVENTS.labels(event="otp_verify", result="wrong_code").inc()
+            raise HTTPException(status_code=401, detail=BAD_CODE)
+        return
     challenge = (
         await db.execute(
             select(models.OtpChallenge)

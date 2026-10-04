@@ -48,6 +48,9 @@ app = FastAPI(title="djassa API", middleware=middleware)
 
 @app.on_event("startup")
 async def startup():
+    # A bad TEST_OTP_NUMBERS (or one set in production) stops the start here
+    # rather than failing every sign-in.
+    auth.test_numbers()
     # Production schemas come from Alembic migrations. The local SQLite dev
     # database is created and seeded here so the apps work out of the box;
     # seeding_enabled() is off for any non-SQLite database unless asked for.

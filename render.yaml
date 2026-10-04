@@ -12,7 +12,7 @@
 # This is a TEST environment: payments are simulated (no real money moves),
 # EXCEPT at a venue whose merchant connected their own Wave Business account
 # (pilot option B): there a Wave payment is real and goes straight to that
-# merchant's wallet. Plus the demo logins (demo/demo123, client/client123). Never point real users
+# merchant's wallet. Plus shared test numbers with a fixed code (TEST_OTP_NUMBERS). Never point real users
 # or real payments at it. See docs/technical/DEPLOY-TEST.md.
 
 services:
@@ -66,6 +66,13 @@ services:
       # as any number: never on a deployment holding real data.
       - key: OTP_SENDER
         value: console
+      # Shared test accounts: these numbers sign in with their fixed code, no
+      # SMS, no log line. 07 00 00 00 01 is a customer; 07 00 00 00 02 is the
+      # seeded merchant of the second sample maquis. Shown on the public
+      # download page, so anyone can use them: only with DJASSA_ENV=test (the
+      # API refuses to start with it in production, ignores it elsewhere).
+      - key: TEST_OTP_NUMBERS
+        value: "+2250700000001:000000,+2250700000002:000000"
       # Shop photos and videos (app/services/media_storage.py). Videos are
       # converted by the ffmpeg bundled in the imageio-ffmpeg wheel (no system
       # ffmpeg on this runtime), one at a time, in the API process: a 60 s

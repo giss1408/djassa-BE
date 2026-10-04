@@ -2,7 +2,7 @@
 
 How to put the Djassa apps in testers' hands for free: the API on **Render's free plan**, the database on **Neon's free plan**, signed Android APKs published as **GitHub Releases**, and one link on WhatsApp. **Firebase App Distribution** is prepared for the field pilot.
 
-This is a **test environment**: simulated payments (fake mobile-money provider) and shared demo logins. Never point real users or real money at it.
+This is a **test environment**: simulated payments (fake mobile-money provider) and shared test numbers. Never point real users or real money at it.
 
 ```text
 WhatsApp link ──▶ <site>/app ──▶ GitHub Release (latest APKs)
@@ -31,7 +31,14 @@ Every start runs `alembic upgrade head` (a no-op when current), then the server.
 
 **Free-plan behaviour:** the service sleeps after ~15 minutes without traffic, and the first request after that takes up to about a minute. The merchant app queues sales offline and retries; the customer app shows "Réessayer". If that becomes a problem during a demo, open `/health` a minute before, or add a free uptime monitor pinging `/health` every 10 minutes (one always-on service fits within the free monthly hours). Celery tasks do not run on the free plan; the apps do not need them.
 
-**Test logins:** merchant `demo` / `demo123`, customer `client` / `client123`, shared by all testers until phone login exists.
+**Test logins:** the apps sign in with a phone number and a 6-digit code. `TEST_OTP_NUMBERS` in `render.yaml` gives shared numbers a fixed code, with no SMS sent:
+
+| App | Number | Code |
+|---|---|---|
+| Djassa (customer) | `07 00 00 00 01` | `000000` |
+| Djassa Pro (merchant) | `07 00 00 00 02` | `000000` |
+
+The merchant number runs the second sample maquis (seeded by `DJASSA_SEED_SAMPLE=1`). Fixed codes work only with `DJASSA_ENV=test`; the API refuses to start with them in production. Any other number gets a real code, which with `OTP_SENDER=console` appears only in the Render service log.
 
 ## 3. Signed APKs on GitHub Releases
 
