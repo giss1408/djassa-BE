@@ -1,18 +1,19 @@
 {
+  "uid": "djassa-webhooks",
   "annotations": {"list": []},
   "panels": [
     {
       "type": "graph",
       "title": "Webhook Request Rate",
       "targets": [
-        {"expr": "rate(http_requests_total{path=\"/mobile-money\"}[1m])", "refId": "A"}
+        {"expr": "rate(http_requests_total{path=\"/api/webhooks/mobile-money\"}[1m])", "refId": "A"}
       ]
     },
     {
       "type": "graph",
       "title": "Webhook Processing Duration",
       "targets": [
-        {"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{path=\"/mobile-money\"}[5m])) by (le))", "refId": "B"}
+        {"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{path=\"/api/webhooks/mobile-money\"}[5m])) by (le))", "refId": "B"}
       ]
     }
   ],

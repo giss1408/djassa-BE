@@ -13,7 +13,11 @@
 # EXCEPT at a venue whose merchant connected their own Wave Business account
 # (pilot option B): there a Wave payment is real and goes straight to that
 # merchant's wallet. Plus shared test numbers with a fixed code (TEST_OTP_NUMBERS). Never point real users
-# or real payments at it. See docs/technical/DEPLOY-TEST.md.
+# or real payments at it. See docs/technical/DEPLOY-TEST.md. Production is
+# render.production.yaml (docs/technical/PRODUCTION.md).
+#
+# /metrics answers 404 here (no METRICS_TOKEN): set one to scrape this
+# environment too.
 
 services:
   - type: web
@@ -30,7 +34,9 @@ services:
     # Migrations run on every start (a free instance has no pre-deploy step).
     # `upgrade head` is a no-op when the schema is current, so a wake-up from
     # sleep costs nothing extra.
-    startCommand: alembic -c alembic.ini upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*'
+    # --no-access-log: uvicorn's own access log prints query strings, which
+    # carry phone numbers; the API writes its own line (app/observability.py).
+    startCommand: alembic -c alembic.ini upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*' --no-access-log
     healthCheckPath: /health
     autoDeploy: true
     envVars:

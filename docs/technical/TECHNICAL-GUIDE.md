@@ -187,6 +187,7 @@ start-up or when the app returns to the foreground, never on a timer.
 | Security | [Architecture/SECURITY.md](../../Architecture/SECURITY.md) | Application and financial-security principles |
 | Container security | [Architecture/security-architecture.md](../../Architecture/security-architecture.md) | Compose/Kubernetes hardening |
 | VPS test deployment | [VPS-TEST-SERVER.md](VPS-TEST-SERVER.md) | Test-server setup and automated deployment |
+| Production and monitoring | [PRODUCTION.md](PRODUCTION.md) | Production deploy, settings, metrics, alerts and runbooks |
 | Database migrations | [backend-api/MIGRATIONS.md](../../backend-api/MIGRATIONS.md) | Schema changes, rollback, and deployment rules |
 | Contributions | [CONTRIBUTING.md](../../CONTRIBUTING.md) | Branches, tests, and security checklist |
 | Contributor guidance | [skills](../../skills/) | Implementation and writing guidance |

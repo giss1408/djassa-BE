@@ -1,21 +1,48 @@
 groups:
   - name: djassa.rules
     rules:
-      - alert: HighErrorRate
-        expr: rate(http_server_requests_seconds_count{job="djassa-api",status=~"5.."}[5m]) > 0.05
-        for: 2m
+      # The API's own health. These read metrics the API exports itself
+      # (app/observability.py), with no `job` filter: the same file serves the
+      # local Prometheus and Grafana Cloud, whose scrape job may be named
+      # differently. Runbooks: docs/technical/PRODUCTION.md.
+      - alert: ApiMetricsMissing
+        expr: absent_over_time(djassa_build_info[5m])
+        for: 5m
         labels:
           severity: critical
         annotations:
-          summary: "High 5xx error rate on djassa-api"
+          summary: "No metrics from djassa-api for 5 minutes: the API is down, or the scrape token was rotated"
 
-      - alert: InstanceDown
-        expr: up == 0
-        for: 1m
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(http_requests_total{path!~"/health|/metrics"}[5m])) > 0.05
+          and sum(rate(http_requests_total{path!~"/health|/metrics"}[5m])) > 0.05
+        for: 5m
         labels:
           severity: critical
         annotations:
-          summary: "Instance {{ $labels.instance }} is down"
+          summary: "More than 5% of djassa-api requests fail with a 5xx"
+
+      - alert: SlowRequests
+        # Media uploads re-encode video in the request; they are slow on purpose.
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{path!~"/health|/metrics|.*/media.*"}[10m]))) > 2
+          and sum(rate(http_requests_total{path!~"/health|/metrics"}[10m])) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "djassa-api p95 latency above 2 s for 10 minutes"
+
+      - alert: PaymentWebhookFailing
+        expr: |
+          sum(increase(http_requests_total{path="/api/webhooks/mobile-money",status!~"2.."}[15m])) > 3
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Payment webhooks are being refused: payments may not be confirmed to merchants"
 
       # Apps (djassa-App-user, djassa-App-retailer, djassa-Web) report their own
       # errors to POST /api/client-events. See ALERTS.md.
@@ -58,3 +85,10 @@ groups:
           severity: critical
         annotations:
           summary: "The SMS provider is refusing sign-in codes; nobody can sign in"
+
+      - alert: OtpDailyBudgetReached
+        expr: sum(increase(djassa_auth_events_total{event="otp_request",result="daily_budget"}[10m])) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "The daily SMS budget (OTP_DAILY_SMS_BUDGET) is spent: new sign-ins wait until it rolls over"

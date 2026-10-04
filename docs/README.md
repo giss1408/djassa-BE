@@ -28,6 +28,7 @@
 | [User enrollment](technical/ENROLLMENT.md) | Who can sign in to which app: customers, merchants, cashiers, field agents, admins; the approval checklist, recovery, test accounts, API. |
 | [Test deployment (free)](technical/DEPLOY-TEST.md) | API on Render free + Neon, signed APKs on GitHub Releases, the WhatsApp install link, Firebase App Distribution. |
 | [VPS test server](technical/VPS-TEST-SERVER.md) | Ubuntu VPS setup and automated test deployment. |
+| [Production](technical/PRODUCTION.md) | Going live on Render's paid plan: deploy, settings, Grafana Cloud metrics and alerts, uptime monitors, logs, what to do when an alert fires. |
 | [Architecture](../Architecture/README.md) | Topology, application and container security, secrets, Kubernetes. |
 | [Contributing](../CONTRIBUTING.md) | Branches, tests, security checklist, pull requests. |
 | [Monitoring alerts](../monitoring/ALERTS.md) | Operational thresholds and access rules. |

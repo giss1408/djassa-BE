@@ -1,0 +1,136 @@
+# Render Blueprint: Djassa in PRODUCTION (the pilot with real merchants).
+# Render dashboard → New → Blueprint → this repository, Blueprint path
+# `render.production.yaml`. render.yaml stays the test environment: shared
+# test numbers, simulated payments, free plan. Never mix the two databases.
+#
+# Before the first deploy, and the full checklist: docs/technical/PRODUCTION.md.
+# Values marked `sync: false` are asked for when the Blueprint is created and
+# then live in the dashboard only; keep docs/technical/PRODUCTION.md's table of
+# settings up to date whenever one changes there.
+
+services:
+  - type: web
+    runtime: python
+    name: djassa-api-prod
+    # Paid: always on (no sleep), a pre-deploy step, persistent metrics
+    # between requests. One instance: Prometheus counters live in the
+    # process, and Grafana Cloud scrapes the public URL, which reaches one
+    # instance at random. Before scaling out, see PRODUCTION.md § Scaling.
+    plan: starter
+    numInstances: 1
+    region: frankfurt
+    rootDir: backend-api
+    branch: main
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    # Migrations run once per deploy, before traffic moves to the new build;
+    # a failed migration stops the deploy and the old build keeps serving.
+    preDeployCommand: alembic -c alembic.ini upgrade head
+    # --no-access-log: uvicorn's access log prints query strings, which carry
+    # phone numbers. The API writes its own access line (app/observability.py).
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*' --no-access-log
+    # Liveness only: a database blip must not make Render restart a healthy
+    # process. The uptime monitor checks /ready, which includes the database.
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: DJASSA_ENV
+        value: production
+      # The production database, never the test one. Neon: the direct
+      # endpoint, with point-in-time restore enabled (PRODUCTION.md § Database).
+      - key: DATABASE_URL
+        sync: false
+      - key: DJASSA_SECRET_KEY
+        generateValue: true
+      # Seals merchants' Wave keys. If it ever changes, every merchant must
+      # reconnect Wave: back it up in the team's password manager.
+      - key: DJASSA_ENCRYPTION_KEY
+        generateValue: true
+      # Payment webhook signing secrets (comma-separated: current,previous).
+      - key: MOBILE_MONEY_SECRETS
+        sync: false
+      # A venue with a connected Wave account is paid through Wave; every
+      # other venue is paid at the counter. Nothing is ever simulated here.
+      - key: MOBILE_MONEY_PROVIDER
+        value: wave
+
+      # --- Sign-in codes ---------------------------------------------------
+      - key: OTP_SENDER
+        value: africastalking
+      - key: AT_USERNAME
+        sync: false
+      - key: AT_API_KEY
+        sync: false
+      # The approved alphanumeric sender (e.g. DJASSA); empty until approved.
+      - key: AT_SENDER_ID
+        sync: false
+      # All numbers together, per 24 hours. A few times a normal day: past it
+      # sign-in pauses and OtpDailyBudgetReached fires. Raise it as the pilot
+      # grows, from the sign-in dashboard.
+      - key: OTP_DAILY_SMS_BUDGET
+        value: "300"
+
+      # --- Media (photos, videos) -------------------------------------------
+      # Required in production: the instance disk is wiped on every deploy.
+      - key: MEDIA_STORAGE
+        value: r2
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        value: djassa-media-prod
+      - key: MEDIA_PUBLIC_BASE_URL
+        sync: false
+
+      # --- Browsers and monitoring ------------------------------------------
+      # The production installer site's exact address (and the public site's
+      # domain once it has one), comma-separated. Never a guessed name.
+      - key: CORS_ORIGINS
+        sync: false
+      # Grafana Cloud's scrape job sends it as the basic-auth password. Copy
+      # it from the dashboard into Grafana Cloud; rotate both together.
+      - key: METRICS_TOKEN
+        generateValue: true
+      # JSON lines for the log service (Render log stream, PRODUCTION.md).
+      - key: LOG_FORMAT
+        value: json
+      - key: LOG_LEVEL
+        value: INFO
+
+  # The admin and field-agent site, pointed at the production API. Built from
+  # its own repository.
+  - type: web
+    runtime: static
+    name: djassa-installer-prod
+    repo: https://github.com/giss1408/djassa-installer
+    branch: main
+    buildCommand: npm ci && npm run lint && npm run build
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: false
+    autoDeploy: false
+    envVars:
+      - key: NODE_VERSION
+        value: "22.12.0"
+      # The production API's address as Render shows it (https://...onrender.com).
+      - key: VITE_DJASSA_API_BASE
+        sync: false
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; connect-src 'self' https:; img-src 'self' https: data:; media-src https:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
