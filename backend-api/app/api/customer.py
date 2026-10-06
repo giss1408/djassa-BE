@@ -3,13 +3,14 @@
 import secrets
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from .. import models
-from ..core.security import get_current_user, require_role
+from ..core.security import get_optional_user, require_role
+from ..rate_limiter import limiter, public_read_limit
 from ..db import get_db
 from ..schemas.customer import (
     CategoryOut,
@@ -166,8 +167,12 @@ async def _balance(db: AsyncSession, customer_id: str, venue_id: int | None = No
 # --- Discovery --------------------------------------------------------------
 
 
+# The catalogue (categories, shops, offers, on-duty pharmacies) is public: the
+# customer app shows it before any sign-in. Paying and points need an account.
+
+
 @router.get("/categories", response_model=list[CategoryOut])
-async def list_categories(user=Depends(get_current_user)):
+async def list_categories():
     return [CategoryOut(key=k, label=label, plural=plural) for k, (label, plural) in CATEGORIES.items()]
 
 
@@ -197,12 +202,13 @@ def deal_out(d: models.Deal) -> DealOut:
 
 
 @router.get("/venues", response_model=list[VenueOut])
+@limiter.limit(public_read_limit)
 async def list_venues(
+    request: Request,
     category: str | None = Query(None),
     q: str | None = Query(None, max_length=64),
     commune: str | None = Query(None, max_length=64),
     db: AsyncSession = Depends(get_db),
-    user=Depends(get_current_user),
 ):
     if category is not None and category not in CATEGORIES:
         raise HTTPException(status_code=422, detail=f"category must be one of {tuple(CATEGORIES)}")
@@ -226,7 +232,10 @@ async def list_venues(
 
 
 @router.get("/venues/{venue_id}", response_model=VenueDetailOut)
-async def get_venue(venue_id: int, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+@limiter.limit(public_read_limit)
+async def get_venue(request: Request, venue_id: int, db: AsyncSession = Depends(get_db), user=Depends(get_optional_user)):
+    """A shop's page. `my_points` is the signed-in customer's balance here,
+    0 for someone browsing without an account."""
     venue = (
         await db.execute(
             select(models.Venue).options(selectinload(models.Venue.rewards)).where(models.Venue.id == venue_id)
@@ -248,18 +257,19 @@ async def get_venue(venue_id: int, db: AsyncSession = Depends(get_db), user=Depe
         VenueDetailOut,
         rewards=sorted(rewards, key=lambda r: r.cost_points),
         deals=[deal_out(d) for d in deals],
-        my_points=await _balance(db, user["username"], venue.id),
+        my_points=await _balance(db, user["username"], venue.id) if user and user["role"] == "customer" else 0,
         media=await _ready_media(db, venue.id),
         cover_url=(await _covers(db, [venue.id])).get(venue.id),
     )
 
 
 @router.get("/pharmacies/on-duty", response_model=list[OnDutyPharmacyOut])
+@limiter.limit(public_read_limit)
 async def on_duty_pharmacies(
+    request: Request,
     commune: str | None = Query(None, max_length=64),
     at: datetime | None = Query(None, description="Defaults to now (UTC = Abidjan time)"),
     db: AsyncSession = Depends(get_db),
-    user=Depends(get_current_user),
 ):
     moment = (at.astimezone(timezone.utc).replace(tzinfo=None) if at and at.tzinfo else at) or utcnow()
     stmt = (

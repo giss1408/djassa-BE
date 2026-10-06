@@ -12,6 +12,9 @@ os.environ["DJASSA_SEED_SAMPLE"] = "1"
 # secrets); tests get explicit throwaway values.
 os.environ.setdefault("DJASSA_SECRET_KEY", "test-only-jwt-secret")
 os.environ.setdefault("MOBILE_MONEY_SECRETS", "dev-secret")
+# The whole suite reads the public catalogue from one address; its own limit
+# is tested in test_public_catalogue.py.
+os.environ.setdefault("PUBLIC_READ_RATE_LIMIT", "100000/minute")
 os.environ.setdefault("MOBILE_MONEY_PROVIDER", "fake")
 # No Redis in tests: an unreachable broker makes every `.delay()` retry for
 # ~20s before the webhook falls back to inline processing.

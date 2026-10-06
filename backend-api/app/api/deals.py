@@ -3,14 +3,15 @@ admins sell the featured slot."""
 
 from datetime import timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from .. import models
-from ..core.security import get_current_user, SHOP_STAFF, require_role
+from ..core.security import SHOP_STAFF, require_role
 from ..db import get_db
+from ..rate_limiter import limiter, public_read_limit
 from ..schemas.customer import DealIn, DealOut, PlacementIn, PlacementOut, PlacementPaidIn
 from .customer import CATEGORIES, deal_out, live_deals_filter, utcnow
 from .payment_requests import _my_venue
@@ -31,15 +32,17 @@ def _naive_utc(value):
 
 
 @router.get("/deals", response_model=list[DealOut])
+@limiter.limit(public_read_limit)
 async def list_deals(
+    request: Request,
     category: str | None = Query(None),
     commune: str | None = Query(None, max_length=64),
     featured: bool | None = Query(None, description="true: only the sponsored ones (home carousel)"),
     limit: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    user=Depends(get_current_user),
 ):
-    """Live deals, sponsored first, then the ones ending soonest."""
+    """Live deals, sponsored first, then the ones ending soonest. Public: the
+    customer app shows them before any sign-in."""
     if category is not None and category not in CATEGORIES:
         raise HTTPException(status_code=422, detail=f"category must be one of {tuple(CATEGORIES)}")
     stmt = (

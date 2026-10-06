@@ -1,3 +1,5 @@
+import os
+
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -7,6 +9,13 @@ from slowapi.util import get_remote_address
 
 # Centralized rate limiter with exemption helper
 limiter = Limiter(key_func=get_remote_address)
+
+
+def public_read_limit() -> str:
+	"""Per-IP limit on the catalogue anyone can read without an account
+	(offers, shops, pharmacies). Generous for a person scrolling, tight for a
+	scraper. Read at request time so tests and operators can change it."""
+	return os.getenv("PUBLIC_READ_RATE_LIMIT", "120/minute")
 
 def exempt_for_internal_ips(app, internal_cidrs=None):
 	"""Mark the app as exempt from rate limits for specific internal CIDRs.

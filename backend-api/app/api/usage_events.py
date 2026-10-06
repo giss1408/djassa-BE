@@ -51,6 +51,9 @@ EVENT_NAMES: dict[str, frozenset[str]] = {
     "retailer": frozenset({
         "app_open", "screen_view", "sale_form_opened", "sale_recorded", "sale_abandoned",
         "daily_report", "data_used",
+        # Someone tried Djassa Pro without an account. What they do in the
+        # demo is not reported: pretend sales would skew the pilot's figures.
+        "demo_started",
     }),
     "user": frozenset({
         "app_open", "screen_view", "tab_view", "venue_viewed", "deal_opened", "media_viewed",

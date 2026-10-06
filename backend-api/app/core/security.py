@@ -15,6 +15,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token")
+# Same scheme, but a missing token is not an error: for the public catalogue.
+oauth2_optional = OAuth2PasswordBearer(tokenUrl="/api/token", auto_error=False)
 
 
 def verify_password(plain_password, hashed_password):
@@ -51,6 +53,18 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
     # Tokens issued before roles existed carry none; they were merchant tokens.
     return {"username": subject, "role": payload.get("role", "merchant")}
+
+
+async def get_optional_user(token: str | None = Depends(oauth2_optional)):
+    """The caller, or None for someone browsing without an account.
+
+    The customer app shows offers, shops and on-duty pharmacies before any
+    sign-in; only paying and points need one. A token that is present but
+    invalid is still a 401, so the app renews it instead of silently
+    showing the anonymous view to a signed-in customer."""
+    if not token:
+        return None
+    return await get_current_user(token)
 
 
 # Djassa Pro sessions: the shop owner, and the cashiers the owner added.
