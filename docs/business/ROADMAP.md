@@ -21,6 +21,7 @@ A phase is complete when **real users have validated it**, not when the code shi
 | Consented revenue export with audit | Prototype *(integration)* | Default export names no customer; customer-level export needs each customer's consent; every export audited; consent can be withdrawn |
 | Loyalty ledger and redemption | Prototype | Points awarded on customer payments |
 | **Points on cash sales, by phone** | Prototype *(integration)* | The merchant app sends the customer's number with a cash sale; the customer earns the venue's points; the merchant looks up the balance and hands over a reward at the counter. Not merged into customer-app accounts until an OTP-verified phone login exists |
+| Layaway ("payer en plusieurs fois") | Prototype *(feature/kpis)* | One named good, fixed price, end date, terms accepted; installments recorded, one sale on handover; off unless an admin switches it on for the shop |
 | Tontine groups, cycles, contributions, export | Foundation only | Built early; **not to be exposed before the Phase 3 gate** |
 | Consent records, verification tiers (request only) | Foundation only | Tier 1 and 2 cannot be self-approved; they need a licensed KYC adapter |
 | Payment state machine, signed and idempotent webhooks, refunds, disputes | Prototype | Reconciliation incomplete |
@@ -90,6 +91,8 @@ A phase is complete when **real users have validated it**, not when the code shi
 - PI-SPI interoperable QR through a licensed partner, if it is live for merchants in Côte d'Ivoire: one QR for every wallet and bank, and the end of per-operator work.
 - Onboarding and support playbook.
 - Progressive verification workflow and fraud-review queue, only where the partner and regulator approve.
+
+- **Layaway test** with 2–3 merchants whose goods suit it, never called credit ([BUSINESS-MODEL.md § Layaway test](BUSINESS-MODEL.md#layaway-test)).
 
 **Exit gate:** merchants pay or renew; acquisition and support economics are known; the product works under low connectivity.
 

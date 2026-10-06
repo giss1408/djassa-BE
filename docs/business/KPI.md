@@ -96,6 +96,21 @@ The core dashboard. Definitions are in §§ 4–8.
 | 5 Finance | Commission revenue / subscription revenue | Reported; **never** assumed in the plan before a signed agreement |
 | 5 Finance | Women's share of referrals, approvals, average amount, repeat borrowing, PAR | Reported per partner (adapted from the WWB "Select Five") |
 
+### 3.4 Layaway test
+
+Runs only at shops where an admin switched it on. Read from `GET /api/admin/layaway`.
+
+| KPI | Definition | Target |
+|---|---|---|
+| Plans started, by status | open, completed (paid, not yet handed over), delivered, cancelled | Tracked |
+| Completion rate | Delivered ÷ (delivered + cancelled) | ≥ 70% (**Proposed**) |
+| Overdue open plans | Open plans past their end date | 0 for more than 7 days |
+| Median days to complete | Opening → last installment | Tracked |
+| Value started and value paid | Sum of prices; sum of installments | Tracked |
+| Disputes | Plans where the customer and merchant disagree on what was paid | < 5% of plans (**Proposed**); not in the platform yet, logged by support |
+| New customers brought | Customers whose first record at the shop is a plan | Asked of each merchant |
+| Women's share of plans | | Needs the gender field ([§ 9](#9-measurement-gaps)) |
+
 ---
 
 ## 4. Merchant adoption and engagement

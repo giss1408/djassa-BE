@@ -33,6 +33,7 @@ OWNED = [
     (models.Venue, "owner_username"),
     (models.Venue, "enrolled_by"),
     (models.VenueStaff, "user_key"),
+    (models.LayawayPlan, "customer_id"),
 ]
 
 # Who did something, as it was at the time. Left on the old key.
@@ -47,6 +48,9 @@ AUDIT = [
     (models.VenueMedia, "uploaded_by"),
     (models.VenueStaff, "added_by"),
     (models.VenueStaff, "removed_by"),
+    (models.LayawayPlan, "created_by"),
+    (models.LayawayPlan, "cancelled_by"),
+    (models.LayawayInstallment, "recorded_by"),
 ]
 
 

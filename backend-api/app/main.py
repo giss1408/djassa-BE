@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from .api import payments, auth, transactions, export, tontine, webhooks, config, support, identity
-from .api import customer, payment_requests, deals, billing, sales, statements, counter_loyalty, venue_location, wave, client_events, account, onboarding, media, usage_events, staff
+from .api import customer, payment_requests, deals, billing, sales, statements, counter_loyalty, venue_location, wave, client_events, account, onboarding, media, usage_events, staff, layaway
 from .graphql_api import router as graphql_router
 from .db import engine, Base
 from .seed import seed_sample_data, seeding_enabled
@@ -132,6 +132,7 @@ app.include_router(identity.router, prefix="/api")
 app.include_router(client_events.router, prefix="/api")
 app.include_router(usage_events.router, prefix="/api")
 app.include_router(staff.router, prefix="/api")
+app.include_router(layaway.router, prefix="/api")
 app.include_router(graphql_router, prefix="/graphql")
 
 # Prometheus scrape endpoint: open in development, METRICS_TOKEN elsewhere
