@@ -42,7 +42,7 @@ from ..schemas.customer import VenueOut as PublicVenueOut
 
 router = APIRouter()
 
-Category = Literal["maquis", "superette", "pharmacy", "mode", "beaute", "telephonie"]
+Category = Literal["maquis", "restaurant", "superette", "pharmacy", "mode", "beaute", "telephonie"]
 WalletProvider = Literal["wave", "orange", "mtn", "moov"]
 
 assert set(Category.__args__) == set(CATEGORIES), "keep Category in step with customer.CATEGORIES"

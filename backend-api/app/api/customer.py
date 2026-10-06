@@ -44,6 +44,7 @@ router = APIRouter()
 # line here; the app draws a generic storefront icon for keys it does not know.
 CATEGORIES: dict[str, tuple[str, str]] = {
     "maquis": ("Maquis", "Maquis"),
+    "restaurant": ("Restaurant", "Restaurants"),
     "superette": ("Supérette", "Supérettes"),
     "pharmacy": ("Pharmacie", "Pharmacies"),
     "mode": ("Mode", "Boutiques de mode"),

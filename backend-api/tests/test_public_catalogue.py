@@ -66,3 +66,13 @@ async def test_the_public_catalogue_is_rate_limited_per_address(client, monkeypa
     codes = [(await client.get("/api/deals")).status_code for _ in range(4)]
     assert codes == [200, 200, 200, 429]
     limiter.reset()
+
+
+@pytest.mark.asyncio
+async def test_restaurants_are_a_category_of_their_own(client):
+    keys = [c["key"] for c in (await client.get("/api/categories")).json()]
+    assert keys[:2] == ["maquis", "restaurant"]
+    restaurants = (await client.get("/api/venues", params={"category": "restaurant"})).json()
+    assert restaurants and all(v["category"] == "restaurant" for v in restaurants)
+    maquis = (await client.get("/api/venues", params={"category": "maquis"})).json()
+    assert not {v["id"] for v in maquis} & {v["id"] for v in restaurants}

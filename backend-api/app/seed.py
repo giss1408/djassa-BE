@@ -51,10 +51,14 @@ _SHOPS = [
     ("mode", "Sneakers Plateau (exemple)", "Plateau", "Rue du Commerce", "Baskets, sacs, accessoires", "9h - 20h", None),
     ("beaute", "Salon Belle Tresse (exemple)", "Yopougon", "Selmer", "Tresses, perruques, manucure", "8h - 20h", ("wave", "+2250700000025")),
     ("telephonie", "Adjame Phone Center (exemple)", "Marcory", "Boulevard VGE", "Telephones, reparations, accessoires", "8h - 20h", ("moov", "+2250100000026")),
+    # Appended, not inserted: the index gives each sample shop its phone.
+    ("restaurant", "Restaurant Le Wafou (exemple)", "Cocody", "Rue des Jardins, 2 Plateaux", "Cuisine ivoirienne et grillades, salle climatisee", "12h - 23h", ("wave", "+2250700000027")),
+    ("restaurant", "La Table d'Assinie (exemple)", "Marcory", "Zone 4, rue Paul Langevin", "Poisson, fruits de mer, menu du midi", "11h30 - 22h30", None),
 ]
 
 _REWARDS = {
     "maquis": [("Une boisson offerte", 50), ("Un alloco offert", 80), ("-2000 FCFA sur l'addition", 200)],
+    "restaurant": [("Un dessert offert", 80), ("-3000 FCFA sur l'addition", 250)],
     "pharmacy": [("Livraison gratuite", 60), ("-1000 FCFA sur la prochaine ordonnance", 150)],
     "superette": [("Un pack d'eau offert", 80), ("-1000 FCFA sur les courses", 150)],
     "mode": [("Retouche offerte", 60), ("-10% sur un pagne", 200)],
@@ -68,6 +72,7 @@ _DEALS = [
     ("Maquis Le Baobab (exemple)", "Poulet braise + attieke a 3 500 F", "Tous les jeudis soir.", None, 3500, 5000, 5, True),
     ("Superette Bon Prix (exemple)", "-20% sur le riz parfume 25 kg", "Dans la limite des stocks.", 20, None, None, 3, True),
     ("Wax & Style (exemple)", "Pagne 6 yards a 7 500 F", "Nouvelle collection.", None, 7500, 10000, 10, True),
+    ("Restaurant Le Wafou (exemple)", "Menu du midi a 5 000 F", "Entree, plat et boisson, en semaine.", None, 5000, 7000, 7, False),
     ("Salon Belle Tresse (exemple)", "-30% sur les tresses le mardi", None, 30, None, None, 14, False),
     ("Adjame Phone Center (exemple)", "Changement d'ecran des 15 000 F", "Garantie 3 mois.", None, 15000, 25000, 7, False),
     ("Chez Tantie Awa (exemple)", "Garba + boisson a 1 000 F", "Le midi en semaine.", None, 1000, 1300, 2, False),
@@ -137,11 +142,14 @@ async def _backfill_pay_codes(db) -> None:
 async def _seed_shops_and_deals(db) -> None:
     """Other retailers and sample deals. Idempotent, so a dev database seeded
     before these existed gets them on its next start."""
-    has_shops = (
-        await db.execute(select(func.count(models.Venue.id)).where(models.Venue.category == _SHOPS[0][0]))
-    ).scalar_one()
-    if not has_shops:
-        for i, (category, name, commune, address, specialties, hours, payout) in enumerate(_SHOPS):
+    # By name, so a sample shop added to the list later (a new category)
+    # reaches databases seeded before it, without repeating the others.
+    seeded = set(
+        (await db.execute(select(models.Venue.name).where(models.Venue.is_sample.is_(True)))).scalars().all()
+    )
+    missing = [(i, shop) for i, shop in enumerate(_SHOPS) if shop[1] not in seeded]
+    if missing:
+        for i, (category, name, commune, address, specialties, hours, payout) in missing:
             venue = models.Venue(
                 category=category,
                 name=name,
