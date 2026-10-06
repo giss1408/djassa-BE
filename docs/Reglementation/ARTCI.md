@@ -31,6 +31,8 @@ The rule: **no phone number is tied to a sale or to points without a consent on 
 
 **Suggestions to the Djassa team.** An *Aide* (help) entry in the app menu opens WhatsApp to the team's number. It is hidden until the customer has 100 points (merchants and cashiers always have it). The points are not spent. The customer starts the conversation from their own WhatsApp, so it is not unsolicited, but messages then sit in WhatsApp (Meta) and count as personal data Djassa holds. Declare it with the rest.
 
+**Favourites and history stay on the phone.** The star on a shop, recent searches and recently viewed shops are saved in a file on the customer's phone, never sent to Djassa. They work without an account, and *Effacer* or uninstalling the app removes them. Djassa does not process this data, so it is not part of the declaration.
+
 **Wording changes.** If the consent text changes, bump `CURRENT_VERSION` on the server and `loyaltyConsentVersion` in the customer app together. Each row records the version that person agreed to.
 
 ## 3. Checked against the law, and not yet
