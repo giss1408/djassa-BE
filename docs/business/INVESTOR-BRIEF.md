@@ -42,7 +42,7 @@ Merchant software first, financial infrastructure second.
 | Stream | When |
 |---|---|
 | Merchant subscription: capped free plan, then ~5,000 F and ~10,000–15,000 F / month / outlet *(hypotheses to test)* | Pilot |
-| Featured deals (paid slot in the customer app) and campaigns | Pilot |
+| Sponsored deals and campaigns: one-off, time-limited placement for a merchant product, service or special offer in the customer app; pilot booking is admin-assisted and pricing is to be tested | Pilot |
 | Multi-outlet and network contracts | After proof |
 | Consented partner commissions (credit, savings, tontine): Djassa earns distribution fees, never carries credit risk | After partnership |
 
