@@ -1,4 +1,4 @@
-# Djassa Application Security
+# Hossouko Application Security
 
 ## Security status
 
@@ -44,7 +44,7 @@ These tiers are a product and control design, not a claim that an operator will 
 
 ## Federated identity boundary
 
-The strategic identity direction is a federated trust and consent layer, not a central national identity database. Djassa should store scoped attestations and metadata such as issuer, assurance level, purpose, issue time, expiry, revocation status, and audit reference. It should not copy raw operator KYC records, biometric databases, or national-ID repositories unless a specific legal and operational mandate permits it.
+The strategic identity direction is a federated trust and consent layer, not a central national identity database. Hossouko should store scoped attestations and metadata such as issuer, assurance level, purpose, issue time, expiry, revocation status, and audit reference. It should not copy raw operator KYC records, biometric databases, or national-ID repositories unless a specific legal and operational mandate permits it.
 
 Every federated integration must define:
 
@@ -62,7 +62,7 @@ This identity-manager direction requires formal governance and regulatory approv
 
 Required application variables:
 
-- `DJASSA_SECRET_KEY`: JWT signing key; fail startup when missing.
+- `HOSSOUKO_SECRET_KEY`: JWT signing key; fail startup when missing.
 - `MOBILE_MONEY_SECRETS`: comma-separated active and previous webhook keys.
 - `DATABASE_URL`: PostgreSQL connection URL.
 - `CELERY_BROKER_URL`: private Redis broker URL.

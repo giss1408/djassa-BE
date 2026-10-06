@@ -1,4 +1,4 @@
-# Render Blueprint: the Djassa API for field testing, on Render's free plan,
+# Render Blueprint: the Hossouko API for field testing, on Render's free plan,
 # with the database on Neon's free plan.
 # Render dashboard → New → Blueprint → pick this repository.
 #
@@ -22,7 +22,7 @@
 services:
   - type: web
     runtime: python
-    name: djassa-api
+    name: hossouko-api
     plan: free
     # Frankfurt: the lowest-latency Render region from Abidjan.
     region: frankfurt
@@ -48,10 +48,10 @@ services:
       - key: DATABASE_URL
         sync: false
       # Signs login tokens. Generated once by Render; never commit one.
-      - key: DJASSA_SECRET_KEY
+      - key: HOSSOUKO_SECRET_KEY
         generateValue: true
       # Test environment only.
-      - key: DJASSA_ENV
+      - key: HOSSOUKO_ENV
         value: test
       # "wave": a venue with a connected Wave account is paid through Wave
       # with the merchant's own key; every other payment stays simulated.
@@ -59,11 +59,11 @@ services:
         value: wave
       # Seals the merchants' Wave keys at rest. Generated once by Render; if it
       # ever changes, merchants must reconnect Wave.
-      - key: DJASSA_ENCRYPTION_KEY
+      - key: HOSSOUKO_ENCRYPTION_KEY
         generateValue: true
       # Seeds the sample venues, pharmacies and deals the apps show, once;
       # later starts detect them and add nothing.
-      - key: DJASSA_SEED_SAMPLE
+      - key: HOSSOUKO_SEED_SAMPLE
         value: "1"
       # Phone sign-in codes (app/services/otp_sender.py). "console" writes the
       # code to the service log; set "africastalking" plus AT_USERNAME and
@@ -75,8 +75,8 @@ services:
       # Shared test accounts: these numbers sign in with their fixed code, no
       # SMS, no log line. 07 00 00 00 01 is a customer; 07 00 00 00 02 is the
       # seeded merchant of the second sample maquis, 07 00 00 00 03 its
-      # cashier, 07 00 00 00 04 a field agent (djassa-installer). Shown on the public
-      # download page, so anyone can use them: only with DJASSA_ENV=test (the
+      # cashier, 07 00 00 00 04 a field agent (hossouko-installer). Shown on the public
+      # download page, so anyone can use them: only with HOSSOUKO_ENV=test (the
       # API refuses to start with it in production, ignores it elsewhere).
       - key: TEST_OTP_NUMBERS
         value: "+2250700000001:000000,+2250700000002:000000,+2250700000003:000000,+2250700000004:000000"
@@ -96,15 +96,15 @@ services:
       # - key: R2_SECRET_ACCESS_KEY
       #   sync: false
       # - key: R2_BUCKET
-      #   value: djassa-media
+      #   value: hossouko-media
       # - key: MEDIA_PUBLIC_BASE_URL
       #   sync: false
       # Browser origins allowed to call the API. The native apps are not
       # affected; the public site calls only /api/client-events (error reports,
-      # when built with VITE_DJASSA_API_BASE); add its domain here once it has
-      # one. djassa-installer is the admin and field-agent site, at the
+      # when built with VITE_HOSSOUKO_API_BASE); add its domain here once it has
+      # one. hossouko-installer is the admin and field-agent site, at the
       # address its Render service was given. Never list a guessed
       # onrender.com name: Render names are global and may belong to someone
       # else.
       - key: CORS_ORIGINS
-        value: https://djassa-installer.onrender.com
+        value: https://hossouko-installer.onrender.com

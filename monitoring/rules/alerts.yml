@@ -1,17 +1,17 @@
 groups:
-  - name: djassa.rules
+  - name: hossouko.rules
     rules:
       # The API's own health. These read metrics the API exports itself
       # (app/observability.py), with no `job` filter: the same file serves the
       # local Prometheus and Grafana Cloud, whose scrape job may be named
       # differently. Runbooks: docs/technical/PRODUCTION.md.
       - alert: ApiMetricsMissing
-        expr: absent_over_time(djassa_build_info[5m])
+        expr: absent_over_time(hossouko_build_info[5m])
         for: 5m
         labels:
           severity: critical
         annotations:
-          summary: "No metrics from djassa-api for 5 minutes: the API is down, or the scrape token was rotated"
+          summary: "No metrics from hossouko-api for 5 minutes: the API is down, or the scrape token was rotated"
 
       - alert: HighErrorRate
         expr: |
@@ -22,7 +22,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "More than 5% of djassa-api requests fail with a 5xx"
+          summary: "More than 5% of hossouko-api requests fail with a 5xx"
 
       - alert: SlowRequests
         # Media uploads re-encode video in the request; they are slow on purpose.
@@ -33,7 +33,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "djassa-api p95 latency above 2 s for 10 minutes"
+          summary: "hossouko-api p95 latency above 2 s for 10 minutes"
 
       - alert: PaymentWebhookFailing
         expr: |
@@ -44,10 +44,10 @@ groups:
         annotations:
           summary: "Payment webhooks are being refused: payments may not be confirmed to merchants"
 
-      # Apps (djassa-App-user, djassa-App-retailer, djassa-Web) report their own
+      # Apps (hossouko-App-user, hossouko-App-retailer, hossouko-Web) report their own
       # errors to POST /api/client-events. See ALERTS.md.
       - alert: AppErrorSpike
-        expr: sum by (app, app_version) (increase(djassa_client_events_total[30m])) > 50
+        expr: sum by (app, app_version) (increase(hossouko_client_events_total[30m])) > 50
         for: 10m
         labels:
           severity: warning
@@ -56,7 +56,7 @@ groups:
           runbook: "GET /api/admin/client-events?app={{ $labels.app }}&days=1 lists the failing stacks"
 
       - alert: AppCrashAfterRelease
-        expr: sum by (app, app_version) (increase(djassa_client_events_total{kind="crash"}[1h])) > 10
+        expr: sum by (app, app_version) (increase(hossouko_client_events_total{kind="crash"}[1h])) > 10
         for: 5m
         labels:
           severity: critical
@@ -68,10 +68,10 @@ groups:
       # silently stops delivering.
       - alert: OtpSentButNotVerified
         expr: |
-          sum(increase(djassa_auth_events_total{event="otp_request",result="sent"}[1h])) > 30
+          sum(increase(hossouko_auth_events_total{event="otp_request",result="sent"}[1h])) > 30
           and
-          sum(increase(djassa_auth_events_total{event="otp_verify",result="ok"}[1h]))
-            < 0.3 * sum(increase(djassa_auth_events_total{event="otp_request",result="sent"}[1h]))
+          sum(increase(hossouko_auth_events_total{event="otp_verify",result="ok"}[1h]))
+            < 0.3 * sum(increase(hossouko_auth_events_total{event="otp_request",result="sent"}[1h]))
         for: 15m
         labels:
           severity: critical
@@ -79,7 +79,7 @@ groups:
           summary: "Under 30% of sign-in codes sent in the last hour were verified (SMS pumping or delivery failure)"
 
       - alert: OtpDeliveryFailing
-        expr: sum(increase(djassa_auth_events_total{event="otp_request",result="delivery_failed"}[15m])) > 5
+        expr: sum(increase(hossouko_auth_events_total{event="otp_request",result="delivery_failed"}[15m])) > 5
         for: 5m
         labels:
           severity: critical
@@ -87,7 +87,7 @@ groups:
           summary: "The SMS provider is refusing sign-in codes; nobody can sign in"
 
       - alert: OtpDailyBudgetReached
-        expr: sum(increase(djassa_auth_events_total{event="otp_request",result="daily_budget"}[10m])) > 0
+        expr: sum(increase(hossouko_auth_events_total{event="otp_request",result="daily_budget"}[10m])) > 0
         labels:
           severity: critical
         annotations:

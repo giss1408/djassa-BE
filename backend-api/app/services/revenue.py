@@ -4,13 +4,13 @@ This is the module the merged stream pays for. Because every sale now carries an
 evidence label, the share of a venue's turnover that an aggregator confirmed is a
 single query -- and it is the figure **no competitor in Cote d'Ivoire can
 currently produce**, because nobody else holds both halves
-(docs/optimization_claude_djassa.md, optimization B).
+(docs/optimization_claude_hossouko.md, optimization B).
 
 Two audiences, one computation:
 
 * The **merchant** sees their verified share, which gives *them* a reason to push
   customers toward digital payment. That is the behaviour change the concept
-  needs, merchant-driven rather than Djassa-driven.
+  needs, merchant-driven rather than Hossouko-driven.
 * An **underwriter** sees regularity and concentration, which is the actual
   question behind "is this business real" -- and the signed statement
   (app/services/statement.py) is built on exactly these numbers.

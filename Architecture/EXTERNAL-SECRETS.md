@@ -9,7 +9,7 @@ The generated Kubernetes Secret must expose these keys exactly:
 | Kubernetes key | Application use |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection URL |
-| `DJASSA_SECRET_KEY` | JWT signing key |
+| `HOSSOUKO_SECRET_KEY` | JWT signing key |
 | `MOBILE_MONEY_SECRETS` | Active and previous webhook signing keys, newest first |
 | `CELERY_BROKER_URL` | Redis broker URL |
 
@@ -31,32 +31,32 @@ Do not use the old names `JWT_SECRET` or `MOBILE_MONEY_SECRET`; the application 
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
-  name: djassa-app-secrets
-  namespace: djassa
+  name: hossouko-app-secrets
+  namespace: hossouko
 spec:
   refreshInterval: 1h
   secretStoreRef:
-    name: djassa-vault
+    name: hossouko-vault
     kind: SecretStore
   target:
-    name: djassa-app-secrets
+    name: hossouko-app-secrets
     creationPolicy: Owner
   data:
     - secretKey: DATABASE_URL
       remoteRef:
-        key: djassa/production
+        key: hossouko/production
         property: database_url
-    - secretKey: DJASSA_SECRET_KEY
+    - secretKey: HOSSOUKO_SECRET_KEY
       remoteRef:
-        key: djassa/production
+        key: hossouko/production
         property: jwt_secret
     - secretKey: MOBILE_MONEY_SECRETS
       remoteRef:
-        key: djassa/production
+        key: hossouko/production
         property: mobile_money_secrets
     - secretKey: CELERY_BROKER_URL
       remoteRef:
-        key: djassa/production
+        key: hossouko/production
         property: celery_broker_url
 ```
 

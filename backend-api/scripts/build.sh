@@ -4,7 +4,7 @@ set -euo pipefail
 # Build Docker image for backend-api
 cd "$(dirname "$0")/.."
 
-: ${TAG:=registry.example.com/djassa/api:dev}
+: ${TAG:=registry.example.com/hossouko/api:dev}
 
 echo "Building Docker image ${TAG}"
 docker build -t ${TAG} .

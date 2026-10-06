@@ -1,6 +1,6 @@
 # Skill: Writing
 
-Purpose: produce clear, concise, and audience-appropriate product, technical, partner, and support content for Djassa.
+Purpose: produce clear, concise, and audience-appropriate product, technical, partner, and support content for Hossouko.
 
 When to use:
 - Drafting report sections, executive summaries, and outreach content.

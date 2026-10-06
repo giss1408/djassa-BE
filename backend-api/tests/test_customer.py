@@ -174,7 +174,7 @@ async def test_rotated_code_stops_working_between_scan_and_pay(client):
     assert (await client.get(f"/api/customer/pay-codes/{old}", headers=h)).status_code == 200
 
     rotated = (await client.post(f"/api/admin/venues/{venue['id']}/pay-code", headers=admin)).json()
-    assert rotated["pay_code"] != old and rotated["qr_payload"] == f"djassa://pay/{rotated['pay_code']}"
+    assert rotated["pay_code"] != old and rotated["qr_payload"] == f"hossouko://pay/{rotated['pay_code']}"
 
     body = {"pay_code": old, "amount": 1000, "wallet_provider": "wave",
             "payer_msisdn": "+2250712345678", "idempotency_key": uuid.uuid4().hex}

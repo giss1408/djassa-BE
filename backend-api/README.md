@@ -1,6 +1,6 @@
-# djassa — backend-api (skeleton)
+# hossouko — backend-api (skeleton)
 
-Minimal FastAPI skeleton for the `djassa` backend.
+Minimal FastAPI skeleton for the `hossouko` backend.
 
 Run locally:
 
@@ -13,7 +13,7 @@ Run with Postgres (development):
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d db
-export DATABASE_URL=postgresql+asyncpg://djassa:djassa@127.0.0.1:5432/djassa
+export DATABASE_URL=postgresql+asyncpg://hossouko:hossouko@127.0.0.1:5432/hossouko
 alembic -c alembic.ini upgrade head
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -21,7 +21,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 Docker build (example):
 
 ```bash
-docker build -t registry.example.com/djassa/api:dev .
+docker build -t registry.example.com/hossouko/api:dev .
 ```
 
 Endpoints:

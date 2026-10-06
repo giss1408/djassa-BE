@@ -1,26 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: djassa-api
-  namespace: djassa
+  name: hossouko-api
+  namespace: hossouko
   labels:
-    app: djassa-api
+    app: hossouko-api
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: djassa-api
+      app: hossouko-api
   template:
     metadata:
       labels:
-        app: djassa-api
+        app: hossouko-api
     spec:
-      serviceAccountName: djassa-api-sa
+      serviceAccountName: hossouko-api-sa
       imagePullSecrets:
         - name: regcred
       containers:
         - name: api
-          image: registry.example.com/djassa/api:RELEASE-2026-09-19
+          image: registry.example.com/hossouko/api:RELEASE-2026-09-19
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -42,7 +42,7 @@ spec:
               type: RuntimeDefault
           envFrom:
             - secretRef:
-                name: djassa-app-secrets
+                name: hossouko-app-secrets
           livenessProbe:
             httpGet:
               path: /health

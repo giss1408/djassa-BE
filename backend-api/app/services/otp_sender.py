@@ -4,7 +4,7 @@ Chosen with `OTP_SENDER`:
 
 * `console` (default outside production): writes the code to the server log
   and, when `OTP_DEV_ECHO=1`, returns it in the API response so the apps can
-  be driven locally without a phone. Refused when `DJASSA_ENV=production`: a
+  be driven locally without a phone. Refused when `HOSSOUKO_ENV=production`: a
   code in a log line is a code anyone with log access can use.
 * `africastalking`: SMS through Africa's Talking, which covers Côte d'Ivoire
   and most of West Africa. Needs `AT_USERNAME`, `AT_API_KEY`, and optionally
@@ -21,7 +21,7 @@ import httpx
 
 from ..core.phone import mask_phone
 
-log = logging.getLogger("djassa.otp")
+log = logging.getLogger("hossouko.otp")
 
 
 class OtpDeliveryFailed(RuntimeError):
@@ -67,8 +67,8 @@ class AfricasTalkingSender:
 def get_sender():
     name = os.getenv("OTP_SENDER", "console")
     if name == "console":
-        if os.getenv("DJASSA_ENV") == "production":
-            raise RuntimeError("OTP_SENDER=console is refused when DJASSA_ENV=production")
+        if os.getenv("HOSSOUKO_ENV") == "production":
+            raise RuntimeError("OTP_SENDER=console is refused when HOSSOUKO_ENV=production")
         return ConsoleSender()
     if name == "africastalking":
         username, api_key = os.getenv("AT_USERNAME"), os.getenv("AT_API_KEY")
@@ -85,5 +85,5 @@ def dev_echo_enabled() -> bool:
     return (
         os.getenv("OTP_DEV_ECHO") == "1"
         and os.getenv("OTP_SENDER", "console") == "console"
-        and os.getenv("DJASSA_ENV") != "production"
+        and os.getenv("HOSSOUKO_ENV") != "production"
     )

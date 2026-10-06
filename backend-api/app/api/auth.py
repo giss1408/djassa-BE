@@ -16,7 +16,7 @@ the app the moment they prove they hold the number.
 merchant session needs the merchant role, which only an admin grants.
 
 `POST /api/token` (username/password demo accounts) stays for local
-development and the test suite, and answers 404 when DJASSA_ENV=production.
+development and the test suite, and answers 404 when HOSSOUKO_ENV=production.
 """
 
 import hmac
@@ -41,7 +41,7 @@ from ..services import loyalty_consent
 from ..services.otp_sender import OtpDeliveryFailed, dev_echo_enabled, get_sender
 
 router = APIRouter()
-log = logging.getLogger("djassa.auth")
+log = logging.getLogger("hossouko.auth")
 
 ACCESS_TTL = timedelta(minutes=60)
 
@@ -62,7 +62,7 @@ _DEMO_USERS = {
 
 
 def demo_login_enabled() -> bool:
-    return os.getenv("DJASSA_ENV") != "production" and os.getenv("DJASSA_DEMO_LOGIN", "1") != "0"
+    return os.getenv("HOSSOUKO_ENV") != "production" and os.getenv("HOSSOUKO_DEMO_LOGIN", "1") != "0"
 
 
 @router.post("/token")
@@ -77,7 +77,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     return {"access_token": access_token, "token_type": "bearer", "role": user["role"]}
 
 
-# --- Shared test numbers (DJASSA_ENV=test only) ------------------------------
+# --- Shared test numbers (HOSSOUKO_ENV=test only) ------------------------------
 
 # TEST_OTP_NUMBERS="+2250700000001:000000,+2250700000002:000000": these numbers
 # sign in with their fixed code, so testers share an account the way they
@@ -91,9 +91,9 @@ def test_numbers() -> dict[str, str]:
     raw = os.getenv("TEST_OTP_NUMBERS", "").strip()
     if not raw:
         return {}
-    env = os.getenv("DJASSA_ENV")
+    env = os.getenv("HOSSOUKO_ENV")
     if env == "production":
-        raise RuntimeError("TEST_OTP_NUMBERS is refused when DJASSA_ENV=production")
+        raise RuntimeError("TEST_OTP_NUMBERS is refused when HOSSOUKO_ENV=production")
     if env != "test":
         return {}
     numbers = {}
@@ -111,8 +111,8 @@ def test_numbers() -> dict[str, str]:
 
 AppName = Literal["customer", "merchant", "admin"]
 
-# The session each app opens, best first: Djassa Pro opens an owner's session
-# for an owner and a cashier's for a cashier, djassa-installer an admin's or a
+# The session each app opens, best first: Hossouko Pro opens an owner's session
+# for an owner and a cashier's for a cashier, hossouko-installer an admin's or a
 # field agent's. Customer sessions need no grant.
 _APP_ROLES = {
     "customer": ("customer",),
@@ -131,8 +131,8 @@ def session_role(user: models.User, app: str) -> str | None:
 
 # A session for these apps needs the role already: granted by an admin.
 _GRANTED_ONLY = {
-    "merchant": "Ce numero n'est enregistre dans aucun commerce. Contactez Djassa, ou le gerant si vous y travaillez.",
-    "admin": "Ce numero n'a pas acces a l'administration Djassa.",
+    "merchant": "Ce numero n'est enregistre dans aucun commerce. Contactez Hossouko, ou le gerant si vous y travaillez.",
+    "admin": "Ce numero n'a pas acces a l'administration Hossouko.",
 }
 
 
@@ -190,10 +190,10 @@ BAD_CODE = "Code incorrect ou expire. Demandez un nouveau code."
 
 
 _MESSAGES = {
-    "sign_in": "Djassa : votre code est {code}. Il expire dans 5 minutes. Ne le donnez a personne.",
-    "change_number": "Djassa : code {code} pour changer le numero de votre compte. Si ce n'est pas vous, ignorez ce message.",
-    "recovery": "Djassa : code {code} pour recuperer votre compte sur ce numero. Ne le donnez a personne.",
-    "partner": "Djassa Pro : votre code est {code}. Il confirme votre demande d'inscription.",
+    "sign_in": "Hossouko : votre code est {code}. Il expire dans 5 minutes. Ne le donnez a personne.",
+    "change_number": "Hossouko : code {code} pour changer le numero de votre compte. Si ce n'est pas vous, ignorez ce message.",
+    "recovery": "Hossouko : code {code} pour recuperer votre compte sur ce numero. Ne le donnez a personne.",
+    "partner": "Hossouko Pro : votre code est {code}. Il confirme votre demande d'inscription.",
 }
 
 
@@ -344,7 +344,7 @@ async def verify_code(request: Request, payload: OtpVerifyIn, db: AsyncSession =
     if user.disabled:
         await db.commit()
         AUTH_EVENTS.labels(event="otp_verify", result="disabled").inc()
-        raise HTTPException(status_code=403, detail="Ce compte est suspendu. Contactez Djassa.")
+        raise HTTPException(status_code=403, detail="Ce compte est suspendu. Contactez Hossouko.")
     role = session_role(user, payload.app)
     if role is None:
         await db.commit()
@@ -478,7 +478,7 @@ async def ensure_role(db: AsyncSession, e164: str, role: str, now: datetime) -> 
 
 
 async def link_merchant(db: AsyncSession, e164: str, venue: models.Venue, now: datetime) -> models.User:
-    """Makes `e164` the merchant who runs `venue` from Djassa Pro.
+    """Makes `e164` the merchant who runs `venue` from Hossouko Pro.
 
     One number runs one shop: the merchant app finds "my shop" from the
     token alone, so a second one would be picked at random.
@@ -489,7 +489,7 @@ async def link_merchant(db: AsyncSession, e164: str, venue: models.Venue, now: d
     ).scalars().first()
     if other is not None:
         raise HTTPException(status_code=409, detail=f"Ce numero gere deja un commerce : {other}")
-    # Djassa Pro opens the owner's session first, so a cashier made owner
+    # Hossouko Pro opens the owner's session first, so a cashier made owner
     # would silently lose their cashier shop. The owner there removes them first.
     employer = (
         await db.execute(

@@ -85,8 +85,8 @@ def local_dir() -> str:
 def get_storage():
     name = os.getenv("MEDIA_STORAGE", "local")
     if name == "local":
-        if os.getenv("DJASSA_ENV") == "production":
-            raise RuntimeError("MEDIA_STORAGE=local is refused when DJASSA_ENV=production (the disk is not durable)")
+        if os.getenv("HOSSOUKO_ENV") == "production":
+            raise RuntimeError("MEDIA_STORAGE=local is refused when HOSSOUKO_ENV=production (the disk is not durable)")
         from .mobile_money import public_base_url
 
         return LocalStorage(local_dir(), public_base_url())

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus
-  namespace: djassa-monitoring
+  namespace: hossouko-monitoring
 spec:
   replicas: 1
   selector:

@@ -18,7 +18,7 @@ from app.seed import seed_sample_data
 async def client(monkeypatch):
     monkeypatch.setenv("OTP_SENDER", "console")
     monkeypatch.setenv("OTP_DEV_ECHO", "1")
-    monkeypatch.delenv("DJASSA_ENV", raising=False)
+    monkeypatch.delenv("HOSSOUKO_ENV", raising=False)
     monkeypatch.delenv("METRICS_TOKEN", raising=False)
     limiter.enabled = False
     async with engine.begin() as conn:
@@ -39,13 +39,13 @@ async def test_metrics_are_open_only_in_development(client, monkeypatch):
     assert (await client.get("/metrics")).status_code == 200
 
     # A deployed API without a token hides the endpoint altogether.
-    monkeypatch.setenv("DJASSA_ENV", "test")
+    monkeypatch.setenv("HOSSOUKO_ENV", "test")
     assert (await client.get("/metrics")).status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_metrics_need_the_token_once_one_is_set(client, monkeypatch):
-    monkeypatch.setenv("DJASSA_ENV", "production")
+    monkeypatch.setenv("HOSSOUKO_ENV", "production")
     monkeypatch.setenv("METRICS_TOKEN", "s3cret-token")
 
     assert (await client.get("/metrics")).status_code == 404
@@ -55,7 +55,7 @@ async def test_metrics_need_the_token_once_one_is_set(client, monkeypatch):
 
     bearer = await client.get("/metrics", headers={"Authorization": "Bearer s3cret-token"})
     assert bearer.status_code == 200
-    assert "djassa_build_info" in bearer.text
+    assert "hossouko_build_info" in bearer.text
     # Grafana Cloud's scrape job sends the token as the basic-auth password.
     assert (await client.get("/metrics", headers={"Authorization": _basic("s3cret-token")})).status_code == 200
 
@@ -77,7 +77,7 @@ async def test_requests_are_counted_by_route_template(client):
 
 @pytest.mark.asyncio
 async def test_each_request_gets_an_id_and_one_access_line(client, caplog):
-    caplog.set_level(logging.INFO, logger="djassa.access")
+    caplog.set_level(logging.INFO, logger="hossouko.access")
     r = await client.get("/api/venues/1?phone=0712345678")
     assert len(r.headers["X-Request-ID"]) == 32
 
@@ -87,7 +87,7 @@ async def test_each_request_gets_an_id_and_one_access_line(client, caplog):
     junk = await client.get("/api/venues/1", headers={"X-Request-ID": "<script>"})
     assert junk.headers["X-Request-ID"] != "<script>"
 
-    lines = [rec for rec in caplog.records if rec.name == "djassa.access"]
+    lines = [rec for rec in caplog.records if rec.name == "hossouko.access"]
     assert len(lines) == 3
     assert lines[0].fields["route"] == "/api/venues/{venue_id}"
     assert lines[0].fields["status"] == r.status_code

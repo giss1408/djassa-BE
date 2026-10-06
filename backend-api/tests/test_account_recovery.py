@@ -29,7 +29,7 @@ NEW_E164 = "+2250511223344"
 async def client(monkeypatch):
     monkeypatch.setenv("OTP_SENDER", "console")
     monkeypatch.setenv("OTP_DEV_ECHO", "1")
-    monkeypatch.delenv("DJASSA_ENV", raising=False)
+    monkeypatch.delenv("HOSSOUKO_ENV", raising=False)
     limiter.enabled = False
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

@@ -3,7 +3,7 @@
 Purpose: implement user-facing frontend components, pages, and interactions with accessibility and responsive design in mind.
 
 When to use:
-- Building web UI, dashboards, merchant tools, mobile/PWA workflows, support screens, and client-side synchronization for Djassa.
+- Building web UI, dashboards, merchant tools, mobile/PWA workflows, support screens, and client-side synchronization for Hossouko.
 
 Recommended guidance:
 - Use the frontend framework already selected by the product; do not add a second framework without a decision record.

@@ -1,10 +1,10 @@
-"""A shop's cashiers, managed by its owner from Djassa Pro.
+"""A shop's cashiers, managed by its owner from Hossouko Pro.
 
     GET    /api/merchant/staff          the active cashiers
     POST   /api/merchant/staff          {phone, name?}  add one
     DELETE /api/merchant/staff/{id}     remove one
 
-A cashier signs in to Djassa Pro with their own number and gets a "cashier"
+A cashier signs in to Hossouko Pro with their own number and gets a "cashier"
 session (`auth.session_role`): sales, payment requests, the pay QR and counter
 points, never Wave, payouts, deals, photos, location, statements or staff
 (`security.SHOP_STAFF`). A number works at one shop at a time and cannot work
@@ -91,7 +91,7 @@ async def add_staff(payload: StaffIn, db: AsyncSession = Depends(get_db), user=D
     if current is not None:
         if current.venue_id == venue.id:
             raise HTTPException(status_code=409, detail="Ce numero fait deja partie de votre equipe")
-        raise HTTPException(status_code=409, detail="Ce numero travaille deja dans un autre commerce Djassa")
+        raise HTTPException(status_code=409, detail="Ce numero travaille deja dans un autre commerce Hossouko")
     active = (
         await db.execute(
             select(func.count(models.VenueStaff.id)).where(
@@ -111,7 +111,7 @@ async def add_staff(payload: StaffIn, db: AsyncSession = Depends(get_db), user=D
     db.add(row)
     await db.commit()
     await db.refresh(row)
-    await _notify(e164, f"Djassa Pro : {venue.name} vous a ajoute a son equipe. Installez Djassa Pro et connectez-vous avec ce numero.")
+    await _notify(e164, f"Hossouko Pro : {venue.name} vous a ajoute a son equipe. Installez Hossouko Pro et connectez-vous avec ce numero.")
     return await _out(db, row)
 
 

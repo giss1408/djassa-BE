@@ -1,4 +1,4 @@
-# Djassa Backend — HOWTO
+# Hossouko Backend — HOWTO
 
 This document explains local development and CI for the backend. For the project overview, start with [the root README](../README.md). For the complete technical map, see [the technical guide](../docs/technical/TECHNICAL-GUIDE.md).
 
@@ -25,7 +25,7 @@ docker compose -f docker-compose.dev.yml up -d db
 Set the `DATABASE_URL` env var for the app and Alembic:
 
 ```bash
-export DATABASE_URL=postgresql+asyncpg://djassa:djassa@127.0.0.1:5432/djassa
+export DATABASE_URL=postgresql+asyncpg://hossouko:hossouko@127.0.0.1:5432/hossouko
 ```
 
 Apply database migrations (Alembic):
@@ -70,13 +70,13 @@ If you prefer to run tests against SQLite (quick run), unset `DATABASE_URL` and 
 Build the image:
 
 ```bash
-docker build -t registry.example.com/djassa/api:dev .
+docker build -t registry.example.com/hossouko/api:dev .
 ```
 
 Run with environment variables (example):
 
 ```bash
-docker run -e DATABASE_URL=postgresql+asyncpg://djassa:djassa@db:5432/djassa -p 8000:8000 registry.example.com/djassa/api:dev
+docker run -e DATABASE_URL=postgresql+asyncpg://hossouko:hossouko@db:5432/hossouko -p 8000:8000 registry.example.com/hossouko/api:dev
 ```
 
 ## 6) CI notes
@@ -92,7 +92,7 @@ Add a workflow step that runs Trivy against the built image and fails if critica
 - name: Scan image with Trivy
 	uses: aquasecurity/trivy-action@v0.3.0
 	with:
-		image-ref: registry.example.com/djassa/api:dev
+		image-ref: registry.example.com/hossouko/api:dev
 		exit-code: '1'
 		severity: CRITICAL
 		format: 'table'
@@ -115,7 +115,7 @@ See [README-CELERY.md](README-CELERY.md) for worker and scheduled-task details.
 
 - Do not commit `.env` files or credentials. Use environment variables or a secrets manager (External Secrets in Kubernetes is configured in `Architecture/k8s/external-secret-example.yaml`).
 - The file `.gitignore` already excludes `.env`, `.venv`, `infra/secrets/` and common credential file extensions.
-- The application expects `DJASSA_SECRET_KEY` for JWT signing and `MOBILE_MONEY_SECRETS` for webhook verification.
+- The application expects `HOSSOUKO_SECRET_KEY` for JWT signing and `MOBILE_MONEY_SECRETS` for webhook verification.
 - Never use demo credentials or placeholder secrets on an Internet-accessible server.
 
 ## 9) Useful commands summary
@@ -125,7 +125,7 @@ See [README-CELERY.md](README-CELERY.md) for worker and scheduled-task details.
 docker compose -f docker-compose.dev.yml up -d db
 
 # run migrations
-export DATABASE_URL=postgresql+asyncpg://djassa:djassa@127.0.0.1:5432/djassa
+export DATABASE_URL=postgresql+asyncpg://hossouko:hossouko@127.0.0.1:5432/hossouko
 alembic -c alembic.ini upgrade head
 
 # run server
@@ -139,7 +139,7 @@ If you want, I can add a `Makefile` or convenience `scripts/` wrappers for these
 
 ## 9) MVP / PoC Deployment Options (cheap, practical)
 
-This section documents practical, low-cost ways to deploy a working PoC or MVP for `djassa`. Choose one depending on how much automation, uptime, and budget you need.
+This section documents practical, low-cost ways to deploy a working PoC or MVP for `hossouko`. Choose one depending on how much automation, uptime, and budget you need.
 
 Summary of recommended providers:
 - **Hetzner Cloud**: best price-to-performance for a single VPS. Pick a CX11/CX21 instance (1–2 vCPU, 2GB RAM) for €3.49–€6/month depending on region and specs.
@@ -173,13 +173,13 @@ curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh
 useradd -m -s /bin/bash deploy || true
 usermod -aG docker deploy
 apt install -y docker-compose-plugin
-mkdir -p /opt/djassa && chown deploy:deploy /opt/djassa
+mkdir -p /opt/hossouko && chown deploy:deploy /opt/hossouko
 exit
 
 # from local machine: copy repo or push image to registry and pull on VPS
-scp -r ./backend-api deploy@YOUR_VPS_IP:/home/deploy/djassa-backend
+scp -r ./backend-api deploy@YOUR_VPS_IP:/home/deploy/hossouko-backend
 ssh deploy@YOUR_VPS_IP
-cd /home/deploy/djassa-backend
+cd /home/deploy/hossouko-backend
 docker compose -f docker-compose.poc.yml up -d --build
 ```
 
@@ -189,13 +189,13 @@ Environment variables (example `.env`):
 
 ```ini
 # Database
-DATABASE_URL=postgresql+asyncpg://djassa:djassa@db:5432/djassa
+DATABASE_URL=postgresql+asyncpg://hossouko:hossouko@db:5432/hossouko
 
 # Redis
 CELERY_BROKER_URL=redis://redis:6379/0
 
 # Web
-DJASSA_SECRET_KEY=replace-with-random
+HOSSOUKO_SECRET_KEY=replace-with-random
 MOBILE_MONEY_SECRETS=...
 ```
 

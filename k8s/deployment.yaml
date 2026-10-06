@@ -1,26 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: djassa-api
-  namespace: djassa
+  name: hossouko-api
+  namespace: hossouko
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: djassa-api
+      app: hossouko-api
   template:
     metadata:
       labels:
-        app: djassa-api
+        app: hossouko-api
     spec:
       containers:
         - name: api
-          image: registry.example.com/djassa/api:latest
+          image: registry.example.com/hossouko/api:latest
           ports:
             - containerPort: 8000
           envFrom:
             - secretRef:
-                name: djassa-secrets
+                name: hossouko-secrets
           readinessProbe:
             httpGet:
               path: /ready

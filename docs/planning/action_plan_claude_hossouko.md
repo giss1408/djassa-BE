@@ -1,6 +1,6 @@
-# Djassa — Implementation Action Plan
+# Hossouko — Implementation Action Plan
 
-> Companion to [Concept review and optimization proposals](optimization_claude_djassa.md).
+> Companion to [Concept review and optimization proposals](optimization_claude_hossouko.md).
 > The review states *what* is wrong and *what* to monetize. This plan states *in which order to do it*,
 > *which files change*, and *how each step is proven done*. Produced 2026-09-29.
 >
@@ -25,11 +25,11 @@ opened on day one** because it is the only long-pole external dependency.
 ## Standing rules for every step
 
 Carried over from [dkassa-inclusion-financiere.md](../business/CONCEPT.md) and
-[djassa-product-concept-v2.md](../business/CONCEPT.md). A step that breaks one of these is wrong
+[hossouko-product-concept-v2.md](../business/CONCEPT.md). A step that breaks one of these is wrong
 even if it ships:
 
-1. **Djassa never holds funds** — not even in transit, not even "technically". Commission is paid *to*
-   Djassa by a licensed party; customer money goes customer wallet → merchant wallet.
+1. **Hossouko never holds funds** — not even in transit, not even "technically". Commission is paid *to*
+   Hossouko by a licensed party; customer money goes customer wallet → merchant wallet.
 2. **No new merchant habit.** Every feature is a view on the recorded transaction. If a step asks the
    merchant to do a second thing daily, it needs an explicit justification.
 3. **Evidence classes never blur.** An aggregator-confirmed payment and a merchant-typed figure are
@@ -285,7 +285,7 @@ view reads. Keep the append-only discipline already used by `LoyaltyEntry`.
 - `app/api/export.py`, `app/api/payment_requests.py::merchant_stats`, `app/graphql_api.py` — read
   `sale_events`.
 
-**Retailer app** (`djassa-App-retailer`)
+**Retailer app** (`hossouko-App-retailer`)
 
 - `lib/core/model/sale.dart` — drop `merchant_id` from `toApiJson()`/`toSyncOperationJson()`; the server
   derives it. Keep `idempotency_key`.
@@ -357,7 +357,7 @@ server on Postgres 15.
 ### Decisions taken during implementation
 
 - **`merchant_stats` keeps `revenue` meaning exactly what it meant before**:
-  money that actually arrived through Djassa. The declared half is reported
+  money that actually arrived through Hossouko. The declared half is reported
   beside it (`declared_revenue`, `turnover`, `verified_share`) rather than folded
   in, so no existing client silently starts reading a larger number, and an
   aggregator confirmation is never summed with a typed figure into one
@@ -380,8 +380,8 @@ server on Postgres 15.
   same amount at different scales (`7000` vs `7000.0000000000`), and since those
   bytes are what gets signed, the two databases would otherwise produce different
   signatures for the same business.
-- **HMAC, not a public-key signature.** A verifier must ask Djassa, so it proves
-  "this is the document Djassa issued" rather than "only Djassa could have made
+- **HMAC, not a public-key signature.** A verifier must ask Hossouko, so it proves
+  "this is the document Hossouko issued" rather than "only Hossouko could have made
   it". Right trade for a pilot — no key distribution — and the payload carries
   `algorithm` and `key_id` so the swap to Ed25519 is a one-line change when a
   partner wants to verify offline.
@@ -398,7 +398,7 @@ server on Postgres 15.
   document is for, and a three-day window cannot speak to it — issuing one anyway
   would produce a misleading artifact that still carried a valid signature.
 - **An admin can issue a statement for any venue, on any plan.** Pilot reality: a
-  partner conversation happens with Djassa in the room, and a starter-plan
+  partner conversation happens with Hossouko in the room, and a starter-plan
   merchant still needs their history to exist. Audited identically.
 - **The per-customer export now carries a `source` column** and cash sales are
   absent from it entirely — an anonymous counter sale has no data subject, so
@@ -459,12 +459,12 @@ Webhook handling already has idempotency and a processing log — reuse them rat
 timeout leaves a reconcilable pending row; a declined payment awards no points.
 
 **Done when:** a real 100 XOF payment moves customer wallet → merchant wallet, points are granted once,
-and a `sale_event` with `source = 'mobile_money_confirmed'` exists. Djassa's balance is unchanged — that
+and a `sale_event` with `source = 'mobile_money_confirmed'` exists. Hossouko's balance is unchanged — that
 last clause is the compliance test, and it should be verified explicitly, not assumed.
 
 ## W1-3 — Commission and recurring collection *(after W3-4)*
 
-- Record the commission Djassa earns per settled payment (revenue line 1) as a derived figure from the
+- Record the commission Hossouko earns per settled payment (revenue line 1) as a derived figure from the
   aggregator's statements — **never** as a deduction from the customer's payment.
 - Recurring mobile-money collection for subscriptions (W1-2), replacing manual recording.
 - Reconcile monthly: aggregator statement vs `billing_events`.
@@ -497,7 +497,7 @@ sponsorable (pharmacy group, health insurer, mutual).
 
 ## W4-3 — Instrument the master metric's denominator *(with W3-1)*
 
-[djassa-product-concept-v2.md](../business/CONCEPT.md) says the share of real transactions
+[hossouko-product-concept-v2.md](../business/CONCEPT.md) says the share of real transactions
 recorded governs everything — but nothing captures **total real sales**, so it cannot be computed and
 the phase gate cannot be enforced.
 
@@ -522,10 +522,10 @@ indefinitely-lived liability. Expect it as a sales objection from any merchant w
 Add point expiry and a maximum redemption rate per visit or period — a schema and policy decision, so
 decide it before merchants accumulate balances under the old rules.
 
-## W4-6 — Resolve djassa / dkassa, and update the concept docs *(before institutional outreach)*
+## W4-6 — Resolve hossouko / dkassa, and update the concept docs *(before institutional outreach)*
 
 - Settle the name, check trademark availability — already an open item in [concept.md](../business/CONCEPT.md).
-- Once W3-1 lands, correct [djassa-product-concept-v2.md](../business/CONCEPT.md) so its
+- Once W3-1 lands, correct [hossouko-product-concept-v2.md](../business/CONCEPT.md) so its
   single-primitive claim matches the implementation. Right now the document describes an intent, not the
   system; after W3-1 it describes both.
 - State finding 4 explicitly in the concept: **loyalty points are the incentive that buys the
@@ -573,7 +573,7 @@ year-1 forecast.
 
 Restating the non-scope so this plan cannot be read as licence to build it:
 
-- Direct lending, or Djassa holding savings — requires BCEAO authorization it does not have.
+- Direct lending, or Hossouko holding savings — requires BCEAO authorization it does not have.
 - Points-to-cash conversion.
 - Selling identifiable transaction data.
 - Charging the customer a fee to pay — cash wins instantly.
@@ -597,7 +597,7 @@ Restating the non-scope so this plan cannot be read as licence to build it:
 
 Related documents:
 
-- [Concept review and optimization proposals](optimization_claude_djassa.md) — the findings this plan acts on
+- [Concept review and optimization proposals](optimization_claude_hossouko.md) — the findings this plan acts on
 - [Product concept v2](../business/CONCEPT.md) · [Product concept](../business/CONCEPT.md)
 - [Business model](../business/BUSINESS-MODEL.md) · [Product roadmap](../business/ROADMAP.md)
 - [Financial inclusion scope (FR)](../business/CONCEPT.md) — the non-negotiable constraints

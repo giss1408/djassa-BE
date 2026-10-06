@@ -1,6 +1,6 @@
-# Djassa Architecture
+# Hossouko Architecture
 
-This directory contains the technical architecture and deployment contracts for Djassa.
+This directory contains the technical architecture and deployment contracts for Hossouko.
 
 ## Status model
 
@@ -40,7 +40,7 @@ Uses the manifests in `k8s/` with an ingress, External Secrets, restricted pod s
 - PostgreSQL, Redis, metrics, and worker services are private.
 - Financial operations require authenticated identity and resource authorization.
 - Webhooks are untrusted input and require signature, timestamp, idempotency, and reconciliation controls.
-- Djassa does not hold deposits or lend directly without the required regulated partner or authorization.
+- Hossouko does not hold deposits or lend directly without the required regulated partner or authorization.
 - Secrets are injected at deployment time and are never committed to Git or baked into images.
 
 ## Current production blockers

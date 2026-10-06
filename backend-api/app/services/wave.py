@@ -2,7 +2,7 @@
 
 Option B of the pilot (docs/technical/DEPLOY-TEST.md): each merchant connects
 THEIR OWN Wave Business account. Every call below uses that merchant's key,
-so the money always lands in the merchant's wallet; Djassa never holds it.
+so the money always lands in the merchant's wallet; Hossouko never holds it.
 
 References (docs.wave.com):
 * Checkout: POST /v1/checkout/sessions -> {id, wave_launch_url, ...}; the
@@ -137,7 +137,7 @@ class WaveClient:
         """Raise WaveError unless the key is live and has Checkout access.
         A search moves no money, which makes it the safe probe at connection."""
         await self._request(
-            "GET", "/v1/checkout/sessions/search", params={"client_reference": "djassa-key-check"}
+            "GET", "/v1/checkout/sessions/search", params={"client_reference": "hossouko-key-check"}
         )
 
 

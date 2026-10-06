@@ -2,11 +2,11 @@
 
 Deliberately *not* gated, on any plan: recording a sale, issuing and redeeming
 loyalty points, publishing a bon plan. The share of a merchant's real
-transactions that reach Djassa is the metric every downstream feature depends on
+transactions that reach Hossouko is the metric every downstream feature depends on
 -- loyalty perception, the reliability signal, the revenue history shown to a
 lender -- so putting the recording habit behind a paywall would trade the whole
 financing case for a few thousand XOF a month
-(docs/djassa-product-concept-v2.md, docs/optimization_claude_djassa.md).
+(docs/hossouko-product-concept-v2.md, docs/optimization_claude_hossouko.md).
 
 What is gated is the reporting and reach a paying merchant gets on top.
 """

@@ -10,11 +10,11 @@ What watches it:
 | Question | Where the answer is | Alerts you |
 |---|---|---|
 | Is the API up and reaching its database? | Uptime monitor on `/ready` | SMS / WhatsApp / email within 2 minutes |
-| Are requests failing or slow? | Grafana Cloud: *Djassa API overview* | `HighErrorRate`, `SlowRequests` |
+| Are requests failing or slow? | Grafana Cloud: *Hossouko API overview* | `HighErrorRate`, `SlowRequests` |
 | Are payments being confirmed? | Grafana Cloud: *Webhooks overview* | `PaymentWebhookFailing` |
-| Can people sign in? Is someone burning SMS? | Grafana Cloud: *Djassa apps and sign-in* | `OtpDeliveryFailing`, `OtpSentButNotVerified`, `OtpDailyBudgetReached` |
+| Can people sign in? Is someone burning SMS? | Grafana Cloud: *Hossouko apps and sign-in* | `OtpDeliveryFailing`, `OtpSentButNotVerified`, `OtpDailyBudgetReached` |
 | Are the apps crashing? | Same dashboard; stacks in the installer site (*Erreurs des apps*) | `AppErrorSpike`, `AppCrashAfterRelease` |
-| Is the pilot being used? | Grafana Cloud: *Djassa pilot usage*; `GET /api/admin/usage` | — |
+| Is the pilot being used? | Grafana Cloud: *Hossouko pilot usage*; `GET /api/admin/usage` | — |
 | What happened at 14:02? | Log service, searched by `request_id` or route | — |
 
 ## 1. Accounts to open (once)
@@ -23,9 +23,9 @@ What watches it:
    (always on), the installer site as a static site.
 2. **Neon**: the production project on a paid plan, with point-in-time
    restore. See § Database.
-3. **Africa's Talking**: production account with credit, and the `DJASSA`
+3. **Africa's Talking**: production account with credit, and the `HOSSOUKO`
    sender ID applied for (approval takes time; codes work without it).
-4. **Cloudflare R2**: a `djassa-media-prod` bucket and an API token limited to it.
+4. **Cloudflare R2**: a `hossouko-media-prod` bucket and an API token limited to it.
 5. **Grafana Cloud**: free tier is enough for the pilot (metrics, dashboards,
    alerting).
 6. **Better Stack** (or UptimeRobot): uptime monitors, and log storage if
@@ -33,14 +33,14 @@ What watches it:
 
 ## 2. Deploy
 
-1. Render → **New → Blueprint** → the `djassa-BE` repository, Blueprint path
+1. Render → **New → Blueprint** → the `hossouko-BE` repository, Blueprint path
    `render.production.yaml`. Render asks for every `sync: false` value; fill
    them from the table in § 6.
 2. The API deploys with `autoDeploy: false`: a merge to `main` does not reach
    real merchants until someone presses **Manual Deploy**. Migrations run in
    the pre-deploy step; if one fails, the previous build keeps serving.
 3. Once the API is up, copy its address into the installer site's
-   `VITE_DJASSA_API_BASE`, and the installer site's address into the API's
+   `VITE_HOSSOUKO_API_BASE`, and the installer site's address into the API's
    `CORS_ORIGINS`. Redeploy both.
 4. Check: `https://<api>/health` → `{"status":"ok"}`, `/ready` →
    `{"ready":true}`, and `/metrics` → **404** (it needs the token).
@@ -60,14 +60,14 @@ In production the endpoint answers only with `METRICS_TOKEN`.
 
 1. **Scrape the API.** Grafana Cloud → *Connections* → **Metrics Endpoint** →
    new scrape job:
-   * Name: `djassa-api`
+   * Name: `hossouko-api`
    * URL: `https://<api>/metrics`
    * Authentication: **Basic**. Username: anything (e.g. `grafana`).
-     Password: the API's `METRICS_TOKEN`, copied from Render → djassa-api-prod
+     Password: the API's `METRICS_TOKEN`, copied from Render → hossouko-api-prod
      → Environment.
    * Interval: 1 minute.
 
-   *Test connection* must succeed; within two minutes `djassa_build_info`
+   *Test connection* must succeed; within two minutes `hossouko_build_info`
    appears in *Explore*.
 2. **Dashboards.** *Dashboards → New → Import*, once per file in
    [`monitoring/grafana/dashboards/`](../../monitoring/grafana/dashboards/):
@@ -104,7 +104,7 @@ cases where nothing arrives at all (`ApiMetricsMissing` is the backstop).
 |---|---|---|---|
 | API and database | `https://<api>/ready` | 1 min | 200 and `"ready":true` |
 | Installer site | `https://<installer>/` | 5 min | 200 |
-| Test download page | `https://<djassa-web>/app/` | 5 min | 200 |
+| Test download page | `https://<hossouko-web>/app/` | 5 min | 200 |
 
 Alert after 2 failed checks, to the same people as critical alerts.
 
@@ -113,7 +113,7 @@ Alert after 2 failed checks, to the same people as critical alerts.
 The API writes one JSON line per request (`LOG_FORMAT=json`):
 
 ```json
-{"ts": "2026-10-04T14:02:11", "level": "info", "logger": "djassa.access",
+{"ts": "2026-10-04T14:02:11", "level": "info", "logger": "hossouko.access",
  "msg": "POST /api/sales 201 84ms", "request_id": "9f2c…", "method": "POST",
  "route": "/api/sales", "status": 201, "duration_ms": 84.2}
 ```
@@ -134,28 +134,28 @@ afterwards. Whenever one changes there, change it here too.
 | Setting | Where it comes from | Notes |
 |---|---|---|
 | `DATABASE_URL` | Neon, production project, direct endpoint | Never the test database |
-| `DJASSA_SECRET_KEY` | Generated by Render | Rotating it signs everyone out |
-| `DJASSA_ENCRYPTION_KEY` | Generated by Render | **Copy to the password manager.** Lost or changed: every merchant reconnects Wave |
+| `HOSSOUKO_SECRET_KEY` | Generated by Render | Rotating it signs everyone out |
+| `HOSSOUKO_ENCRYPTION_KEY` | Generated by Render | **Copy to the password manager.** Lost or changed: every merchant reconnects Wave |
 | `MOBILE_MONEY_SECRETS` | Payment provider's webhook secret | `current,previous` while rotating |
 | `AT_USERNAME`, `AT_API_KEY` | Africa's Talking, production app | |
 | `AT_SENDER_ID` | Africa's Talking, once approved | Empty until then |
 | `OTP_DAILY_SMS_BUDGET` | Blueprint: 300 | A few times a normal day; raise as the pilot grows |
-| `R2_*`, `MEDIA_PUBLIC_BASE_URL` | Cloudflare R2 | Bucket `djassa-media-prod` |
+| `R2_*`, `MEDIA_PUBLIC_BASE_URL` | Cloudflare R2 | Bucket `hossouko-media-prod` |
 | `CORS_ORIGINS` | The installer site's exact address | Add the public site's domain once it has one |
 | `METRICS_TOKEN` | Generated by Render | Also in Grafana Cloud's scrape job; rotate both together |
-| `VITE_DJASSA_API_BASE` (installer site) | The API's address | Rebuild the site after a change |
+| `VITE_HOSSOUKO_API_BASE` (installer site) | The API's address | Rebuild the site after a change |
 
 ## 7. When an alert fires
 
 | Alert | First look | Likely causes and fixes |
 |---|---|---|
-| **Uptime /ready down** | Render → djassa-api-prod → Events and Logs | Deploy failed to start (the log names the bad setting); Neon down or out of compute: check Neon status; roll back with *Rollback* on the last good deploy |
+| **Uptime /ready down** | Render → hossouko-api-prod → Events and Logs | Deploy failed to start (the log names the bad setting); Neon down or out of compute: check Neon status; roll back with *Rollback* on the last good deploy |
 | **ApiMetricsMissing** | Is the uptime monitor also red? | Both red: the API is down, see above. Only this one: the scrape fails, usually `METRICS_TOKEN` rotated on one side only |
 | **HighErrorRate** | *API overview* → *Errors by route*; logs filtered on `level: error` | One route: a bug, often from the last deploy (*Running build* panel), so roll back. All routes: the database |
 | **SlowRequests** | *Latency p95, slowest routes* | Database under load (Neon dashboard); one slow route: a missing index |
 | **PaymentWebhookFailing** | Logs on route `/api/webhooks/mobile-money` | 401: the provider rotated its secret, so update `MOBILE_MONEY_SECRETS`; 5xx: a bug, payments are not being confirmed, so treat as urgent and tell affected merchants |
 | **OtpDeliveryFailing** | Africa's Talking dashboard | Credit spent, sender ID rejected, provider outage. Nobody new can sign in meanwhile |
-| **OtpSentButNotVerified** | *Djassa apps and sign-in* → codes by result | SMS pumping: lower `OTP_DAILY_SMS_BUDGET`, check the provider's per-country spend. Or codes are not arriving: send one to your own phone |
+| **OtpSentButNotVerified** | *Hossouko apps and sign-in* → codes by result | SMS pumping: lower `OTP_DAILY_SMS_BUDGET`, check the provider's per-country spend. Or codes are not arriving: send one to your own phone |
 | **OtpDailyBudgetReached** | Same dashboard | Real growth: raise the budget. An attack: keep it, it is doing its job, and look at the per-IP limits |
 | **AppErrorSpike / AppCrashAfterRelease** | Installer site → *Erreurs des apps* | A bad release: stop sharing the new APK, fix, release the next tag |
 
@@ -167,7 +167,7 @@ fixed it, and what would have caught it sooner.
 Counters live in the API process, and the scrape reaches one instance through
 Render's public address. With `numInstances: 1` that is the whole picture.
 Before adding instances: run Grafana Alloy as a Render private service that
-scrapes every instance on the private network (`djassa-api-prod-discovery`)
+scrapes every instance on the private network (`hossouko-api-prod-discovery`)
 and remote-writes to Grafana Cloud, and turn the public scrape job off.
 
 ## Database

@@ -1,4 +1,4 @@
-# Contributing to Djassa
+# Contributing to Hossouko
 
 ## Branches
 

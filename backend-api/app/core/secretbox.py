@@ -1,13 +1,13 @@
 """Encrypt merchants' third-party secrets at rest (e.g. their Wave API key).
 
-A merchant who connects their Wave Business account hands Djassa a key that
+A merchant who connects their Wave Business account hands Hossouko a key that
 can create payments into their wallet. It is stored encrypted with Fernet
-(AES-128-CBC + HMAC-SHA256), under DJASSA_ENCRYPTION_KEY, so a database dump
+(AES-128-CBC + HMAC-SHA256), under HOSSOUKO_ENCRYPTION_KEY, so a database dump
 alone does not reveal it. Decryption happens only at the moment of a call.
 
-DJASSA_ENCRYPTION_KEY: any long random string (Render can generate it). In
+HOSSOUKO_ENCRYPTION_KEY: any long random string (Render can generate it). In
 production it is mandatory. Elsewhere it falls back to a key derived from
-DJASSA_SECRET_KEY so development and tests need no extra setup. Changing the
+HOSSOUKO_SECRET_KEY so development and tests need no extra setup. Changing the
 key makes existing secrets unreadable: merchants would have to reconnect.
 """
 
@@ -23,11 +23,11 @@ class SecretUnavailable(RuntimeError):
 
 
 def _fernet() -> Fernet:
-    material = os.getenv("DJASSA_ENCRYPTION_KEY")
+    material = os.getenv("HOSSOUKO_ENCRYPTION_KEY")
     if not material:
-        if os.getenv("DJASSA_ENV") == "production":
-            raise RuntimeError("DJASSA_ENCRYPTION_KEY must be set in production")
-        material = "dev-only:" + (os.getenv("DJASSA_SECRET_KEY") or "")
+        if os.getenv("HOSSOUKO_ENV") == "production":
+            raise RuntimeError("HOSSOUKO_ENCRYPTION_KEY must be set in production")
+        material = "dev-only:" + (os.getenv("HOSSOUKO_SECRET_KEY") or "")
     # Fernet wants 32 url-safe base64 bytes; derive them from any string.
     return Fernet(base64.urlsafe_b64encode(hashlib.sha256(material.encode()).digest()))
 

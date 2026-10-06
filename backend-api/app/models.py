@@ -233,7 +233,7 @@ class Venue(Base):
 
     `payout_provider`/`payout_account` are the merchant's OWN mobile-money
     wallet. A customer payment goes straight there through the licensed
-    aggregator; Djassa never holds the money (docs/business/CONCEPT.md § 6).
+    aggregator; Hossouko never holds the money (docs/business/CONCEPT.md § 6).
     """
 
     __tablename__ = "venues"
@@ -391,16 +391,16 @@ class CustomerPayment(Base):
 
 
 class WaveAccount(Base):
-    """A merchant's own Wave Business account, connected to Djassa (option B).
+    """A merchant's own Wave Business account, connected to Hossouko (option B).
 
     Two levels, the merchant's choice:
 
     * **Points only** (the default): a webhook in the merchant's Wave Business
-      portal tells Djassa about every payment to their ordinary Wave QR, and
-      the payer earns points. Djassa stores only the webhook signing secret,
+      portal tells Hossouko about every payment to their ordinary Wave QR, and
+      the payer earns points. Hossouko stores only the webhook signing secret,
       which can verify messages but cannot create or move any payment.
     * **In-app payment** (optional): the merchant also gives an API key with
-      Checkout access, so customers can pay the shop from the Djassa app.
+      Checkout access, so customers can pay the shop from the Hossouko app.
 
     Secrets are stored sealed (app/core/secretbox.py). `webhook_token` is the
     random part of the webhook URL given to Wave, and identifies the venue
@@ -482,7 +482,7 @@ class MerchantSubscription(Base):
     One live subscription per venue. The plan gates *paid* features only --
     recording a sale and issuing points are never behind it, because the share
     of real transactions recorded is the metric every other feature and the
-    whole financing case depend on (docs/djassa-product-concept-v2.md).
+    whole financing case depend on (docs/hossouko-product-concept-v2.md).
     """
 
     __tablename__ = "merchant_subscriptions"
@@ -574,7 +574,7 @@ class SaleEvent(Base):
     `CustomerPayment` (confirmed by the aggregator, linked to a venue and to
     points). The credit export read the *unverified* one, so what a lender would
     have received was a list of numbers a merchant typed
-    (docs/optimization_claude_djassa.md, finding 2).
+    (docs/optimization_claude_hossouko.md, finding 2).
 
     One stream, one `source` field. A merchant's cash business is real and must
     be recordable, so `cash_declared` is a first-class row -- but it is never
@@ -799,7 +799,7 @@ class RecoveryRequest(Base):
 
 
 class PartnerRequest(Base):
-    """A merchant asking to join, from the Djassa Pro sign-in screen.
+    """A merchant asking to join, from the Hossouko Pro sign-in screen.
 
     The phone is proven by SMS code when the request is filed, and becomes the
     merchant's login once an admin approves and the shop is created.
@@ -830,7 +830,7 @@ class PartnerRequest(Base):
 
 
 class VenueStaff(Base):
-    """A cashier: someone the owner lets work the shop from Djassa Pro.
+    """A cashier: someone the owner lets work the shop from Hossouko Pro.
 
     A cashier records sales, requests payments and serves points, but never
     reaches Wave, payouts, deals, photos, location, statements or staff. A
@@ -881,7 +881,7 @@ class VenueMedia(Base):
 
 
 class LoyaltyConsent(Base):
-    """A customer's agreement that Djassa keeps their number to count points.
+    """A customer's agreement that Hossouko keeps their number to count points.
 
     Law 2013-450 (art. 14) makes consent the basis for processing, so no
     payment or sale is tied to a phone number without one of these rows

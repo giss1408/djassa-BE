@@ -1,8 +1,8 @@
-# Djassa System Architecture
+# Hossouko System Architecture
 
 ## Purpose
 
-Djassa starts as a merchant loyalty and transaction-history platform. Over time it may connect users and merchants to regulated financial partners for tontines, savings, and credit. The system must preserve a strict boundary between technology/distribution and regulated custody or lending.
+Hossouko starts as a merchant loyalty and transaction-history platform. Over time it may connect users and merchants to regulated financial partners for tontines, savings, and credit. The system must preserve a strict boundary between technology/distribution and regulated custody or lending.
 
 ## Current implementation status
 
@@ -67,9 +67,9 @@ A signature proves message authenticity; it does not prove that the amount, reci
 
 ## Payment boundary
 
-Djassa is the orchestration and record-keeping layer. A provider or regulated financial partner executes the actual wallet or bank movement. The API creates a payment intent, calls a country-selected provider adapter, stores the provider transaction ID, and updates state only after a verified callback or reconciliation result.
+Hossouko is the orchestration and record-keeping layer. A provider or regulated financial partner executes the actual wallet or bank movement. The API creates a payment intent, calls a country-selected provider adapter, stores the provider transaction ID, and updates state only after a verified callback or reconciliation result.
 
-The sandbox adapter is for integration tests only. Live adapters must be country-specific, use secret-manager credentials, enforce provider idempotency, apply timeouts and retries, and expose settlement/reconciliation data. Djassa must never mark a payment successful based only on a client response.
+The sandbox adapter is for integration tests only. Live adapters must be country-specific, use secret-manager credentials, enforce provider idempotency, apply timeouts and retries, and expose settlement/reconciliation data. Hossouko must never mark a payment successful based only on a client response.
 
 ## Deployment contracts
 
@@ -86,7 +86,7 @@ The sandbox adapter is for integration tests only. Live adapters must be country
 - Entry point: `scripts/deploy-k8s.sh` or the Jenkins pipeline after review.
 - API uses a ClusterIP service and ingress TLS.
 - Pod security settings include non-root execution, no privilege escalation, read-only root filesystem, and dropped capabilities.
-- External Secrets injects `DATABASE_URL`, `DJASSA_SECRET_KEY`, and `MOBILE_MONEY_SECRETS`.
+- External Secrets injects `DATABASE_URL`, `HOSSOUKO_SECRET_KEY`, and `MOBILE_MONEY_SECRETS`.
 - NetworkPolicy must be validated against the actual namespaces and labels in the cluster.
 
 The Kubernetes files contain example registry, hostname, Vault, and certificate values. They are templates, not production-ready defaults.

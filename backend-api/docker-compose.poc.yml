@@ -2,9 +2,9 @@ services:
   db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-djassa}
+      POSTGRES_USER: ${POSTGRES_USER:-hossouko}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
-      POSTGRES_DB: ${POSTGRES_DB:-djassa}
+      POSTGRES_DB: ${POSTGRES_DB:-hossouko}
     volumes:
       - db-data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -39,7 +39,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set}
       CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
-      DJASSA_SECRET_KEY: ${DJASSA_SECRET_KEY:?DJASSA_SECRET_KEY must be set}
+      HOSSOUKO_SECRET_KEY: ${HOSSOUKO_SECRET_KEY:?HOSSOUKO_SECRET_KEY must be set}
       MOBILE_MONEY_SECRETS: ${MOBILE_MONEY_SECRETS:?MOBILE_MONEY_SECRETS must be set}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
@@ -65,7 +65,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set}
       CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
-      DJASSA_SECRET_KEY: ${DJASSA_SECRET_KEY:?DJASSA_SECRET_KEY must be set}
+      HOSSOUKO_SECRET_KEY: ${HOSSOUKO_SECRET_KEY:?HOSSOUKO_SECRET_KEY must be set}
       MOBILE_MONEY_SECRETS: ${MOBILE_MONEY_SECRETS:?MOBILE_MONEY_SECRETS must be set}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
     deploy:

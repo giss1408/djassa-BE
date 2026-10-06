@@ -13,7 +13,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 # migrations
-export DATABASE_URL=postgresql+asyncpg://djassa:djassa@127.0.0.1:5432/djassa
+export DATABASE_URL=postgresql+asyncpg://hossouko:hossouko@127.0.0.1:5432/hossouko
 alembic -c alembic.ini upgrade head
 
 # run server

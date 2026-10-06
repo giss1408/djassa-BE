@@ -5,12 +5,12 @@ from pathlib import Path
 
 # Must run before `app` is imported: the engine is built at import time. Tests
 # get a throwaway SQLite file so they can never touch a developer's database.
-_tmp = Path(tempfile.mkdtemp(prefix="djassa-tests-")) / "test.db"
-os.environ["DATABASE_URL"] = os.getenv("DJASSA_TEST_DATABASE_URL", f"sqlite+aiosqlite:///{_tmp}")
-os.environ["DJASSA_SEED_SAMPLE"] = "1"
+_tmp = Path(tempfile.mkdtemp(prefix="hossouko-tests-")) / "test.db"
+os.environ["DATABASE_URL"] = os.getenv("HOSSOUKO_TEST_DATABASE_URL", f"sqlite+aiosqlite:///{_tmp}")
+os.environ["HOSSOUKO_SEED_SAMPLE"] = "1"
 # The app refuses to start without these (production fails closed on missing
 # secrets); tests get explicit throwaway values.
-os.environ.setdefault("DJASSA_SECRET_KEY", "test-only-jwt-secret")
+os.environ.setdefault("HOSSOUKO_SECRET_KEY", "test-only-jwt-secret")
 os.environ.setdefault("MOBILE_MONEY_SECRETS", "dev-secret")
 # The whole suite reads the public catalogue from one address; its own limit
 # is tested in test_public_catalogue.py.

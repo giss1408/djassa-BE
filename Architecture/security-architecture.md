@@ -60,7 +60,7 @@ Use External Secrets or a cloud secret manager. The application contract is:
 
 ```text
 DATABASE_URL
-DJASSA_SECRET_KEY
+HOSSOUKO_SECRET_KEY
 MOBILE_MONEY_SECRETS
 CELERY_BROKER_URL
 ```

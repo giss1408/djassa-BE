@@ -110,7 +110,7 @@ async def record_wallet_sale(
     now: datetime,
 ) -> models.SaleEvent:
     """A payment the merchant's own wallet reported (e.g. Wave's
-    merchant.payment_received), made outside a Djassa checkout.
+    merchant.payment_received), made outside a Hossouko checkout.
 
     Confirmed evidence -- the wallet operator says the money arrived -- but
     with no `CustomerPayment` behind it, so the key is the operator's

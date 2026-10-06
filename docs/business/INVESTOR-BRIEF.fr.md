@@ -1,14 +1,14 @@
-# Djassa — Dossier investisseur
+# Hossouko — Dossier investisseur
 
 *Pré-amorçage · Abidjan, Côte d'Ivoire · octobre 2026* · [English version](INVESTOR-BRIEF.md)
 
 > **Éléments à compléter.** Tout ce qui est marqué `[À COMPLÉTER]` (immatriculation, actionnariat, levée) est une donnée fictive à remplacer avant tout envoi. Les chiffres de marché sont sourcés dans [MARKET.md](MARKET.md) et doivent être revérifiés avant tout usage contractuel.
 >
-> Ce document est la traduction de [INVESTOR-BRIEF.md](INVESTOR-BRIEF.md). Toute modification doit être reportée dans les deux versions, ainsi que dans la page web (`djassa-Web/public/brief/`).
+> Ce document est la traduction de [INVESTOR-BRIEF.md](INVESTOR-BRIEF.md). Toute modification doit être reportée dans les deux versions, ainsi que dans la page web (`hossouko-Web/public/brief/`).
 
 ## En une phrase
 
-**Djassa transforme les ventes quotidiennes des commerces de quartier en preuve : un historique d'activité vérifié, qui appartient au commerçant et qu'il peut, avec son consentement, présenter à un prêteur agréé.** Le commerçant paie parce que Djassa fait revenir ses clients.
+**Hossouko transforme les ventes quotidiennes des commerces de quartier en preuve : un historique d'activité vérifié, qui appartient au commerçant et qu'il peut, avec son consentement, présenter à un prêteur agréé.** Le commerçant paie parce que Hossouko fait revenir ses clients.
 
 ## Le problème
 
@@ -20,13 +20,13 @@
 
 Une seule habitude, enregistrer la vente, produit cinq usages : fidélité, historique de revenus, régularité de tontine, indicateur de fiabilité et dossier de financement pour un partenaire agréé.
 
-- **Zéro effort en mobile money.** Djassa s'appuie sur le portefeuille que le commerçant utilise déjà. Les paiements sur son QR existant sont capturés automatiquement, Wave d'abord, puis les autres opérateurs et le QR interopérable de **PI-SPI**, la plateforme de la banque centrale (BCEAO) qui relie toutes les banques et tous les portefeuilles mobiles de la zone UEMOA ([détails](MARKET.md#what-pi-spi-is)). **Aucun frais en plus, aucune nouvelle habitude.**
+- **Zéro effort en mobile money.** Hossouko s'appuie sur le portefeuille que le commerçant utilise déjà. Les paiements sur son QR existant sont capturés automatiquement, Wave d'abord, puis les autres opérateurs et le QR interopérable de **PI-SPI**, la plateforme de la banque centrale (BCEAO) qui relie toutes les banques et tous les portefeuilles mobiles de la zone UEMOA ([détails](MARKET.md#what-pi-spi-is)). **Aucun frais en plus, aucune nouvelle habitude.**
 - **Les espèces comptent aussi.** Un geste dans l'application commerçant, même hors ligne. Avec le numéro du client, celui-ci gagne des points.
 - **Une fidélité visible pour le commerçant.** Points, récompenses remises au comptoir, bons plans, et chaque semaine le nombre de « clients revenus ».
 - **Une preuve pour le crédit, avec consentement.** Chaque vente est étiquetée *confirmée par le prestataire* ou *déclarée par le commerçant*, et n'est exportée qu'avec consentement vers une IMF ou un fonds de garantie agréés.
 - **Quatre briques :** une application commerçant (hors ligne d'abord, Android d'entrée de gamme), une application client (maquis, pharmacies de garde, bons plans, paiement, points), la plateforme, et un site public.
 
-**Djassa ne détient jamais de fonds et ne prête jamais.** Les institutions agréées gardent la conservation des fonds et le crédit. Djassa est le partenaire technologique et de distribution.
+**Hossouko ne détient jamais de fonds et ne prête jamais.** Les institutions agréées gardent la conservation des fonds et le crédit. Hossouko est le partenaire technologique et de distribution.
 
 ## Pourquoi maintenant
 
@@ -44,13 +44,13 @@ Logiciel marchand d'abord, infrastructure financière ensuite.
 | Abonnement commerçant : formule gratuite plafonnée, puis ~5 000 F et ~10 000–15 000 F / mois / point de vente *(hypothèses à tester)* | Pilote |
 | Bons plans sponsorisés et campagnes : emplacement ponctuel et limité dans le temps pour promouvoir un produit, un service ou une offre dans l'application client ; réservation assistée par l'équipe pendant le pilote, prix à tester | Pilote |
 | Contrats multi-points de vente et réseaux | Après preuve |
-| Commissions d'apport consenties (crédit, épargne, tontine) : Djassa perçoit une commission de distribution, sans jamais porter le risque de crédit | Après partenariat |
+| Commissions d'apport consenties (crédit, épargne, tontine) : Hossouko perçoit une commission de distribution, sans jamais porter le risque de crédit | Après partenariat |
 
-**Pourquoi le commerçant paie :** un petit maquis qui gagne +5 % grâce aux clients qui reviennent dégage environ 73 000 F de marge brute par mois, pour un abonnement de 5 000 F (illustratif ; voir [BUSINESS-MODEL.md](BUSINESS-MODEL.md)). Faire passer ses paiements par un agrégateur à ~3 % lui coûterait davantage. C'est pourquoi Djassa ne remplace jamais le portefeuille du commerçant.
+**Pourquoi le commerçant paie :** un petit maquis qui gagne +5 % grâce aux clients qui reviennent dégage environ 73 000 F de marge brute par mois, pour un abonnement de 5 000 F (illustratif ; voir [BUSINESS-MODEL.md](BUSINESS-MODEL.md)). Faire passer ses paiements par un agrégateur à ~3 % lui coûterait davantage. C'est pourquoi Hossouko ne remplace jamais le portefeuille du commerçant.
 
 ## Positionnement
 
-Djassa évite les finances personnelles grand public (Djamo) et le paiement B2B (Julaya, Hub2), et s'associe aux rails de paiement (Wave, Orange, MTN, CinetPay). **La fidélité client et la preuve d'activité marchande** n'ont pas d'acteur ivoirien dominant.
+Hossouko évite les finances personnelles grand public (Djamo) et le paiement B2B (Julaya, Hub2), et s'associe aux rails de paiement (Wave, Orange, MTN, CinetPay). **La fidélité client et la preuve d'activité marchande** n'ont pas d'acteur ivoirien dominant.
 
 ## Traction
 
@@ -83,7 +83,7 @@ Aucune expansion géographique avant qu'un corridor ait franchi ce seuil.
 
 | | |
 |---|---|
-| Entité juridique | `[À COMPLÉTER]` Djassa SAS, Abidjan, Côte d'Ivoire (OHADA) |
+| Entité juridique | `[À COMPLÉTER]` Hossouko SAS, Abidjan, Côte d'Ivoire (OHADA) |
 | Immatriculation (RCCM) | `[À COMPLÉTER]` CI-ABJ-2026-B-00000 |
 | Capital social | `[À COMPLÉTER]` 1 000 000 FCFA |
 | Actionnariat | `[À COMPLÉTER]` Stanislas Regisse 50 % · Bienvenue Kouadio 50 % |
@@ -103,7 +103,7 @@ Aucune expansion géographique avant qu'un corridor ait franchi ce seuil.
 
 ## Nos lignes rouges
 
-Aucune promesse de prêt. Aucun dépôt détenu par Djassa. Aucune donnée partagée sans consentement. Aucun score opaque. Aucun lancement panafricain. Aucune base biométrique réutilisable. Ces principes déterminent ce que nous construisons et ce que nous refusons de vendre ([CONCEPT.md § 11](CONCEPT.md#11-red-lines)).
+Aucune promesse de prêt. Aucun dépôt détenu par Hossouko. Aucune donnée partagée sans consentement. Aucun score opaque. Aucun lancement panafricain. Aucune base biométrique réutilisable. Ces principes déterminent ce que nous construisons et ce que nous refusons de vendre ([CONCEPT.md § 11](CONCEPT.md#11-red-lines)).
 
 ## Contact
 

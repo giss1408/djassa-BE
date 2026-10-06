@@ -1,5 +1,5 @@
 -- Supabase investor room. Run in the Supabase SQL editor as project owner.
--- Keep this room separate from the demo-user authentication used by Djassa apps.
+-- Keep this room separate from the demo-user authentication used by Hossouko apps.
 
 create extension if not exists pgcrypto;
 

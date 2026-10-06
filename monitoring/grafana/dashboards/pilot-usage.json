@@ -1,10 +1,10 @@
 {
-  "uid": "djassa-pilot-usage",
+  "uid": "hossouko-pilot-usage",
   "annotations": {
     "list": []
   },
   "schemaVersion": 36,
-  "title": "Djassa pilot usage",
+  "title": "Hossouko pilot usage",
   "panels": [
     {
       "type": "stat",
@@ -17,7 +17,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (app) (increase(djassa_app_installs_total[30d]))",
+          "expr": "sum by (app) (increase(hossouko_app_installs_total[30d]))",
           "legendFormat": "{{app}}",
           "refId": "A"
         }
@@ -34,7 +34,7 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(djassa_usage_events_total{app=\"retailer\",name=\"sale_recorded\"}[7d]))",
+          "expr": "sum(increase(hossouko_usage_events_total{app=\"retailer\",name=\"sale_recorded\"}[7d]))",
           "legendFormat": "sales",
           "refId": "A"
         }
@@ -51,7 +51,7 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(djassa_usage_events_total{app=\"retailer\",name=\"sale_abandoned\"}[7d])) / clamp_min(sum(increase(djassa_usage_events_total{app=\"retailer\",name=~\"sale_recorded|sale_abandoned\"}[7d])), 1)",
+          "expr": "sum(increase(hossouko_usage_events_total{app=\"retailer\",name=\"sale_abandoned\"}[7d])) / clamp_min(sum(increase(hossouko_usage_events_total{app=\"retailer\",name=~\"sale_recorded|sale_abandoned\"}[7d])), 1)",
           "legendFormat": "abandoned",
           "refId": "A"
         }
@@ -68,7 +68,7 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(djassa_usage_events_total{app=\"user\",name=\"venue_viewed\"}[7d]))",
+          "expr": "sum(increase(hossouko_usage_events_total{app=\"user\",name=\"venue_viewed\"}[7d]))",
           "legendFormat": "venue views",
           "refId": "A"
         }
@@ -85,7 +85,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (app) (increase(djassa_app_installs_total[1d]))",
+          "expr": "sum by (app) (increase(hossouko_app_installs_total[1d]))",
           "legendFormat": "{{app}}",
           "refId": "A"
         }
@@ -102,7 +102,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (app) (increase(djassa_usage_events_total{name=\"app_open\"}[1d]))",
+          "expr": "sum by (app) (increase(hossouko_usage_events_total{name=\"app_open\"}[1d]))",
           "legendFormat": "{{app}}",
           "refId": "A"
         }
@@ -119,17 +119,17 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(djassa_usage_events_total{app=\"retailer\",name=\"sale_form_opened\"}[1d]))",
+          "expr": "sum(increase(hossouko_usage_events_total{app=\"retailer\",name=\"sale_form_opened\"}[1d]))",
           "legendFormat": "form opened",
           "refId": "A"
         },
         {
-          "expr": "sum(increase(djassa_usage_events_total{app=\"retailer\",name=\"sale_recorded\"}[1d]))",
+          "expr": "sum(increase(hossouko_usage_events_total{app=\"retailer\",name=\"sale_recorded\"}[1d]))",
           "legendFormat": "recorded",
           "refId": "B"
         },
         {
-          "expr": "sum(increase(djassa_usage_events_total{app=\"retailer\",name=\"sale_abandoned\"}[1d]))",
+          "expr": "sum(increase(hossouko_usage_events_total{app=\"retailer\",name=\"sale_abandoned\"}[1d]))",
           "legendFormat": "abandoned",
           "refId": "C"
         }
@@ -146,7 +146,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (name) (increase(djassa_usage_events_total{app=\"user\",name=~\"venue_viewed|deal_opened|media_viewed|scan_opened|payment_started|payment_completed\"}[1d]))",
+          "expr": "sum by (name) (increase(hossouko_usage_events_total{app=\"user\",name=~\"venue_viewed|deal_opened|media_viewed|scan_opened|payment_started|payment_completed\"}[1d]))",
           "legendFormat": "{{name}}",
           "refId": "A"
         }

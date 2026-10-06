@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: djassa-api-sa
-  namespace: djassa
+  name: hossouko-api-sa
+  namespace: hossouko
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: djassa-api-role
-  namespace: djassa
+  name: hossouko-api-role
+  namespace: hossouko
 rules:
   - apiGroups: [""]
     resources: ["pods", "services", "endpoints"]
@@ -19,12 +19,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: djassa-api-rolebinding
-  namespace: djassa
+  name: hossouko-api-rolebinding
+  namespace: hossouko
 subjects:
   - kind: ServiceAccount
-    name: djassa-api-sa
+    name: hossouko-api-sa
 roleRef:
   kind: Role
-  name: djassa-api-role
+  name: hossouko-api-role
   apiGroup: rbac.authorization.k8s.io

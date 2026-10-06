@@ -6,10 +6,10 @@ As of 4 October 2026.
 
 Everyone signs in the same way: a phone number and a 6-digit SMS code, with no password. What differs is who may open which app.
 
-- **Customers** need no enrollment. The first successful code in Djassa creates the account.
-- **Merchants** never create their own shop. Djassa enrolls the shop on site, or approves a request the merchant sends from Djassa Pro.
-- **Cashiers** are shop staff invited by the owner from Djassa Pro. They record sales and serve customers, but cannot touch money settings.
-- **Field agents** are Djassa staff who enroll shops on site from djassa-installer. They see only the shops they enrolled.
+- **Customers** need no enrollment. The first successful code in Hossouko creates the account.
+- **Merchants** never create their own shop. Hossouko enrolls the shop on site, or approves a request the merchant sends from Hossouko Pro.
+- **Cashiers** are shop staff invited by the owner from Hossouko Pro. They record sales and serve customers, but cannot touch money settings.
+- **Field agents** are Hossouko staff who enroll shops on site from hossouko-installer. They see only the shops they enrolled.
 - **Admins** grant the merchant, agent and admin roles, and review merchant requests against a 3-point checklist.
 
 One phone number is one account. A person can hold several roles; the app they open decides which session they get.
@@ -20,15 +20,15 @@ Five roles, each tied to one app. Only the customer role is self-service; every 
 
 | Role | App | Who gives it | Can do | Cannot do |
 | --- | --- | --- | --- | --- |
-| Customer | Djassa | Self, on first sign-in | Find shops and pharmacies, see deals, pay, earn and spend points | Anything in Djassa Pro or djassa-installer |
-| Merchant (owner) | Djassa Pro | Admin or field agent, at enrollment | Everything for their one shop: sales, payments, points, deals, photos, location, Wave, statements, staff | Run a second shop from the same number |
-| Cashier | Djassa Pro | The shop owner | Record sales, request payments, show the pay QR, look up and redeem points, see deals | Wave, payouts, stats, deals, photos, location, statements, export, staff |
-| Field agent | djassa-installer | Admin | Enroll a shop on site, see the shops they enrolled | Approve requests, see other shops, users, payments or billing |
-| Admin | djassa-installer | Another admin | Everything, including granting roles and approving requests | Remove their own admin role |
+| Customer | Hossouko | Self, on first sign-in | Find shops and pharmacies, see deals, pay, earn and spend points | Anything in Hossouko Pro or hossouko-installer |
+| Merchant (owner) | Hossouko Pro | Admin or field agent, at enrollment | Everything for their one shop: sales, payments, points, deals, photos, location, Wave, statements, staff | Run a second shop from the same number |
+| Cashier | Hossouko Pro | The shop owner | Record sales, request payments, show the pay QR, look up and redeem points, see deals | Wave, payouts, stats, deals, photos, location, statements, export, staff |
+| Field agent | hossouko-installer | Admin | Enroll a shop on site, see the shops they enrolled | Approve requests, see other shops, users, payments or billing |
+| Admin | hossouko-installer | Another admin | Everything, including granting roles and approving requests | Remove their own admin role |
 
-The server picks the session from the person's roles (`session_role` in `backend-api/app/api/auth.py`). In Djassa Pro, an owner gets a merchant session and a cashier gets a cashier session. In djassa-installer, an admin gets an admin session and a field agent gets an agent session.
+The server picks the session from the person's roles (`session_role` in `backend-api/app/api/auth.py`). In Hossouko Pro, an owner gets a merchant session and a cashier gets a cashier session. In hossouko-installer, an admin gets an admin session and a field agent gets an agent session.
 
-## Customers (Djassa)
+## Customers (Hossouko)
 
 A customer is enrolled the moment they prove they hold a phone number. There is no form, password or email.
 
@@ -41,22 +41,22 @@ Points a customer earned at a shop counter before installing the app are filed u
 
 Identity checks stay out of sign-up. A liveness check comes only with tontine, and a national ID only with sharing history with a lender (tiers 1 and 2 in [Concept](../business/CONCEPT.md)).
 
-## Merchants (Djassa Pro)
+## Merchants (Hossouko Pro)
 
-A merchant account issues payment QR codes and receives money, so a shop is always checked by Djassa before it goes live. There are two ways in, and both end the same way: a shop record, the owner's number linked to it, and a QR code if a wallet was given.
+A merchant account issues payment QR codes and receives money, so a shop is always checked by Hossouko before it goes live. There are two ways in, and both end the same way: a shop record, the owner's number linked to it, and a QR code if a wallet was given.
 
-**1. Enrolled on site.** A field agent or admin visits the shop and creates it in djassa-installer, entering the shop details and the owner's number. Being there is the check. The shop records who enrolled it.
+**1. Enrolled on site.** A field agent or admin visits the shop and creates it in hossouko-installer, entering the shop details and the owner's number. Being there is the check. The shop records who enrolled it.
 
-**2. The merchant asks to join.** From the Djassa Pro sign-in screen, the merchant verifies their number with a code, then sends the shop name, category, commune, address and wallet. An admin reviews it in djassa-installer and approves or rejects it. The merchant gets an SMS either way and signs in with the same number.
+**2. The merchant asks to join.** From the Hossouko Pro sign-in screen, the merchant verifies their number with a code, then sends the shop name, category, commune, address and wallet. An admin reviews it in hossouko-installer and approves or rejects it. The merchant gets an SMS either way and signs in with the same number.
 
 ```mermaid
 flowchart LR
-  visit[Agent or admin visits<br/>standing in the shop] --> enrol[Enrolls the shop<br/>djassa-installer form]
-  ask[Merchant asks to join<br/>from Djassa Pro] --> checks[Admin checks<br/>call, wallet name, shop seen]
+  visit[Agent or admin visits<br/>standing in the shop] --> enrol[Enrolls the shop<br/>hossouko-installer form]
+  ask[Merchant asks to join<br/>from Hossouko Pro] --> checks[Admin checks<br/>call, wallet name, shop seen]
   enrol --> live[Shop goes live<br/>owner's number is the login<br/>QR code if a wallet is given]
   checks -- approved --> live
   checks -- rejected --> refused[Request refused<br/>merchant told by SMS]
-  live --> cashiers[Owner adds cashiers<br/>from Djassa Pro]
+  live --> cashiers[Owner adds cashiers<br/>from Hossouko Pro]
 ```
 
 Only a merchant's own request passes through the admin checks; an agent's visit is the check.
@@ -67,16 +67,16 @@ Before approving a request, the admin must confirm up to three checks. The serve
 - **Wallet name matches:** the mobile money account holder's name matches the contact name on the request. Required only when the request names a wallet.
 - **Shop seen:** a photo of the storefront, a GPS fix taken in the shop, or a visit confirms the shop exists at that address.
 
-After approval, the owner connects their own Wave Business account from Djassa Pro. One number runs one shop; a second shop needs a second number for now.
+After approval, the owner connects their own Wave Business account from Hossouko Pro. One number runs one shop; a second shop needs a second number for now.
 
 ## Cashiers
 
-The owner adds staff from Djassa Pro so nobody has to borrow the owner's phone or full access. Each cashier signs in on their own phone with their own number.
+The owner adds staff from Hossouko Pro so nobody has to borrow the owner's phone or full access. Each cashier signs in on their own phone with their own number.
 
-1. The owner opens **Mon equipe** in the Djassa Pro account menu, taps **Ajouter un caissier**, and enters the staff member's number and first name.
-2. The staff member gets a courtesy SMS saying they can sign in to Djassa Pro.
-3. They install Djassa Pro and sign in with their number and a code. The server gives them a cashier session for that shop.
-4. Djassa Pro hides what a cashier cannot use: Wave, deal publishing, photos, location and the team.
+1. The owner opens **Mon equipe** in the Hossouko Pro account menu, taps **Ajouter un caissier**, and enters the staff member's number and first name.
+2. The staff member gets a courtesy SMS saying they can sign in to Hossouko Pro.
+3. They install Hossouko Pro and sign in with their number and a code. The server gives them a cashier session for that shop.
+4. Hossouko Pro hides what a cashier cannot use: Wave, deal publishing, photos, location and the team.
 
 Rules:
 
@@ -88,9 +88,9 @@ Rules:
 
 ## Field agents
 
-Field agents enroll shops in person without holding admin powers. An admin grants the role by phone number in djassa-installer (Utilisateurs), and can take it back at any time.
+Field agents enroll shops in person without holding admin powers. An admin grants the role by phone number in hossouko-installer (Utilisateurs), and can take it back at any time.
 
-- The agent signs in to djassa-installer on their phone's browser, with their number and a code. They see two pages only: **Inscrire un commerce** and **Mes commerces**.
+- The agent signs in to hossouko-installer on their phone's browser, with their number and a code. They see two pages only: **Inscrire un commerce** and **Mes commerces**.
 - Enrolling a shop is the same form admins use: shop details, the owner's number (required for agents), and the wallet if the owner has one. The shop goes live straight away, because the agent is standing in it.
 - Each shop records which agent enrolled it (`venues.enrolled_by`). Admins see that in the shop list, which supports paying agents per enrollment.
 - An agent cannot approve merchant requests, edit shops after enrollment, or see users, payments, billing or other agents' shops.
@@ -110,16 +110,16 @@ A move carries everything the person owns to the new number: points, payments, t
 
 ## Test accounts
 
-On the test server, shared numbers sign in with the fixed code `000000`, with no SMS sent. They are set by `TEST_OTP_NUMBERS` in [`render.yaml`](../../render.yaml) and work only when `DJASSA_ENV=test`; the API refuses to start with them in production.
+On the test server, shared numbers sign in with the fixed code `000000`, with no SMS sent. They are set by `TEST_OTP_NUMBERS` in [`render.yaml`](../../render.yaml) and work only when `HOSSOUKO_ENV=test`; the API refuses to start with them in production.
 
 | Number | App | Role |
 | --- | --- | --- |
-| 07 00 00 00 01 | Djassa | Customer |
-| 07 00 00 00 02 | Djassa Pro | Owner of "Chez Tantie Awa (exemple)" |
-| 07 00 00 00 03 | Djassa Pro | Cashier at "Chez Tantie Awa (exemple)" |
-| 07 00 00 00 04 | djassa-installer | Field agent |
+| 07 00 00 00 01 | Hossouko | Customer |
+| 07 00 00 00 02 | Hossouko Pro | Owner of "Chez Tantie Awa (exemple)" |
+| 07 00 00 00 03 | Hossouko Pro | Cashier at "Chez Tantie Awa (exemple)" |
+| 07 00 00 00 04 | hossouko-installer | Field agent |
 
-The roles come from the sample data (`DJASSA_SEED_SAMPLE=1`). The admin test number, 07 00 00 00 09, is seeded too but has no fixed code: it signs in with a real code from the server log, so the public download page never opens admin access.
+The roles come from the sample data (`HOSSOUKO_SEED_SAMPLE=1`). The admin test number, 07 00 00 00 09, is seeded too but has no fixed code: it signs in with a real code from the server log, so the public download page never opens admin access.
 
 ## API reference
 
@@ -146,5 +146,5 @@ Cashier sessions may call sales, payment requests, the pay QR, counter points, a
 - **Agent pay:** is a field agent paid per shop enrolled, per active shop after 30 days, or not per shop at all? The attribution is recorded either way.
 - **Agent edits:** should agents correct a shop they enrolled (hours, address) in its first week, or always ask an admin?
 - **Cashier view of totals:** cashiers see the sales recorded on their own phone, not the shop's revenue. Confirm owners want it that way.
-- **Several shops per owner:** one number runs one shop today. A shop picker in Djassa Pro is needed if chains or multi-shop owners join.
+- **Several shops per owner:** one number runs one shop today. A shop picker in Hossouko Pro is needed if chains or multi-shop owners join.
 - **Agent-enrolled shops and the checklist:** agents skip the 3-point checklist because they stand in the shop. Decide whether they should still record a storefront photo.

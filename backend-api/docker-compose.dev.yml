@@ -3,9 +3,9 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_USER: djassa
-      POSTGRES_PASSWORD: djassa
-      POSTGRES_DB: djassa
+      POSTGRES_USER: hossouko
+      POSTGRES_PASSWORD: hossouko
+      POSTGRES_DB: hossouko
     ports:
       - "5432:5432"
     volumes:

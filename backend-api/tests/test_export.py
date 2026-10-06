@@ -2,7 +2,7 @@
 
 This file previously asserted the bug: it granted a consent naming another user,
 the caller received it instead, and the export succeeded. The tests below assert
-the denial (docs/optimization_claude_djassa.md, finding 3).
+the denial (docs/optimization_claude_hossouko.md, finding 3).
 """
 
 import pytest

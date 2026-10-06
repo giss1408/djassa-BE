@@ -22,8 +22,8 @@ pipeline {
     }
 
     environment {
-        IMAGE_NAME = 'djassa/api'
-        REGISTRY = credentials('djassa-container-registry-url')
+        IMAGE_NAME = 'hossouko/api'
+        REGISTRY = credentials('hossouko-container-registry-url')
         IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT ?: 'working'}"
         DOCKER_BUILDKIT = '1'
         PIP_DISABLE_PIP_VERSION_CHECK = '1'
@@ -70,7 +70,7 @@ pipeline {
                 sh '''
                     set -eu
                     docker run --rm \
-                      -e DJASSA_SECRET_KEY=test-only-jwt-secret \
+                      -e HOSSOUKO_SECRET_KEY=test-only-jwt-secret \
                       -e MOBILE_MONEY_SECRETS=dev-secret \
                       -e PYTHONPATH=/workspace \
                       -v "$WORKSPACE/backend-api:/workspace:ro" \
@@ -86,13 +86,13 @@ pipeline {
                 sh '''
                     set -eu
                     docker run --rm \
-                      -e DJASSA_SECRET_KEY=test-only-jwt-secret \
+                      -e HOSSOUKO_SECRET_KEY=test-only-jwt-secret \
                       -e MOBILE_MONEY_SECRETS=dev-secret \
                       -e PYTHONPATH=/workspace \
                       -v "$WORKSPACE/backend-api:/workspace:ro" \
                       -w /workspace \
                       "$FULL_IMAGE" \
-                      sh -lc 'rm -f /tmp/djassa-migration.db; DATABASE_URL=sqlite+aiosqlite:////tmp/djassa-migration.db alembic -c alembic.ini upgrade head; DATABASE_URL=sqlite+aiosqlite:////tmp/djassa-migration.db alembic -c alembic.ini current'
+                      sh -lc 'rm -f /tmp/hossouko-migration.db; DATABASE_URL=sqlite+aiosqlite:////tmp/hossouko-migration.db alembic -c alembic.ini upgrade head; DATABASE_URL=sqlite+aiosqlite:////tmp/hossouko-migration.db alembic -c alembic.ini current'
                 '''
             }
         }
@@ -130,7 +130,7 @@ pipeline {
             }
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'djassa-container-registry',
+                    credentialsId: 'hossouko-container-registry',
                     usernameVariable: 'REGISTRY_USERNAME',
                     passwordVariable: 'REGISTRY_PASSWORD'
                 )]) {
@@ -154,15 +154,15 @@ pipeline {
                 }
             }
             steps {
-                sshagent(credentials: ['djassa-vps-ssh']) {
+                sshagent(credentials: ['hossouko-vps-ssh']) {
                     withCredentials([
-                        string(credentialsId: 'djassa-vps-host', variable: 'VPS_HOST'),
-                        string(credentialsId: 'djassa-vps-user', variable: 'VPS_USER')
+                        string(credentialsId: 'hossouko-vps-host', variable: 'VPS_HOST'),
+                        string(credentialsId: 'hossouko-vps-user', variable: 'VPS_USER')
                     ]) {
                         sh '''
                             set -eu
                             ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" \
-                              'cd /opt/djassa/djassa/backend-api && git fetch --prune && git checkout integration && git pull --ff-only && ./deploy-vps-test.sh'
+                              'cd /opt/hossouko/hossouko/backend-api && git fetch --prune && git checkout integration && git pull --ff-only && ./deploy-vps-test.sh'
                         '''
                     }
                 }
@@ -180,20 +180,20 @@ pipeline {
                 }
             }
             steps {
-                withCredentials([file(credentialsId: 'djassa-kubeconfig', variable: 'KUBECONFIG')]) {
+                withCredentials([file(credentialsId: 'hossouko-kubeconfig', variable: 'KUBECONFIG')]) {
                     sh '''
                         set -eu
                         command -v kubectl >/dev/null 2>&1 || { echo "kubectl is required on the Jenkins agent" >&2; exit 1; }
                         kubectl apply -f Architecture/k8s/namespace.yaml
                         kubectl apply -f Architecture/k8s/rbac.yaml
                         kubectl apply -f Architecture/k8s/external-secret-store.yaml
-                        kubectl apply -f Architecture/k8s/external-secret-djassa.yaml
+                        kubectl apply -f Architecture/k8s/external-secret-hossouko.yaml
                         kubectl apply -f Architecture/k8s/service-clusterip.yaml
                         kubectl apply -f Architecture/k8s/deployment-secure.yaml
-                        kubectl set image deployment/djassa-api api="$FULL_IMAGE"
+                        kubectl set image deployment/hossouko-api api="$FULL_IMAGE"
                         kubectl apply -f Architecture/k8s/ingress-tls.yaml
                         kubectl apply -f Architecture/k8s/networkpolicy.yaml
-                        kubectl rollout status deployment/djassa-api --timeout=180s
+                        kubectl rollout status deployment/hossouko-api --timeout=180s
                     '''
                 }
             }
@@ -206,10 +206,10 @@ pipeline {
             sh(script: 'docker image rm "$FULL_IMAGE" >/dev/null 2>&1 || true', returnStatus: true)
         }
         success {
-            echo 'Djassa CI/CD pipeline completed successfully.'
+            echo 'Hossouko CI/CD pipeline completed successfully.'
         }
         failure {
-            echo 'Djassa CI/CD pipeline failed. Review the stage logs and archived SBOM.'
+            echo 'Hossouko CI/CD pipeline failed. Review the stage logs and archived SBOM.'
         }
     }
 }

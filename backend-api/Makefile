@@ -18,7 +18,7 @@ down:
 	docker compose -f docker-compose.dev.yml down
 
 migrate:
-	. $(VENV)/bin/activate && export DATABASE_URL=postgresql+asyncpg://djassa:djassa@127.0.0.1:5432/djassa && alembic -c alembic.ini upgrade head
+	. $(VENV)/bin/activate && export DATABASE_URL=postgresql+asyncpg://hossouko:hossouko@127.0.0.1:5432/hossouko && alembic -c alembic.ini upgrade head
 
 run:
 	. $(VENV)/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000

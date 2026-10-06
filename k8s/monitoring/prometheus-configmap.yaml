@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
-  namespace: djassa-monitoring
+  namespace: hossouko-monitoring
 data:
   prometheus.yml: |
     global:

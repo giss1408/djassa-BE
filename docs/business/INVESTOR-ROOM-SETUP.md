@@ -1,4 +1,4 @@
-# Djassa — Investor Room Setup
+# Hossouko — Investor Room Setup
 
 *Implementation and operations guide · 1 October 2026*
 
@@ -9,14 +9,14 @@ The investor room is an invite-only page at `/investor`, backed by Supabase Auth
 - Supabase Auth accounts are created by an administrator; public sign-up is disabled.
 - TOTP multi-factor authentication is mandatory. Database functions and every investor read policy require the JWT assurance level `aal2`, an active membership row, and document-specific permission where applicable.
 - Files are stored in the private `investor-room` bucket. RLS checks the user's active membership, MFA, document permission, and exact storage path on each download.
-- Document reviews are private to the investor. The checkboxes mean “reviewed”, “discuss with Djassa”, and “include in my local download pack”; they are not signatures, agreement to terms, or legal acceptance.
+- Document reviews are private to the investor. The checkboxes mean “reviewed”, “discuss with Hossouko”, and “include in my local download pack”; they are not signatures, agreement to terms, or legal acceptance.
 - Sessions are kept in memory only. Refreshing the page requires sign-in again. Use HTTPS and do not test with real investor documents until the project is configured and policies have been verified.
 - This is access control, not DRM: an authorized investor can save a document after download. Share only approved files and use a signed NDA where appropriate.
 
 ## Configure Supabase
 
-1. Create a dedicated Supabase project for the investor room. Do not reuse the Djassa demo-app login or its demo credentials.
-2. In Authentication settings, disable public sign-ups. Configure SMTP and the site URL / redirect allowlist for `https://djassa.co/investor.html` and local development at `http://localhost:5173/investor.html`.
+1. Create a dedicated Supabase project for the investor room. Do not reuse the Hossouko demo-app login or its demo credentials.
+2. In Authentication settings, disable public sign-ups. Configure SMTP and the site URL / redirect allowlist for `https://hossouko.co/investor.html` and local development at `http://localhost:5173/investor.html`.
 3. Keep MFA enrollment available. The page enrolls a TOTP authenticator on first access and verifies it on later sign-ins. The SQL policies enforce `aal2`, so a password-only session cannot read room data even if the UI is bypassed.
 4. Run [`../../scripts/investor-room-schema.sql`](../../scripts/investor-room-schema.sql) in the Supabase SQL editor as project owner. Confirm the `investor-room` bucket is private.
 5. Create investor accounts using the Supabase Auth admin invitation flow. Do not expose an account-creation endpoint on the public website.
@@ -47,7 +47,7 @@ Use the SQL editor/dashboard for membership, permissions, document metadata, and
 
 ## Configure the website
 
-Set these **build-time** variables on the Render static-site service and in a local, untracked `djassa-Web/.env.local` for development:
+Set these **build-time** variables on the Render static-site service and in a local, untracked `hossouko-Web/.env.local` for development:
 
 ```text
 VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
@@ -70,4 +70,4 @@ Before inviting real investors:
 - Confirm the Supabase service-role key is absent from the web bundle, Render static environment, Git, and browser requests.
 - Upload only approved, appropriately redacted versions. Obtain local legal review for NDA wording and electronic-signature requirements; the checklist is not a signature.
 
-The browser-generated ZIP contains only documents currently assigned to the signed-in investor and selected by that investor. It is generated locally from authorized downloads; no archive is uploaded back to Djassa.
+The browser-generated ZIP contains only documents currently assigned to the signed-in investor and selected by that investor. It is generated locally from authorized downloads; no archive is uploaded back to Hossouko.

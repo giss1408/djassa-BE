@@ -17,18 +17,18 @@ jobs:
       # then still built, scanned and tested, just never pushed.
       REGISTRY_URL: ${{ secrets.REGISTRY_URL }}
       # Local tag, independent of the registry, for the scan steps.
-      LOCAL_IMAGE: djassa-api:${{ github.sha }}
+      LOCAL_IMAGE: hossouko-api:${{ github.sha }}
     services:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: djassa
-          POSTGRES_PASSWORD: djassa
-          POSTGRES_DB: djassa
+          POSTGRES_USER: hossouko
+          POSTGRES_PASSWORD: hossouko
+          POSTGRES_DB: hossouko
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U djassa"
+          --health-cmd "pg_isready -U hossouko"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -77,8 +77,8 @@ jobs:
       - name: Run migrations on Postgres
         working-directory: backend-api
         env:
-          DATABASE_URL: postgresql+asyncpg://djassa:djassa@127.0.0.1:5432/djassa
-          DJASSA_SECRET_KEY: ci-only-secret
+          DATABASE_URL: postgresql+asyncpg://hossouko:hossouko@127.0.0.1:5432/hossouko
+          HOSSOUKO_SECRET_KEY: ci-only-secret
         run: alembic upgrade head
 
       - name: Run pytest
@@ -98,8 +98,8 @@ jobs:
       - name: Push image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.REGISTRY_URL != ''
         run: |
-          docker tag "$LOCAL_IMAGE" "$REGISTRY_URL/djassa/api:${{ github.sha }}"
-          docker push "$REGISTRY_URL/djassa/api:${{ github.sha }}"
+          docker tag "$LOCAL_IMAGE" "$REGISTRY_URL/hossouko/api:${{ github.sha }}"
+          docker push "$REGISTRY_URL/hossouko/api:${{ github.sha }}"
 
       - name: Upload SBOM artifact
         if: always()

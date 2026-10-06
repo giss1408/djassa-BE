@@ -27,7 +27,7 @@ REQUEST_TTL = timedelta(minutes=10)
 
 
 async def _my_venue(db: AsyncSession, user, require_wallet: bool = True) -> models.Venue:
-    """The shop this Djassa Pro session works for: the one the owner runs, or
+    """The shop this Hossouko Pro session works for: the one the owner runs, or
     the one a cashier was added to. Looked up on every request, so a removed
     cashier is out at once, whatever their token says."""
     if user["role"] == "cashier":
@@ -149,14 +149,14 @@ async def merchant_stats(
     Two halves, deliberately never added into one unqualified number:
 
     * `revenue` / `confirmed_revenue` -- money that actually arrived through
-      Djassa. Unchanged from before this endpoint read the merged stream, so no
+      Hossouko. Unchanged from before this endpoint read the merged stream, so no
       client sees a different figure than it used to.
     * `declared_revenue` -- cash the merchant recorded themselves. Real business,
       weaker evidence, labelled as such.
 
     `verified_share` is the ratio between them, and it is here for the merchant
     rather than for us: seeing it move is what gives *them* a reason to push
-    customers toward digital payment (docs/optimization_claude_djassa.md,
+    customers toward digital payment (docs/optimization_claude_hossouko.md,
     optimization B).
 
     Aggregated in Python rather than SQL: a single venue's month is a few

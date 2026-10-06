@@ -2,7 +2,7 @@
 
 The apps catch their uncaught errors, keep them in a small local queue, and
 send them here in one batch at start-up or when they come back to the
-foreground (djassa-App-*/lib/core/monitoring/). The web site sends its own
+foreground (hossouko-App-*/lib/core/monitoring/). The web site sends its own
 with `navigator.sendBeacon`. Every report increments a Prometheus counter, so
 Grafana and Alertmanager see a crash spike the way they see a 5xx spike; the
 rows keep the stack traces for whoever fixes it.

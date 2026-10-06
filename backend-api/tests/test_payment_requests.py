@@ -40,7 +40,7 @@ async def test_merchant_qr_is_scanned_confirmed_and_paid(client):
     r = await client.post("/api/merchant/payment-requests", json={"amount": 7500}, headers=merchant)
     assert r.status_code == 201, r.text
     req = r.json()
-    assert req["status"] == "open" and req["qr_payload"] == f"djassa://pay/{req['code']}"
+    assert req["status"] == "open" and req["qr_payload"] == f"hossouko://pay/{req['code']}"
 
     # Scan: the customer sees the merchant and the amount the MERCHANT set.
     target = (await client.get(f"/api/customer/pay-codes/{req['code']}", headers=customer)).json()
@@ -141,7 +141,7 @@ async def test_merchant_gets_the_shop_fixed_qr_and_a_customer_can_pay_it(client)
     first = await client.get("/api/merchant/pay-code", headers=merchant)
     assert first.status_code == 200, first.text
     body = first.json()
-    assert body["qr_payload"] == f"djassa://pay/{body['pay_code']}"
+    assert body["qr_payload"] == f"hossouko://pay/{body['pay_code']}"
     # The same code every time: the sticker on the counter must keep working.
     again = (await client.get("/api/merchant/pay-code", headers=merchant)).json()
     assert again["pay_code"] == body["pay_code"]

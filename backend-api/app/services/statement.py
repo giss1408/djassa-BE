@@ -4,18 +4,18 @@ No microfinance institution wants 10,000 raw rows. They want something a credit
 officer can read in a minute and a compliance officer can verify was not edited
 after issue: period, monthly turnover, verified share, regularity, seasonality,
 customer concentration, the consent it rests on, and a signature
-(docs/optimization_claude_djassa.md, optimization C).
+(docs/optimization_claude_hossouko.md, optimization C).
 
 ## What the signature is and is not
 
 A detached HMAC-SHA256 over a canonical serialization of the payload, keyed on
-`DJASSA_STATEMENT_SECRET`. That makes it **tamper-evident**: a merchant who
+`HOSSOUKO_STATEMENT_SECRET`. That makes it **tamper-evident**: a merchant who
 edits a figure before forwarding the file produces a payload whose signature no
 longer verifies, and `POST /api/statements/verify` says so.
 
 It is deliberately *not* a public-key signature. HMAC means a verifier must ask
-Djassa (or hold the shared secret), so it proves "this is the document Djassa
-issued", not "this is Djassa's document and only Djassa could have made it".
+Hossouko (or hold the shared secret), so it proves "this is the document Hossouko
+issued", not "this is Hossouko's document and only Hossouko could have made it".
 That is the right trade for a pilot -- no key distribution, no PKI -- but it is a
 one-line swap to Ed25519 the moment a partner wants to verify offline, which is
 why the payload carries `algorithm` and `key_id`.
@@ -48,11 +48,11 @@ from .revenue import RevenueProfile
 # Bumped when the meaning of a field changes, so a partner holding an old
 # statement knows which rules produced it. Never reuse a version for new
 # semantics: a figure that quietly changed meaning is worse than a new field.
-SCHEMA_VERSION = "djassa.revenue-statement.v1"
+SCHEMA_VERSION = "hossouko.revenue-statement.v1"
 
 ALGORITHM = "HMAC-SHA256"
 
-_ENV_SECRET = "DJASSA_STATEMENT_SECRET"
+_ENV_SECRET = "HOSSOUKO_STATEMENT_SECRET"
 
 
 class StatementSecretMissing(RuntimeError):
@@ -65,7 +65,7 @@ class StatementSecretMissing(RuntimeError):
 
 
 def _secret() -> bytes:
-    value = os.getenv(_ENV_SECRET) or os.getenv("DJASSA_SECRET_KEY")
+    value = os.getenv(_ENV_SECRET) or os.getenv("HOSSOUKO_SECRET_KEY")
     if not value:
         raise StatementSecretMissing(
             f"{_ENV_SECRET} must be set to issue a revenue statement"
@@ -80,7 +80,7 @@ def key_id() -> str:
     "tampered with", and so a key rotation is diagnosable instead of looking
     like a forgery. A hash of the key, never the key.
     """
-    return hashlib.sha256(b"djassa-statement-key-id:" + _secret()).hexdigest()[:16]
+    return hashlib.sha256(b"hossouko-statement-key-id:" + _secret()).hexdigest()[:16]
 
 
 def canonical(payload: dict) -> bytes:
@@ -99,7 +99,7 @@ def sign(payload: dict) -> str:
 
 
 def verify(payload: dict, signature: str) -> bool:
-    """Whether `signature` is the one Djassa issued for `payload`.
+    """Whether `signature` is the one Hossouko issued for `payload`.
 
     `compare_digest`, not `==`: a byte-at-a-time comparison leaks where a forged
     signature first differs, which is enough to construct a valid one.
@@ -140,7 +140,7 @@ def build_payload(
     """The signed part of a statement. Nothing outside this dict is attested."""
     return {
         "schema_version": SCHEMA_VERSION,
-        "issuer": "Djassa",
+        "issuer": "Hossouko",
         "issued_at": issued_at.isoformat(),
         "issued_to": issued_to,
         "venue": {"id": profile.venue_id, "name": profile.venue_name},
@@ -185,7 +185,7 @@ def build_payload(
         },
         "consent_reference": consent_reference,
         "disclaimer": (
-            "Djassa n'est ni preteur ni etablissement de paiement et ne detient aucun fonds. "
+            "Hossouko n'est ni preteur ni etablissement de paiement et ne detient aucun fonds. "
             "Les montants 'cash_declared' sont declares par le commercant et non verifies par un tiers."
         ),
     }

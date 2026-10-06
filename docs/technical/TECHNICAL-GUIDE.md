@@ -1,4 +1,4 @@
-# Djassa Technical Guide
+# Hossouko Technical Guide
 
 This document is the technical navigation page for the repository. It describes what each technical area owns and where to find the operational instructions.
 
@@ -16,8 +16,8 @@ The backend is a FastAPI service with:
 
 API surfaces, by client:
 
-- **Merchant app** (`djassa-App-retailer`): `/api/auth/*` (phone sign-in), `/api/merchant/sales` and `/api/merchant/sales/sync` (optional `customer_phone` earns the customer points; the first time a number is used it needs `customer_consent: true`, see [ARTCI.md](../Reglementation/ARTCI.md)), `/api/merchant/customers/loyalty` and `/redeem` (balance and reward at the counter, by phone), `/api/merchant/venue/location` (GET/PUT: the shop's position, from the phone's GPS in the shop, for customers' directions), merchant deals, stats and payment requests. Signed out, it offers a **demo** (`lib/features/demo/`): the real screens on a pretend shop, wired to an in-memory ledger and an in-app fake server, in a separate provider container; nothing is sent, and what is done in the demo is not counted in usage analytics (only `demo_started` is).
-- **Customer app** (`djassa-App-user`): opens without an account. Venues, categories, on-duty pharmacies and deals are **public** (no token needed, `PUBLIC_READ_RATE_LIMIT` per IP, default 120/minute; a token, when sent, adds the customer's own points to a shop page). Sign-in (`/api/auth/*`, phone + code) is asked only to pay (pay-code lookup, customer payments) or to see loyalty balance and redemption.
+- **Merchant app** (`hossouko-App-retailer`): `/api/auth/*` (phone sign-in), `/api/merchant/sales` and `/api/merchant/sales/sync` (optional `customer_phone` earns the customer points; the first time a number is used it needs `customer_consent: true`, see [ARTCI.md](../Reglementation/ARTCI.md)), `/api/merchant/customers/loyalty` and `/redeem` (balance and reward at the counter, by phone), `/api/merchant/venue/location` (GET/PUT: the shop's position, from the phone's GPS in the shop, for customers' directions), merchant deals, stats and payment requests. Signed out, it offers a **demo** (`lib/features/demo/`): the real screens on a pretend shop, wired to an in-memory ledger and an in-app fake server, in a separate provider container; nothing is sent, and what is done in the demo is not counted in usage analytics (only `demo_started` is).
+- **Customer app** (`hossouko-App-user`): opens without an account. Venues, categories, on-duty pharmacies and deals are **public** (no token needed, `PUBLIC_READ_RATE_LIMIT` per IP, default 120/minute; a token, when sent, adds the customer's own points to a shop page). Sign-in (`/api/auth/*`, phone + code) is asked only to pay (pay-code lookup, customer payments) or to see loyalty balance and redemption.
 - **Admin**: pharmacy duty rotation, venue pay codes, featured deals, merchant accounts (`/api/admin/users/roles`), app error reports (`/api/admin/client-events`).
 - **All apps and the site**: `POST /api/client-events` (error reports, no sign-in needed).
 - **Foundations not exposed to users yet**: tontines, consents, identity verification tiers, exports, payments with refunds and disputes (see [ROADMAP.md § Where we stand](../business/ROADMAP.md#where-we-stand)).
@@ -47,7 +47,7 @@ SMS delivery is `app/services/otp_sender.py`, chosen by `OTP_SENDER`:
 
 | Variable | Meaning |
 |---|---|
-| `OTP_SENDER=console` | Default outside production. Logs the code. Refused when `DJASSA_ENV=production`. |
+| `OTP_SENDER=console` | Default outside production. Logs the code. Refused when `HOSSOUKO_ENV=production`. |
 | `OTP_DEV_ECHO=1` | With `console` only, returns the code in the API response so the apps fill it in. Local development only: anyone could sign in as any number. |
 | `OTP_SENDER=africastalking` | SMS via Africa's Talking with `AT_USERNAME`, `AT_API_KEY`, optional `AT_SENDER_ID`, `AT_SANDBOX=1`. |
 
@@ -59,7 +59,7 @@ Locally, with sample data seeded, `07 00 00 00 02` is a merchant that runs
 
 The username/password `POST /api/token` with the `demo`/`client`/`admin`
 accounts remains for development and tests. It answers 404 when
-`DJASSA_ENV=production` or `DJASSA_DEMO_LOGIN=0`. Until a production admin
+`HOSSOUKO_ENV=production` or `HOSSOUKO_DEMO_LOGIN=0`. Until a production admin
 signs in by phone, grant the first admin role directly in the database
 (`UPDATE users SET roles = 'admin' WHERE phone_e164 = '+225…'`).
 
@@ -69,14 +69,14 @@ signs in by phone, grant the first admin role directly in the database
 
 | Who starts | Path |
 |---|---|
-| An agent or admin | `POST /api/admin/venues {category, name, commune, address, payout_provider, payout_account, merchant_phone, points_per_100…}` creates the shop, makes `merchant_phone` its Djassa Pro login, and issues the payment QR when a wallet is given. |
-| The merchant, from the Djassa Pro sign-in screen (*Inscrire mon commerce*) | `POST /api/partner-requests/code` proves the phone. `POST /api/partner-requests` files the shop details. An admin lists them at `GET /api/admin/partner-requests`, calls the merchant, then calls `/approve` (with corrections) or `/reject`. Approving runs the same creation as above. The merchant is told by SMS. |
+| An agent or admin | `POST /api/admin/venues {category, name, commune, address, payout_provider, payout_account, merchant_phone, points_per_100…}` creates the shop, makes `merchant_phone` its Hossouko Pro login, and issues the payment QR when a wallet is given. |
+| The merchant, from the Hossouko Pro sign-in screen (*Inscrire mon commerce*) | `POST /api/partner-requests/code` proves the phone. `POST /api/partner-requests` files the shop details. An admin lists them at `GET /api/admin/partner-requests`, calls the merchant, then calls `/approve` (with corrections) or `/reject`. Approving runs the same creation as above. The merchant is told by SMS. |
 
-One phone number runs one shop (409 otherwise), because Djassa Pro finds "my shop" from the token. After sign-in the merchant sets the shop position from their phone, and connects Wave (points only by default). See [DEPLOY-TEST.md § 6](DEPLOY-TEST.md).
+One phone number runs one shop (409 otherwise), because Hossouko Pro finds "my shop" from the token. After sign-in the merchant sets the shop position from their phone, and connects Wave (points only by default). See [DEPLOY-TEST.md § 6](DEPLOY-TEST.md).
 
 ## Shop photos and videos
 
-`app/api/media.py`. Each shop has up to **10 photos and 3 videos of 60 s**. Merchants add them in Djassa Pro (*Photos et vidéos*) and admins in djassa-installer; customers see them on the shop page (`media` in `GET /api/venues/{id}`).
+`app/api/media.py`. Each shop has up to **10 photos and 3 videos of 60 s**. Merchants add them in Hossouko Pro (*Photos et vidéos*) and admins in hossouko-installer; customers see them on the shop page (`media` in `GET /api/venues/{id}`).
 
 Uploads are never served as sent (`app/services/media_processing.py`):
 
@@ -94,11 +94,11 @@ Storage (`app/services/media_storage.py`), chosen by `MEDIA_STORAGE`:
 | `local` (default) | Development: files under `MEDIA_LOCAL_DIR` (default `./media`), served by the API at `/media/…`. Refused in production; Render's free disk is wiped on deploy. |
 | `r2` | Cloudflare R2: free up to 10 GB, **no bandwidth fees**. Set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` (an R2 API token limited to the bucket), `R2_BUCKET`, and `MEDIA_PUBLIC_BASE_URL` (the bucket's public `r2.dev` URL or a custom domain). |
 
-R2 setup: Cloudflare dashboard → R2 → create bucket `djassa-media` → Settings → enable public access (r2.dev) or connect a custom domain such as `media.djassa.ci`. Then R2 → Manage API tokens → *Object Read & Write* on that bucket only. Keys contain a random part and files never change, so they are served with a one-year immutable cache. Deleting a media item deletes its files.
+R2 setup: Cloudflare dashboard → R2 → create bucket `hossouko-media` → Settings → enable public access (r2.dev) or connect a custom domain such as `media.hossouko.ci`. Then R2 → Manage API tokens → *Object Read & Write* on that bucket only. Keys contain a random part and files never change, so they are served with a one-year immutable cache. Deleting a media item deletes its files.
 
 ## Admin screen
 
-`../djassa-installer`, a React static site for the Djassa team: shops and their media, sign-up requests, account recoveries, users and roles, and app errors. Admins sign in with phone + SMS code using `app: "admin"`; only numbers with the admin role get a session. The supporting endpoints are `GET/PATCH /api/admin/venues[/{id}]`, `GET /api/admin/users?phone=`, `POST /api/admin/users/disable` and `POST /api/admin/users/roles/revoke`. An admin cannot suspend themselves or remove their own admin role. Add the site's origin to `CORS_ORIGINS`.
+`../hossouko-installer`, a React static site for the Hossouko team: shops and their media, sign-up requests, account recoveries, users and roles, and app errors. Admins sign in with phone + SMS code using `app: "admin"`; only numbers with the admin role get a session. The supporting endpoints are `GET/PATCH /api/admin/venues[/{id}]`, `GET /api/admin/users?phone=`, `POST /api/admin/users/disable` and `POST /api/admin/users/roles/revoke`. An admin cannot suspend themselves or remove their own admin role. Add the site's origin to `CORS_ORIGINS`.
 
 ## Account recovery
 
@@ -130,8 +130,8 @@ The apps and the site report their own uncaught errors to
 SDK. Reports are batched on the device and sent at start-up or when the app
 returns to the foreground, never on a timer. Digit runs in messages and tokens
 are scrubbed on the device and again on the server. Each report increments
-`djassa_client_events_total{app, platform, kind, app_version}`. The
-*Djassa apps and sign-in* Grafana dashboard and the `AppErrorSpike` and
+`hossouko_client_events_total{app, platform, kind, app_version}`. The
+*Hossouko apps and sign-in* Grafana dashboard and the `AppErrorSpike` and
 `AppCrashAfterRelease` alerts read that counter. Admins read grouped stacks
 with `GET /api/admin/client-events?app=user&days=7`. Release builds are
 obfuscated: symbolize a stack with `flutter symbolize` and the symbols that
@@ -159,7 +159,7 @@ start-up or when the app returns to the foreground, never on a timer.
   Customer app: `app_open`, `tab_view`, `screen_view`, `venue_viewed`,
   `deal_opened`, `media_viewed`, `scan_opened`, `payment_started`,
   `payment_completed`, `data_used`.
-* **Where to read it.** The *Djassa pilot usage* Grafana dashboard
+* **Where to read it.** The *Hossouko pilot usage* Grafana dashboard
   (Prometheus totals) and `GET /api/admin/usage?app=retailer|user&days=30`
   for installs, active installs, screens, venues and deals seen, and per
   merchant: active days, median seconds to record a sale, abandons, data
@@ -176,10 +176,10 @@ start-up or when the app returns to the foreground, never on a timer.
 | Area | Location | Purpose |
 |---|---|---|
 | Backend API | [backend-api](../../backend-api/) | FastAPI application, models, routes, workers, tests |
-| Merchant app | [djassa-App-retailer](../../../djassa-App-retailer/ARCHITECTURE.md) | Flutter, offline-first sale recording |
-| Customer app | [djassa-App-user](../../../djassa-App-user/) | Flutter, discovery, QR payment, loyalty |
-| Public site | [djassa-Web](../../../djassa-Web/README.md) | React/Vite investor and partner site |
-| Product concept | [CONCEPT.md](../business/CONCEPT.md) | What Djassa is, the four products, boundaries |
+| Merchant app | [hossouko-App-retailer](../../../hossouko-App-retailer/ARCHITECTURE.md) | Flutter, offline-first sale recording |
+| Customer app | [hossouko-App-user](../../../hossouko-App-user/) | Flutter, discovery, QR payment, loyalty |
+| Public site | [hossouko-Web](../../../hossouko-Web/README.md) | React/Vite investor and partner site |
+| Product concept | [CONCEPT.md](../business/CONCEPT.md) | What Hossouko is, the four products, boundaries |
 | Business model | [BUSINESS-MODEL.md](../business/BUSINESS-MODEL.md) | Customers, revenue, unit economics, boundaries |
 | Partner strategy | [PARTNERS.md](../business/PARTNERS.md) | Institutions, outreach, pilot questions |
 | Product roadmap | [ROADMAP.md](../business/ROADMAP.md) | Current state, phases, exit criteria |
@@ -202,7 +202,7 @@ python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
 docker compose -f docker-compose.dev.yml up -d db redis
-export DATABASE_URL=postgresql+asyncpg://djassa:djassa@127.0.0.1:5432/djassa
+export DATABASE_URL=postgresql+asyncpg://hossouko:hossouko@127.0.0.1:5432/hossouko
 alembic -c alembic.ini upgrade head
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -278,7 +278,7 @@ The current identity API is:
 
 Tier 1 and Tier 2 completion require a future licensed identity/KYC adapter or operator attestation path. The demo authentication system is not a production identity provider.
 
-The strategic identity architecture is federated rather than centralized: Djassa should exchange scoped, provider-issued attestations and consent records, not copy raw operator KYC, biometric, or national-ID databases. Each claim should include its issuer, assurance level, purpose, issue time, expiry/revocation status, and audit reference. The original operator or licensed KYC institution remains authoritative for the underlying verification.
+The strategic identity architecture is federated rather than centralized: Hossouko should exchange scoped, provider-issued attestations and consent records, not copy raw operator KYC, biometric, or national-ID databases. Each claim should include its issuer, assurance level, purpose, issue time, expiry/revocation status, and audit reference. The original operator or licensed KYC institution remains authoritative for the underlying verification.
 
 ## GraphQL
 
@@ -288,7 +288,7 @@ Use REST for provider webhooks and operational integrations. GraphQL resolvers m
 
 ## Payment orchestration
 
-Djassa now models payment intents without pretending that the sandbox moves real money:
+Hossouko now models payment intents without pretending that the sandbox moves real money:
 
 ```text
 created -> pending -> succeeded
@@ -305,18 +305,18 @@ Provider callbacks must include an external ID, status, amount, and currency. Th
 
 ### Customer payments to a venue: Wave, merchant's own account (pilot)
 
-During the pilot Djassa has no Wave account and never holds funds. Each merchant connects **their own** Wave Business account (`app/api/wave.py`):
+During the pilot Hossouko has no Wave account and never holds funds. Each merchant connects **their own** Wave Business account (`app/api/wave.py`):
 
 | Endpoint | Who | What |
 |---|---|---|
-| `PUT /api/merchant/wave` | merchant | Creates or updates the connection; only the fields sent change. An empty body creates the `webhook_url` to paste into the Wave portal. `webhook_secret` alone is enough for points (points only, the default). `api_key` (Checkout access only) is optional and enables in-app payment. It is tested first with a search that moves no money. Secrets are sealed with Fernet under `DJASSA_ENCRYPTION_KEY` (`app/core/secretbox.py`) and never returned; only a hint (`…a1B2`) is. `payments_enabled` says whether a key is connected. |
+| `PUT /api/merchant/wave` | merchant | Creates or updates the connection; only the fields sent change. An empty body creates the `webhook_url` to paste into the Wave portal. `webhook_secret` alone is enough for points (points only, the default). `api_key` (Checkout access only) is optional and enables in-app payment. It is tested first with a search that moves no money. Secrets are sealed with Fernet under `HOSSOUKO_ENCRYPTION_KEY` (`app/core/secretbox.py`) and never returned; only a hint (`…a1B2`) is. `payments_enabled` says whether a key is connected. |
 | `GET` / `DELETE /api/merchant/wave` | merchant | Status (key hint, webhook configured, last event) / disconnect. |
 | `POST /webhooks/wave/{token}` | Wave | Signed events (`Wave-Signature`, HMAC-SHA256, 5-minute replay window). The random token identifies the venue. |
 | `GET /api/customer/payments/{id}` | customer | Re-reads a pending checkout from Wave, so a late webhook does not block the app. |
 
 Flow: the customer pays with Wave → `POST /api/customer/payments` creates a Wave checkout **with the merchant's key** (amount fixed, payer restricted to the customer's number, `client_reference` = the payment's idempotency key) → the response is `pending` with `checkout_url` → the app opens it, the Wave app approves → `checkout.session.completed` settles the payment, grants points and writes one confirmed `sale_event`.
 
-`merchant.payment_received` (someone paid the merchant's ordinary Wave QR, outside Djassa) records a confirmed sale keyed `wave:<transaction id>`, and grants the venue's points on the sender's phone number (`tel:+225…`, the counter key) **only if that number has a loyalty consent on file** (`loyalty_consents`, given at sign-in in the customer app or at a counter). Without one the sale is recorded anonymously and the number is not stored ([ARTCI.md](../Reglementation/ARTCI.md)). It is skipped when the same money is a Djassa checkout (same transaction id, or a pending checkout from the same number for the same amount).
+`merchant.payment_received` (someone paid the merchant's ordinary Wave QR, outside Hossouko) records a confirmed sale keyed `wave:<transaction id>`, and grants the venue's points on the sender's phone number (`tel:+225…`, the counter key) **only if that number has a loyalty consent on file** (`loyalty_consents`, given at sign-in in the customer app or at a counter). Without one the sale is recorded anonymously and the number is not stored ([ARTCI.md](../Reglementation/ARTCI.md)). It is skipped when the same money is a Hossouko checkout (same transaction id, or a pending checkout from the same number for the same amount).
 
 A points-only venue (no key) gets no checkout: in production a Wave payment in the app is refused with "Payez avec le QR Wave du commerce", and the payment to the shop's own QR still earns the points through `merchant.payment_received`.
 
@@ -340,9 +340,9 @@ Required production-like variables:
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection URL |
-| `DJASSA_SECRET_KEY` | JWT signing key; never use a placeholder |
+| `HOSSOUKO_SECRET_KEY` | JWT signing key; never use a placeholder |
 | `MOBILE_MONEY_SECRETS` | Comma-separated webhook signing keys |
-| `DJASSA_ENCRYPTION_KEY` | Seals merchants' Wave keys at rest; changing it forces merchants to reconnect |
+| `HOSSOUKO_ENCRYPTION_KEY` | Seals merchants' Wave keys at rest; changing it forces merchants to reconnect |
 | `MEDIA_STORAGE=r2` + `R2_*`, `MEDIA_PUBLIC_BASE_URL` | Shop photos and videos (see Shop photos and videos) |
 | `OTP_SENDER` + provider keys | Sign-in codes by SMS (see Sign-in) |
 | `CELERY_BROKER_URL` | Redis broker URL |
@@ -362,7 +362,7 @@ Do not use the demo credentials or placeholder secrets on an Internet-accessible
 
 The following remain mandatory work:
 
-- Configure a real `OTP_SENDER` (and a funded SMS account) and set `DJASSA_ENV=production`, which disables the demo login and the console sender.
+- Configure a real `OTP_SENDER` (and a funded SMS account) and set `HOSSOUKO_ENV=production`, which disables the demo login and the console sender.
 - Implement resource authorization beyond roles.
 - Remove default secrets and fail closed at startup.
 - Schedule `maintenance.purge_expired` daily (see `backend-api/README-CELERY.md`).

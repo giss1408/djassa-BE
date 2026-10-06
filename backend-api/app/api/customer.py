@@ -62,7 +62,7 @@ def new_pay_code() -> str:
 
 def qr_payload(pay_code: str) -> str:
     """The exact text encoded in a venue's payment QR code."""
-    return f"djassa://pay/{pay_code}"
+    return f"hossouko://pay/{pay_code}"
 
 
 def _mask(account: str) -> str:
@@ -71,7 +71,7 @@ def _mask(account: str) -> str:
 
 def _check_payable(venue: models.Venue) -> None:
     if not (venue.payout_provider and venue.payout_account):
-        raise HTTPException(status_code=422, detail="Ce commercant n'accepte pas encore le paiement Djassa")
+        raise HTTPException(status_code=422, detail="Ce commercant n'accepte pas encore le paiement Hossouko")
 
 
 async def _open_request(db: AsyncSession, request: models.PaymentRequest) -> models.PaymentRequest:
@@ -599,7 +599,7 @@ def _consent_out(row: models.LoyaltyConsent | None) -> LoyaltyConsentOut:
 
 @router.get("/customer/loyalty-consent", response_model=LoyaltyConsentOut)
 async def my_loyalty_consent(db: AsyncSession = Depends(get_db), user=Depends(require_role("customer"))):
-    """Whether Djassa may tie this customer's payments to their number."""
+    """Whether Hossouko may tie this customer's payments to their number."""
     return _consent_out(await loyalty_consent.current(db, user["username"]))
 
 

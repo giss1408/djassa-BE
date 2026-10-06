@@ -1,6 +1,6 @@
-# Djassa Skills
+# Hossouko Skills
 
-This folder defines the project-specific skills and contributor instructions for Djassa. Use these files when planning, implementing, reviewing, researching, or documenting changes.
+This folder defines the project-specific skills and contributor instructions for Hossouko. Use these files when planning, implementing, reviewing, researching, or documenting changes.
 
 Structure:
 

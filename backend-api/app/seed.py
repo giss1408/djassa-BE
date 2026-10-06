@@ -5,7 +5,7 @@ is a 00-prefixed placeholder, and every row has `is_sample=True` so the app can
 say so. Real on-duty pharmacy data must come from the official weekly rotation
 (entered through POST /api/admin/pharmacies/{id}/duties), never from this file.
 
-Runs only when DJASSA_SEED_SAMPLE is truthy, which defaults to on for the
+Runs only when HOSSOUKO_SEED_SAMPLE is truthy, which defaults to on for the
 SQLite dev database and off for anything else.
 """
 
@@ -19,10 +19,10 @@ from .core.phone import phone_key
 from .db import DATABASE_URL, AsyncSessionLocal
 
 DEV_MERCHANT_PHONE = "+2250700000002"
-# A cashier at the merchant's maquis, and a field agent (djassa-installer).
+# A cashier at the merchant's maquis, and a field agent (hossouko-installer).
 DEV_CASHIER_PHONE = "+2250700000003"
 DEV_AGENT_PHONE = "+2250700000004"
-# Phone sign-in for djassa-installer in development (sample data only).
+# Phone sign-in for hossouko-installer in development (sample data only).
 DEV_ADMIN_PHONE = "+2250700000009"
 
 _MAQUIS = [
@@ -82,7 +82,7 @@ _DEALS = [
 
 def seeding_enabled() -> bool:
     default = "1" if DATABASE_URL.startswith("sqlite") else "0"
-    return os.getenv("DJASSA_SEED_SAMPLE", default).lower() in ("1", "true", "yes")
+    return os.getenv("HOSSOUKO_SEED_SAMPLE", default).lower() in ("1", "true", "yes")
 
 
 async def _backfill_pay_codes(db) -> None:

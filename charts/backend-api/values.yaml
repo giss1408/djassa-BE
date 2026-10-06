@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: giss1408/djassa
+  repository: giss1408/hossouko
   pullPolicy: IfNotPresent
   tag: latest
 

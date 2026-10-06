@@ -212,7 +212,7 @@ async def _add(
         what = "photos" if kind == "image" else "videos"
         raise HTTPException(status_code=409, detail=f"{limit} {what} maximum par commerce. Supprimez-en une d'abord.")
 
-    workdir = tempfile.mkdtemp(prefix="djassa-media-")
+    workdir = tempfile.mkdtemp(prefix="hossouko-media-")
     try:
         src = await _receive(upload, kind, workdir)
     except HTTPException:

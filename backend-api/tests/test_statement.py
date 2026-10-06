@@ -4,7 +4,7 @@ The artifact shown to a microfinance institution. What these assert is the
 difference between an attestation and a spreadsheet with a logo: the numbers
 reconcile with the event stream by construction, an edited figure fails
 verification, and every issue is attributable
-(docs/optimization_claude_djassa.md, optimization C).
+(docs/optimization_claude_hossouko.md, optimization C).
 """
 
 from datetime import datetime
@@ -140,7 +140,7 @@ async def test_the_statement_names_no_customer(client):
 
     r = await client.get("/api/merchant/statement", params=PERIOD, headers=merchant)
     assert r.status_code == 200
-    assert "client" not in r.text.replace("djassa", ""), "no data subject is named"
+    assert "client" not in r.text.replace("hossouko", ""), "no data subject is named"
     payload = r.json()["payload"]
     assert payload["customers"]["identified"] == 1
     assert payload["customers"]["top_customer_share"] == 1.0
@@ -241,7 +241,7 @@ async def test_a_too_short_period_is_refused(client):
 
 @pytest.mark.asyncio
 async def test_an_admin_can_issue_for_a_venue_on_any_plan_and_it_is_audited(client):
-    """The pilot reality: a partner conversation happens with Djassa in the room."""
+    """The pilot reality: a partner conversation happens with Hossouko in the room."""
     merchant = await _auth(client, "demo", "demo123")
     customer = await _auth(client, "client", "client123")
     admin = await _auth(client, "admin", "admin123")
@@ -276,7 +276,7 @@ async def test_the_signature_key_id_is_not_the_key(client):
 
     document = (await client.get("/api/merchant/statement", params=PERIOD, headers=merchant)).json()
     key_id = document["signature"]["key_id"]
-    secret = os.environ.get("DJASSA_STATEMENT_SECRET") or os.environ["DJASSA_SECRET_KEY"]
+    secret = os.environ.get("HOSSOUKO_STATEMENT_SECRET") or os.environ["HOSSOUKO_SECRET_KEY"]
     assert secret not in key_id
     assert document["signature"]["algorithm"] == "HMAC-SHA256"
     assert len(key_id) == 16
@@ -289,8 +289,8 @@ async def test_an_unsigned_statement_is_never_issued(monkeypatch, client):
     admin = await _auth(client, "admin", "admin123")
     await _on_network_plan(await _demo_venue_id(), client, admin)
 
-    monkeypatch.delenv("DJASSA_STATEMENT_SECRET", raising=False)
-    monkeypatch.delenv("DJASSA_SECRET_KEY", raising=False)
+    monkeypatch.delenv("HOSSOUKO_STATEMENT_SECRET", raising=False)
+    monkeypatch.delenv("HOSSOUKO_SECRET_KEY", raising=False)
     r = await client.get("/api/merchant/statement", params=PERIOD, headers=merchant)
     assert r.status_code == 503
     assert "non emise" in r.json()["detail"]

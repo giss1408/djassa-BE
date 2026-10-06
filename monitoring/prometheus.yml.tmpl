@@ -10,7 +10,7 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'djassa-api'
+  - job_name: 'hossouko-api'
     metrics_path: /metrics
     static_configs:
       - targets: ['{{HOST_INTERNAL}}:8000']

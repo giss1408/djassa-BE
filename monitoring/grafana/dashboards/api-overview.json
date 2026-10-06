@@ -129,7 +129,7 @@
       },
       "targets": [
         {
-          "expr": "max by (commit) (djassa_build_info)",
+          "expr": "max by (commit) (hossouko_build_info)",
           "legendFormat": "{{commit}}",
           "refId": "A"
         }
@@ -137,10 +137,10 @@
     }
   ],
   "schemaVersion": 36,
-  "title": "Djassa API overview",
-  "uid": "djassa-api-overview",
+  "title": "Hossouko API overview",
+  "uid": "hossouko-api-overview",
   "tags": [
-    "djassa"
+    "hossouko"
   ],
   "time": {
     "from": "now-24h",

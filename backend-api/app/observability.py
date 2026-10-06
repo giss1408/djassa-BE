@@ -4,11 +4,11 @@
   never the raw path: one series per route, not one per id or per URL a
   scanner tries. A hosted Prometheus bills per series, and an unbounded label
   is also memory anyone can make the API spend.
-* **/metrics** is open only where `DJASSA_ENV` is unset (development, tests).
+* **/metrics** is open only where `HOSSOUKO_ENV` is unset (development, tests).
   A deployed API answers it only with `METRICS_TOKEN`, as a bearer token or as
   the password of HTTP basic auth (what Grafana Cloud's scrape job sends), and
   answers 404 otherwise, so the endpoint does not advertise itself.
-* **Logs**: one line per request on the `djassa.access` logger, with the route
+* **Logs**: one line per request on the `hossouko.access` logger, with the route
   template, status, duration and a request id echoed in `X-Request-ID`. No
   query string, no IP, no body: query strings carry phone numbers
   (`/api/admin/users?phone=`). `LOG_FORMAT=json` writes JSON lines for a log
@@ -30,11 +30,11 @@ from prometheus_client import Gauge
 
 from .metrics import record_request
 
-access_log = logging.getLogger("djassa.access")
+access_log = logging.getLogger("hossouko.access")
 
 # Which build is running: a deploy shows as the commit label changing, so a
 # dashboard can line up an error spike with the release that caused it.
-BUILD_INFO = Gauge("djassa_build_info", "The running build", ["commit"])
+BUILD_INFO = Gauge("hossouko_build_info", "The running build", ["commit"])
 BUILD_INFO.labels(commit=(os.getenv("RENDER_GIT_COMMIT") or "dev")[:7]).set(1)
 
 
@@ -77,7 +77,7 @@ def route_label(request: Request) -> str:
 def metrics_authorized(authorization: str | None) -> bool:
     token = os.getenv("METRICS_TOKEN")
     if not token:
-        return os.getenv("DJASSA_ENV") is None
+        return os.getenv("HOSSOUKO_ENV") is None
     if not authorization:
         return False
     scheme, _, credentials = authorization.partition(" ")

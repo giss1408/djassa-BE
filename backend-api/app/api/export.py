@@ -14,7 +14,7 @@ microfinance partner and it touches other people's transaction data:
 Before this, `create_consent` recorded the *caller* as the consenting party and
 the export checked only that the caller had consented for the requested merchant
 id, so any account could self-grant and download any merchant's customer-level
-history (docs/optimization_claude_djassa.md, finding 3).
+history (docs/optimization_claude_hossouko.md, finding 3).
 """
 
 import csv
@@ -90,7 +90,7 @@ async def _events_in_window(db: AsyncSession, venue_id: int, days: int):
     Reads `sale_events`, which is the merged stream: before it existed the
     revenue export read the *declared* table, so what a lender received was a
     list of numbers a merchant had typed
-    (docs/optimization_claude_djassa.md, finding 2). Now every row carries its
+    (docs/optimization_claude_hossouko.md, finding 2). Now every row carries its
     evidence class and the export says which is which.
     """
     now = utcnow()

@@ -1,24 +1,24 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: djassa-ingress
-  namespace: djassa
+  name: hossouko-ingress
+  namespace: hossouko
   annotations:
     kubernetes.io/ingress.class: "nginx"
     cert-manager.io/cluster-issuer: "letsencrypt-production"
 spec:
   tls:
     - hosts:
-        - djassa.example.com
-      secretName: djassa-tls
+        - hossouko.example.com
+      secretName: hossouko-tls
   rules:
-    - host: djassa.example.com
+    - host: hossouko.example.com
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: djassa-api
+                name: hossouko-api
                 port:
                   number: 8000

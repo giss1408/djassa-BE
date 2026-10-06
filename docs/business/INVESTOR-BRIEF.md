@@ -1,14 +1,14 @@
-# Djassa — Investor Brief
+# Hossouko — Investor Brief
 
 *Pre-seed · Abidjan, Côte d'Ivoire · October 2026* · [Version française](INVESTOR-BRIEF.fr.md)
 
 > **Placeholders.** Everything marked `[PLACEHOLDER]` (company registration, ownership, the round) is dummy data to be replaced before this brief is sent to anyone. Market figures carry their sources in [MARKET.md](MARKET.md) and must be re-checked before contractual use.
 >
-> Keep this file, its French translation ([INVESTOR-BRIEF.fr.md](INVESTOR-BRIEF.fr.md)) and the web page (`djassa-Web/public/brief/`) in step: a change to one is a change to all three.
+> Keep this file, its French translation ([INVESTOR-BRIEF.fr.md](INVESTOR-BRIEF.fr.md)) and the web page (`hossouko-Web/public/brief/`) in step: a change to one is a change to all three.
 
 ## In one sentence
 
-**Djassa turns everyday sales at neighbourhood shops into proof: a verified business history that the merchant owns and, with consent, can take to a licensed lender.** Merchants pay for it because it brings their customers back.
+**Hossouko turns everyday sales at neighbourhood shops into proof: a verified business history that the merchant owns and, with consent, can take to a licensed lender.** Merchants pay for it because it brings their customers back.
 
 ## The problem
 
@@ -20,13 +20,13 @@
 
 One habit, recording the sale, produces five uses: loyalty, revenue history, tontine regularity, a reliability indicator and a financing case for a licensed partner.
 
-- **Zero extra effort on mobile money.** Djassa builds on the wallet the merchant already uses. The merchant's existing QR payments are captured automatically, Wave first, then other operators and the interoperable QR of **PI-SPI**, the central bank's platform that links every bank and mobile wallet in the UEMOA zone ([details](MARKET.md#what-pi-spi-is)). **No extra fee, no new habit.**
+- **Zero extra effort on mobile money.** Hossouko builds on the wallet the merchant already uses. The merchant's existing QR payments are captured automatically, Wave first, then other operators and the interoperable QR of **PI-SPI**, the central bank's platform that links every bank and mobile wallet in the UEMOA zone ([details](MARKET.md#what-pi-spi-is)). **No extra fee, no new habit.**
 - **Cash sales count too.** They take one tap in the merchant app, even offline. With the customer's phone number, the customer earns points.
 - **Loyalty the merchant can see.** Points, rewards handed over at the counter, deals, and a weekly "customers who came back" figure.
 - **Proof for credit, with consent.** Each sale is labelled *confirmed by the provider* or *declared by the merchant*, and exported only with consent to a licensed MFI or guarantee scheme.
 - **Four pieces:** a merchant app (offline-first, cheap Android), a customer app (maquis, on-duty pharmacies, deals, payment, points), the platform, and a public site.
 
-**Djassa never holds funds and never lends.** Licensed institutions keep custody and credit. Djassa is the technology and distribution partner.
+**Hossouko never holds funds and never lends.** Licensed institutions keep custody and credit. Hossouko is the technology and distribution partner.
 
 ## Why now
 
@@ -44,13 +44,13 @@ Merchant software first, financial infrastructure second.
 | Merchant subscription: capped free plan, then ~5,000 F and ~10,000–15,000 F / month / outlet *(hypotheses to test)* | Pilot |
 | Sponsored deals and campaigns: one-off, time-limited placement for a merchant product, service or special offer in the customer app; pilot booking is admin-assisted and pricing is to be tested | Pilot |
 | Multi-outlet and network contracts | After proof |
-| Consented partner commissions (credit, savings, tontine): Djassa earns distribution fees, never carries credit risk | After partnership |
+| Consented partner commissions (credit, savings, tontine): Hossouko earns distribution fees, never carries credit risk | After partnership |
 
-**Why a merchant pays:** a small maquis earning +5% from returning customers gains about 73,000 F of gross profit a month against a 5,000 F subscription (illustrative; see [BUSINESS-MODEL.md](BUSINESS-MODEL.md)). Routing its payments through a ~3% aggregator would cost it more than that. This is why Djassa never replaces the merchant's wallet.
+**Why a merchant pays:** a small maquis earning +5% from returning customers gains about 73,000 F of gross profit a month against a 5,000 F subscription (illustrative; see [BUSINESS-MODEL.md](BUSINESS-MODEL.md)). Routing its payments through a ~3% aggregator would cost it more than that. This is why Hossouko never replaces the merchant's wallet.
 
 ## Positioning
 
-Djassa avoids consumer personal finance (Djamo) and B2B payments (Julaya, Hub2), and partners with payment rails (Wave, Orange, MTN, CinetPay). **Customer loyalty and merchant activity proof** have no dominant Ivorian player.
+Hossouko avoids consumer personal finance (Djamo) and B2B payments (Julaya, Hub2), and partners with payment rails (Wave, Orange, MTN, CinetPay). **Customer loyalty and merchant activity proof** have no dominant Ivorian player.
 
 ## Traction
 
@@ -83,7 +83,7 @@ No geographic expansion before one corridor passes the gate.
 
 | | |
 |---|---|
-| Legal entity | `[PLACEHOLDER]` Djassa SAS, Abidjan, Côte d'Ivoire (OHADA) |
+| Legal entity | `[PLACEHOLDER]` Hossouko SAS, Abidjan, Côte d'Ivoire (OHADA) |
 | Registration (RCCM) | `[PLACEHOLDER]` CI-ABJ-2026-B-00000 |
 | Share capital | `[PLACEHOLDER]` 1,000,000 FCFA |
 | Ownership | `[PLACEHOLDER]` Stanislas Regisse 50% · Bienvenue Kouadio 50% |
@@ -103,7 +103,7 @@ No geographic expansion before one corridor passes the gate.
 
 ## Red lines
 
-No loan promise. No deposits held by Djassa. No data shared without consent. No opaque score. No pan-African launch. No reusable biometric database. These shape what we build and what we refuse to sell ([CONCEPT.md § 11](CONCEPT.md#11-red-lines)).
+No loan promise. No deposits held by Hossouko. No data shared without consent. No opaque score. No pan-African launch. No reusable biometric database. These shape what we build and what we refuse to sell ([CONCEPT.md § 11](CONCEPT.md#11-red-lines)).
 
 ## Contact
 

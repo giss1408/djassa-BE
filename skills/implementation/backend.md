@@ -1,6 +1,6 @@
 # Skill: Implementation — Backend
 
-Purpose: implement, test, and document backend services for `djassa` with an emphasis on clarity, security, and reproducibility.
+Purpose: implement, test, and document backend services for `hossouko` with an emphasis on clarity, security, and reproducibility.
 
 When to use:
 - Building FastAPI routes, GraphQL resolvers, authentication, authorization, PostgreSQL persistence, Alembic migrations, Celery jobs, country adapters, or support workflows.

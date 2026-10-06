@@ -4,7 +4,7 @@ Our own pipeline instead of an analytics SDK, for the same reasons as
 `client_events`: merchants and customers pay for every byte, and nothing
 leaves for a third party. The apps keep a small aggregated queue and send it
 in one request at start-up or when they come back to the foreground
-(djassa-App-*/lib/core/monitoring/usage_tracker.dart).
+(hossouko-App-*/lib/core/monitoring/usage_tracker.dart).
 
 Identity, deliberately minimal:
 
@@ -51,7 +51,7 @@ EVENT_NAMES: dict[str, frozenset[str]] = {
     "retailer": frozenset({
         "app_open", "screen_view", "sale_form_opened", "sale_recorded", "sale_abandoned",
         "daily_report", "data_used",
-        # Someone tried Djassa Pro without an account. What they do in the
+        # Someone tried Hossouko Pro without an account. What they do in the
         # demo is not reported: pretend sales would skew the pilot's figures.
         "demo_started",
     }),

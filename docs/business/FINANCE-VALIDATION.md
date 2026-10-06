@@ -1,4 +1,4 @@
-# Djassa — Finance Validation Pack
+# Hossouko — Finance Validation Pack
 
 *Working document · 1 October 2026 · Côte d'Ivoire · [French version](FINANCE-VALIDATION.fr.md) · [English budget](FINANCE-BUDGET.md) · [French budget](FINANCE-BUDGET.fr.md)*
 
@@ -97,11 +97,11 @@ The XOF 7,500/month average price and 90% margin are modeling assumptions, **not
 |---|---|---|---|
 | Average price actually collected: XOF 7,500/month | Tested price list, invoices, receipts, discounts, and overdue days | Subscription cash collected ÷ paying merchants; calculate the average price actually received | Untested assumption |
 | Paid sponsored-deal demand and price | Booking records for 7-day slots at XOF 1,000/2,000/3,000; invoices and receipts; placement-delivery record; direct staff/creative costs | Count placements both booked and paid per month; cash received less direct delivery cost. Do not count interest or uncollected invoices as revenue. | Untested pilot hypothesis |
-| Margin after variable costs: 90% | OTP/SMS/WhatsApp invoices, variable cloud costs, payment fees paid by Djassa, variable commissions, and measured support time | (Cash revenue − directly attributable variable costs) ÷ cash revenue | Unverified |
+| Margin after variable costs: 90% | OTP/SMS/WhatsApp invoices, variable cloud costs, payment fees paid by Hossouko, variable commissions, and measured support time | (Cash revenue − directly attributable variable costs) ÷ cash revenue | Unverified |
 | Notification cost is affordable | Local channel quotes and invoices; actual messages per outlet | Notification spend ÷ active outlets and ÷ useful messages delivered | To measure in pilot |
 | Fixed costs remain near XOF 2M/month after pilot | Monthly contracts and invoices for team, hosting, accounting, travel, and tools | Total monthly recurring fixed costs, separate from variable costs | To confirm |
 
-Do not count payment or lender commissions without a signed contract, confirmed receipt, valid consent, and regulatory clearance. Do not count money paid directly from a customer's wallet to a merchant as Djassa revenue.
+Do not count payment or lender commissions without a signed contract, confirmed receipt, valid consent, and regulatory clearance. Do not count money paid directly from a customer's wallet to a merchant as Hossouko revenue.
 
 ### Monthly margin record
 

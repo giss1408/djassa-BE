@@ -1,6 +1,6 @@
 # Database Migrations
 
-Djassa uses Alembic for schema changes. Application startup does not create or alter tables; migrations must be applied as a deployment step.
+Hossouko uses Alembic for schema changes. Application startup does not create or alter tables; migrations must be applied as a deployment step.
 
 ## Apply migrations
 

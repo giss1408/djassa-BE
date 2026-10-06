@@ -4,7 +4,7 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="${ROOT_DIR}/docker-compose.poc.yml"
 ENV_FILE="${ROOT_DIR}/.env"
-PROJECT_NAME="${COMPOSE_PROJECT_NAME:-djassa-test}"
+PROJECT_NAME="${COMPOSE_PROJECT_NAME:-hossouko-test}"
 
 log() {
   printf '[deploy] %s\n' "$*"
@@ -44,12 +44,12 @@ if [[ ! -f "$ENV_FILE" ]]; then
   jwt_secret="$(openssl rand -hex 32)"
   webhook_secret="$(openssl rand -hex 32)"
   cat > "$ENV_FILE" <<EOF
-POSTGRES_USER=djassa
+POSTGRES_USER=hossouko
 POSTGRES_PASSWORD=${db_password}
-POSTGRES_DB=djassa
-DATABASE_URL=postgresql+asyncpg://djassa:${db_password}@db:5432/djassa
+POSTGRES_DB=hossouko
+DATABASE_URL=postgresql+asyncpg://hossouko:${db_password}@db:5432/hossouko
 CELERY_BROKER_URL=redis://redis:6379/0
-DJASSA_SECRET_KEY=${jwt_secret}
+HOSSOUKO_SECRET_KEY=${jwt_secret}
 MOBILE_MONEY_SECRETS=${webhook_secret}
 EOF
   chmod 600 "$ENV_FILE"
@@ -61,12 +61,12 @@ set -a
 . "$ENV_FILE"
 set +a
 
-for required in POSTGRES_PASSWORD DATABASE_URL DJASSA_SECRET_KEY MOBILE_MONEY_SECRETS; do
+for required in POSTGRES_PASSWORD DATABASE_URL HOSSOUKO_SECRET_KEY MOBILE_MONEY_SECRETS; do
   [[ -n "${!required:-}" ]] || fail "$required is missing from $ENV_FILE"
 done
 
-case "$DJASSA_SECRET_KEY" in
-  change-me*|please-change-me|replace-with-random) fail "DJASSA_SECRET_KEY is a placeholder" ;;
+case "$HOSSOUKO_SECRET_KEY" in
+  change-me*|please-change-me|replace-with-random) fail "HOSSOUKO_SECRET_KEY is a placeholder" ;;
 esac
 case "$MOBILE_MONEY_SECRETS" in
   change-me*|please-change-me|replace-with-random) fail "MOBILE_MONEY_SECRETS is a placeholder" ;;
@@ -87,7 +87,7 @@ compose up -d db redis
 
 log "Waiting for PostgreSQL"
 for attempt in $(seq 1 30); do
-  if compose exec -T db pg_isready -U "${POSTGRES_USER:-djassa}" -d "${POSTGRES_DB:-djassa}" >/dev/null 2>&1; then
+  if compose exec -T db pg_isready -U "${POSTGRES_USER:-hossouko}" -d "${POSTGRES_DB:-hossouko}" >/dev/null 2>&1; then
     break
   fi
   [[ "$attempt" -eq 30 ]] && fail "PostgreSQL did not become ready"

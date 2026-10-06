@@ -1,16 +1,16 @@
 """Merchants connect their own Wave Business account (pilot option B).
 
-Djassa never holds funds, and during the pilot has no Wave account of its own.
+Hossouko never holds funds, and during the pilot has no Wave account of its own.
 Two levels, the merchant's choice:
 
 **Points only (the default, no payment key).** In THEIR Wave Business portal
 (business.wave.com, Developer section) the merchant creates a webhook pointing
-to the `webhook_url` Djassa returns (`PUT /api/merchant/wave` with an empty
+to the `webhook_url` Hossouko returns (`PUT /api/merchant/wave` with an empty
 body creates it), with "signing secret" authentication and the
-merchant.payment_received event, and pastes the signing secret into Djassa
+merchant.payment_received event, and pastes the signing secret into Hossouko
 Pro. Every customer who pays the merchant's ordinary Wave QR then earns the
 venue's points on their phone number (`tel:+225...`, the counter key) if they
-agreed to loyalty in Djassa (app/services/loyalty_consent.py); either way the
+agreed to loyalty in Hossouko (app/services/loyalty_consent.py); either way the
 sale counts as confirmed, anonymous when they did not. The signing secret can only verify Wave's messages;
 it cannot create or move a payment.
 
@@ -18,7 +18,7 @@ it cannot create or move a payment.
 "Checkout API" access (never "Payout API": the key is a bearer secret, and
 with Payout a leak could move their money out), and subscribes the webhook to
 checkout.session.completed and checkout.session.payment_failed too. Customers
-can then pay the shop from the Djassa app: a Wave checkout is created with the
+can then pay the shop from the Hossouko app: a Wave checkout is created with the
 merchant's key and the money goes straight to the merchant's wallet.
 
 Secrets are sealed at rest (app/core/secretbox.py) and never returned.
@@ -66,7 +66,7 @@ class WaveConnectIn(BaseModel):
 class WaveAccountOut(BaseModel):
     connected: bool
     api_key_hint: str | None = None
-    # Customers can pay this shop from the Djassa app (a key is connected).
+    # Customers can pay this shop from the Hossouko app (a key is connected).
     payments_enabled: bool = False
     webhook_configured: bool = False
     webhook_url: str | None = None
@@ -144,7 +144,7 @@ async def connect_wave(
 @router.delete("/merchant/wave", status_code=204)
 async def disconnect_wave(db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
     """Forget the connection: key, secret and webhook address. The merchant should also revoke the key in
-    their Wave portal; Djassa cannot do that for them."""
+    their Wave portal; Hossouko cannot do that for them."""
     venue = await _my_venue(db, user, require_wallet=False)
     account = await _account(db, venue.id)
     if account is not None:
@@ -213,7 +213,7 @@ def _same_phone(raw: str | None, e164: str) -> bool:
 
 
 async def _direct_payment(db: AsyncSession, account: models.WaveAccount, data: dict) -> None:
-    """A payment to the merchant's Wave outside a Djassa checkout: points on
+    """A payment to the merchant's Wave outside a Hossouko checkout: points on
     the sender's phone number, and a confirmed sale in the stream."""
     txn = data.get("id") or data.get("transaction_id")
     amount = wave.parse_amount(data.get("amount"))
@@ -224,7 +224,7 @@ async def _direct_payment(db: AsyncSession, account: models.WaveAccount, data: d
         await db.execute(select(models.SaleEvent.id).where(models.SaleEvent.idempotency_key == key))
     ).scalar_one_or_none() is not None:
         return
-    # Already counted as a Djassa checkout payment?
+    # Already counted as a Hossouko checkout payment?
     if (
         await db.execute(
             select(models.CustomerPayment.id).where(models.CustomerPayment.external_transaction_id == txn)
@@ -236,7 +236,7 @@ async def _direct_payment(db: AsyncSession, account: models.WaveAccount, data: d
     except InvalidPhone:
         sender = None
     if sender is not None:
-        # A Djassa checkout still waiting for its own event, from this payer and
+        # A Hossouko checkout still waiting for its own event, from this payer and
         # for this amount: that event will settle it, so do not count it twice.
         pending = (
             await db.execute(
@@ -252,7 +252,7 @@ async def _direct_payment(db: AsyncSession, account: models.WaveAccount, data: d
             return
     # The sender's number is personal data Wave hands us without the payer
     # asking for anything: kept only if they already agreed to loyalty in
-    # Djassa. Otherwise the sale is recorded for the merchant, anonymously.
+    # Hossouko. Otherwise the sale is recorded for the merchant, anonymously.
     customer_id = phone_key(sender) if sender else None
     if customer_id is not None and not await loyalty_consent.has_consent(db, customer_id):
         customer_id = None
@@ -306,7 +306,7 @@ async def wave_webhook(token: str, request: Request, db: AsyncSession = Depends(
 
 
 _RETURN_PAGE = """<!doctype html><html lang="fr"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Djassa</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Hossouko</title>
 <style>body{{font-family:system-ui,sans-serif;background:#0f5132;color:#fff;display:grid;
 place-items:center;min-height:100vh;margin:0;text-align:center;padding:16px}}p{{opacity:.85}}</style>
 </head><body><main><h1>{title}</h1><p>{text}</p></main></body></html>"""
@@ -317,5 +317,5 @@ async def wave_return(result: str = "ok"):
     """Where Wave sends the phone's browser after the payment. The app shows
     the outcome; this page only sends the customer back to it."""
     if result == "ok":
-        return _RETURN_PAGE.format(title="Paiement envoye", text="Revenez dans l'application Djassa pour voir vos points.")
-    return _RETURN_PAGE.format(title="Paiement non abouti", text="Revenez dans l'application Djassa pour reessayer.")
+        return _RETURN_PAGE.format(title="Paiement envoye", text="Revenez dans l'application Hossouko pour voir vos points.")
+    return _RETURN_PAGE.format(title="Paiement non abouti", text="Revenez dans l'application Hossouko pour reessayer.")

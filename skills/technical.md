@@ -1,6 +1,6 @@
 # Skill: Technical, Reproducibility & Operations
 
-Purpose: ensure Djassa code, data, deployments, and operational decisions are reproducible and well-documented.
+Purpose: ensure Hossouko code, data, deployments, and operational decisions are reproducible and well-documented.
 
 When to use:
 - Preparing data tables, scripts, migrations, CI/CD pipelines, architecture changes, or reproducible analysis.
