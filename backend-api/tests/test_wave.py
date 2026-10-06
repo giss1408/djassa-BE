@@ -18,6 +18,7 @@ from app import models
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
 from app.seed import seed_sample_data
+from app.api.customer import utcnow
 from app.services import wave
 
 GOOD_KEY = "wave_ci_prod_" + "k" * 40
@@ -141,6 +142,13 @@ def test_amounts_are_whole_francs():
 # --- Connection -------------------------------------------------------------
 
 
+async def _consent(phone_e164: str):
+    """The payer agreed to loyalty in Djassa (app or counter) beforehand."""
+    async with AsyncSessionLocal() as db:
+        db.add(models.LoyaltyConsent(customer_id=f"tel:{phone_e164}", source="app", consent_version="test", granted_at=utcnow()))
+        await db.commit()
+
+
 @pytest.mark.asyncio
 async def test_merchant_connects_their_wave_and_the_key_is_never_returned(client, fake_wave):
     merchant = await _auth(client, "demo", "demo123")
@@ -177,6 +185,7 @@ async def test_a_wrong_key_is_refused_at_connection(client, fake_wave):
 async def test_wave_checkout_is_created_with_the_merchants_key_and_settled_by_webhook(client, fake_wave):
     merchant = await _auth(client, "demo", "demo123")
     customer = await _auth(client, "client", "client123")
+    await client.put("/api/customer/loyalty-consent", json={"consent_version": "test"}, headers=customer)
     connected = (await _connect(client, merchant)).json()
 
     r = await _pay(client, merchant, customer)
@@ -263,6 +272,7 @@ async def test_unsigned_or_wrongly_signed_events_are_refused(client, fake_wave):
 @pytest.mark.asyncio
 async def test_a_plain_wave_payment_to_the_merchant_earns_points_on_the_phone(client, fake_wave):
     merchant = await _auth(client, "demo", "demo123")
+    await _consent("+2250701020304")
     connected = (await _connect(client, merchant)).json()
     event = {
         "id": "EV_4",
@@ -335,6 +345,7 @@ async def test_without_a_connected_account_production_refuses_wave(client, fake_
 @pytest.mark.asyncio
 async def test_points_only_needs_no_key_and_still_earns_points(client, fake_wave):
     merchant = await _auth(client, "demo", "demo123")
+    await _consent("+2250701020304")
     # An empty body creates the webhook address first, before Wave gives the secret.
     started = (await client.put("/api/merchant/wave", json={}, headers=merchant)).json()
     assert started["connected"] is True
@@ -383,3 +394,19 @@ async def test_points_only_shop_sends_wave_payers_to_the_shop_qr(client, fake_wa
     assert r.status_code == 422
     assert "QR Wave du commerce" in r.json()["detail"]
     assert fake_wave.created == []
+
+
+@pytest.mark.asyncio
+async def test_a_payer_who_never_agreed_is_recorded_anonymously(client, fake_wave):
+    """Wave hands over the sender's number without the payer asking Djassa for
+    anything: the sale counts for the merchant, but the number is not kept."""
+    merchant = await _auth(client, "demo", "demo123")
+    connected = (await client.put("/api/merchant/wave", json={"webhook_secret": SECRET}, headers=merchant)).json()
+    event = {"id": "EV_ANON", "type": "merchant.payment_received",
+             "data": {"id": "T_ANON1", "amount": "1500", "currency": "XOF", "sender_mobile": "+2250709090909"}}
+    assert (await _post_event(client, _hook_path(connected), event)).status_code == 200
+
+    async with AsyncSessionLocal() as db:
+        sale = (await db.execute(select(models.SaleEvent).where(models.SaleEvent.idempotency_key == "wave:T_ANON1"))).scalar_one()
+        assert sale.customer_id is None and sale.loyalty_entry_id is None
+        assert (await db.execute(select(models.LoyaltyEntry).where(models.LoyaltyEntry.customer_id == "tel:+2250709090909"))).first() is None

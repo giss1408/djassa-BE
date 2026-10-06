@@ -51,6 +51,7 @@ async def test_recording_and_loyalty_are_never_gated(client):
     """The one thing a plan must not touch: the transaction-recording habit."""
     merchant = await _auth(client, "demo", "demo123")
     customer = await _auth(client, "client", "client123")
+    await client.put("/api/customer/loyalty-consent", json={"consent_version": "test"}, headers=customer)
 
     # Starter merchant, no subscription at all.
     r = await client.post("/api/merchant/payment-requests", json={"amount": 2000}, headers=merchant)

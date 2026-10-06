@@ -91,6 +91,7 @@ async def test_only_admin_edits_the_rotation(client):
 @pytest.mark.asyncio
 async def test_payment_earns_points_once_and_retry_is_idempotent(client):
     h = await _auth(client, "client", "client123")
+    await client.put("/api/customer/loyalty-consent", json={"consent_version": "test"}, headers=h)
     venue = await _payable_maquis(client, h)
     before = (await client.get(f"/api/venues/{venue['id']}", headers=h)).json()["my_points"]
 
@@ -185,6 +186,7 @@ async def test_rotated_code_stops_working_between_scan_and_pay(client):
 @pytest.mark.asyncio
 async def test_redeem_reward_spends_venue_points(client):
     h = await _auth(client, "client", "client123")
+    await client.put("/api/customer/loyalty-consent", json={"consent_version": "test"}, headers=h)
     venue = await _payable_maquis(client, h)
     detail = (await client.get(f"/api/venues/{venue['id']}", headers=h)).json()
     reward = detail["rewards"][0]
@@ -213,3 +215,32 @@ async def test_redeem_reward_spends_venue_points(client):
         await client.post("/api/customer/loyalty/redeem", json={"reward_id": pricey["id"]}, headers=h)
     r = await client.post("/api/customer/loyalty/redeem", json={"reward_id": pricey["id"]}, headers=h)
     assert r.status_code == 409
+
+
+async def _pay_once(client, h, venue, amount=5000):
+    return await client.post("/api/customer/payments", headers=h, json={
+        "pay_code": venue["pay_code"], "amount": amount, "wallet_provider": "wave",
+        "payer_msisdn": "+2250712345678", "idempotency_key": uuid.uuid4().hex})
+
+
+@pytest.mark.asyncio
+async def test_no_consent_no_points_and_withdrawing_erases_them(client):
+    h = await _auth(client, "client", "client123")
+    venue = await _payable_maquis(client, h)
+    # This file shares one database; earlier tests may have given consent.
+    await client.delete("/api/customer/loyalty-consent", headers=h)
+    assert (await client.get("/api/customer/loyalty-consent", headers=h)).json()["active"] is False
+    r = await _pay_once(client, h, venue)
+    assert r.status_code == 201 and r.json()["points_awarded"] == 0
+
+    given = (await client.put("/api/customer/loyalty-consent", json={"consent_version": "fidelite-2026-10"}, headers=h)).json()
+    assert given["active"] is True and given["source"] == "app"
+    assert (await _pay_once(client, h, venue)).json()["points_awarded"] > 0
+    total = (await client.get("/api/customer/loyalty", headers=h)).json()["total_points"]
+    assert total > 0
+
+    gone = await client.delete("/api/customer/loyalty-consent", headers=h)
+    assert gone.status_code == 200 and gone.json()["points_erased"] == total
+    assert (await client.get("/api/customer/loyalty", headers=h)).json()["total_points"] == 0
+    assert (await client.get("/api/customer/loyalty-consent", headers=h)).json()["active"] is False
+    assert (await _pay_once(client, h, venue)).json()["points_awarded"] == 0

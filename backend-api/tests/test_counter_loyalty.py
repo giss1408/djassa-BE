@@ -42,10 +42,11 @@ async def _venue_of(username="demo"):
         ).scalars().first()
 
 
-async def _sale(ac, merchant, key, amount="2500", phone="07 12 34 56 78"):
+async def _sale(ac, merchant, key, amount="2500", phone="07 12 34 56 78", consent=True):
     body = {"amount": amount, "currency": "XOF", "type": "sale", "idempotency_key": key}
     if phone is not None:
         body["customer_phone"] = phone
+        body["customer_consent"] = consent
     return await ac.post("/api/merchant/sales", json=body, headers=merchant)
 
 
@@ -143,7 +144,8 @@ async def test_the_offline_queue_carries_the_number_and_reports_points_per_sale(
         "/api/merchant/sales/sync",
         json={
             "operations": [
-                {"amount": "1000", "idempotency_key": "sync-pts-0001", "customer_phone": "0712345678"},
+                {"amount": "1000", "idempotency_key": "sync-pts-0001", "customer_phone": "0712345678",
+                 "customer_consent": True},
                 {"amount": "1000", "idempotency_key": "sync-pts-0002"},
                 {"amount": "1000", "idempotency_key": "sync-pts-0003", "customer_phone": "nope"},
             ]
@@ -237,3 +239,28 @@ async def test_counter_endpoints_are_for_merchants_only(client):
     customer = await _auth(client, "client", "client123")
     r = await client.post("/api/merchant/customers/loyalty", json={"phone": "0712345678"}, headers=customer)
     assert r.status_code == 403
+
+
+# --- Consent (docs/Reglementation/ARTCI.md, option 1) -------------------------
+
+
+@pytest.mark.asyncio
+async def test_a_number_without_consent_is_refused_so_the_merchant_can_ask(client):
+    merchant = await _auth(client)
+    r = await _sale(client, merchant, "consent-0001", consent=False)
+    assert r.status_code == 422
+    assert "accepte" in r.json()["detail"]
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(models.SaleEvent).where(models.SaleEvent.idempotency_key == "sale:consent-0001"))).first() is None
+
+
+@pytest.mark.asyncio
+async def test_consent_given_once_at_the_counter_is_on_file_for_the_next_sale(client):
+    merchant = await _auth(client)
+    assert (await _sale(client, merchant, "consent-0002", consent=True)).status_code == 201
+    async with AsyncSessionLocal() as db:
+        row = (await db.execute(select(models.LoyaltyConsent))).scalar_one()
+        assert row.customer_id == "tel:+2250712345678" and row.source == "counter" and row.venue_id is not None
+    # Next visit: the number already agreed, no need to tick the box again.
+    r = await _sale(client, merchant, "consent-0003", consent=False)
+    assert r.status_code == 201 and r.json()["points_awarded"] > 0

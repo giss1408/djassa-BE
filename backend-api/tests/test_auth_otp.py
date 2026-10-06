@@ -280,3 +280,22 @@ async def test_test_numbers_only_apply_in_the_test_environment(client, monkeypat
     monkeypatch.setenv("TEST_OTP_NUMBERS", "+2250700000001:123")
     with pytest.raises(RuntimeError):
         await client.post("/api/auth/otp/verify", json={"phone": "0700000001", "code": "000000"})
+
+
+@pytest.mark.asyncio
+async def test_consent_ticked_on_the_sign_in_screen_is_recorded(client):
+    code = await _code(client)
+    r = await client.post("/api/auth/otp/verify", json={
+        "phone": PHONE, "code": code, "app": "customer", "loyalty_consent_version": "fidelite-2026-10"})
+    assert r.status_code == 200
+    async with AsyncSessionLocal() as db:
+        row = (await db.execute(select(models.LoyaltyConsent))).scalar_one()
+        assert row.customer_id == "tel:" + E164 and row.source == "app"
+        assert row.consent_version == "fidelite-2026-10"
+
+
+@pytest.mark.asyncio
+async def test_signing_in_without_ticking_opens_the_account_without_consent(client):
+    assert (await _sign_in(client)).status_code == 200
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(models.LoyaltyConsent))).first() is None

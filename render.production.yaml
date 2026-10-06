@@ -71,6 +71,11 @@ services:
       - key: OTP_DAILY_SMS_BUDGET
         value: "300"
 
+      # The Djassa team's WhatsApp for suggestions (merchants always,
+      # customers from 100 points). Unset: the menu entry stays hidden.
+      - key: DJASSA_SUGGESTIONS_WHATSAPP
+        sync: false
+
       # --- Media (photos, videos) -------------------------------------------
       # Required in production: the instance disk is wiped on every deploy.
       - key: MEDIA_STORAGE

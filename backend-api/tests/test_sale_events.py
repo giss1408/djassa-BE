@@ -66,6 +66,7 @@ async def _events(**where):
 async def test_a_succeeded_payment_writes_exactly_one_confirmed_event(client):
     merchant = await _auth(client, "demo", "demo123")
     customer = await _auth(client, "client", "client123")
+    await client.put("/api/customer/loyalty-consent", json={"consent_version": "test"}, headers=customer)
     paid = await _pay(client, merchant, customer, "ev-confirmed-1", amount=4500)
     assert paid["status"] == "succeeded"
 

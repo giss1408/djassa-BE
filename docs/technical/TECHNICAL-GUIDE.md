@@ -16,7 +16,7 @@ The backend is a FastAPI service with:
 
 API surfaces, by client:
 
-- **Merchant app** (`djassa-App-retailer`): `/api/auth/*` (phone sign-in), `/api/merchant/sales` and `/api/merchant/sales/sync` (optional `customer_phone` earns the customer points), `/api/merchant/customers/loyalty` and `/redeem` (balance and reward at the counter, by phone), `/api/merchant/venue/location` (GET/PUT: the shop's position, from the phone's GPS in the shop, for customers' directions), merchant deals, stats and payment requests.
+- **Merchant app** (`djassa-App-retailer`): `/api/auth/*` (phone sign-in), `/api/merchant/sales` and `/api/merchant/sales/sync` (optional `customer_phone` earns the customer points; the first time a number is used it needs `customer_consent: true`, see [ARTCI.md](../Reglementation/ARTCI.md)), `/api/merchant/customers/loyalty` and `/redeem` (balance and reward at the counter, by phone), `/api/merchant/venue/location` (GET/PUT: the shop's position, from the phone's GPS in the shop, for customers' directions), merchant deals, stats and payment requests.
 - **Customer app** (`djassa-App-user`): `/api/auth/*` (phone sign-in), venues, categories, on-duty pharmacies, deals, pay-code lookup, customer payments, loyalty balance and redemption.
 - **Admin**: pharmacy duty rotation, venue pay codes, featured deals, merchant accounts (`/api/admin/users/roles`), app error reports (`/api/admin/client-events`).
 - **All apps and the site**: `POST /api/client-events` (error reports, no sign-in needed).
@@ -316,7 +316,7 @@ During the pilot Djassa has no Wave account and never holds funds. Each merchant
 
 Flow: the customer pays with Wave → `POST /api/customer/payments` creates a Wave checkout **with the merchant's key** (amount fixed, payer restricted to the customer's number, `client_reference` = the payment's idempotency key) → the response is `pending` with `checkout_url` → the app opens it, the Wave app approves → `checkout.session.completed` settles the payment, grants points and writes one confirmed `sale_event`.
 
-`merchant.payment_received` (someone paid the merchant's ordinary Wave QR, outside Djassa) grants the venue's points on the sender's phone number (`tel:+225…`, the counter key) and records a confirmed sale keyed `wave:<transaction id>`. It is skipped when the same money is a Djassa checkout (same transaction id, or a pending checkout from the same number for the same amount).
+`merchant.payment_received` (someone paid the merchant's ordinary Wave QR, outside Djassa) records a confirmed sale keyed `wave:<transaction id>`, and grants the venue's points on the sender's phone number (`tel:+225…`, the counter key) **only if that number has a loyalty consent on file** (`loyalty_consents`, given at sign-in in the customer app or at a counter). Without one the sale is recorded anonymously and the number is not stored ([ARTCI.md](../Reglementation/ARTCI.md)). It is skipped when the same money is a Djassa checkout (same transaction id, or a pending checkout from the same number for the same amount).
 
 A points-only venue (no key) gets no checkout: in production a Wave payment in the app is refused with "Payez avec le QR Wave du commerce", and the payment to the shop's own QR still earns the points through `merchant.payment_received`.
 

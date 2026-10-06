@@ -9,8 +9,9 @@ to the `webhook_url` Djassa returns (`PUT /api/merchant/wave` with an empty
 body creates it), with "signing secret" authentication and the
 merchant.payment_received event, and pastes the signing secret into Djassa
 Pro. Every customer who pays the merchant's ordinary Wave QR then earns the
-venue's points on their phone number (`tel:+225...`, the counter key), and the
-sale counts as confirmed. The signing secret can only verify Wave's messages;
+venue's points on their phone number (`tel:+225...`, the counter key) if they
+agreed to loyalty in Djassa (app/services/loyalty_consent.py); either way the
+sale counts as confirmed, anonymous when they did not. The signing secret can only verify Wave's messages;
 it cannot create or move a payment.
 
 **In-app payment (optional).** The merchant also pastes an API key with ONLY
@@ -41,7 +42,7 @@ from ..core.phone import InvalidPhone, normalize_phone, phone_key
 from ..core.secretbox import SecretUnavailable, hint, seal, unseal
 from ..core.security import require_role
 from ..db import get_db
-from ..services import sale_events, wave
+from ..services import loyalty_consent, sale_events, wave
 from ..services.mobile_money import public_base_url
 from .customer import settle_payment, utcnow
 from .payment_requests import _my_venue
@@ -249,13 +250,19 @@ async def _direct_payment(db: AsyncSession, account: models.WaveAccount, data: d
         ).scalars().all()
         if any(_same_phone(p, sender) for p in pending):
             return
+    # The sender's number is personal data Wave hands us without the payer
+    # asking for anything: kept only if they already agreed to loyalty in
+    # Djassa. Otherwise the sale is recorded for the merchant, anonymously.
+    customer_id = phone_key(sender) if sender else None
+    if customer_id is not None and not await loyalty_consent.has_consent(db, customer_id):
+        customer_id = None
     venue = await db.get(models.Venue, account.venue_id)
     await sale_events.record_wallet_sale(
         db,
         venue_id=venue.id,
         amount=amount,
         idempotency_key=key,
-        customer_id=phone_key(sender) if sender else None,
+        customer_id=customer_id,
         points_per_100=venue.points_per_100,
         now=utcnow(),
     )

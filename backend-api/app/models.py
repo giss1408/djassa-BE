@@ -296,6 +296,10 @@ class Deal(Base):
     discount_percent = Column(Integer, nullable=True)
     price = Column(Integer, nullable=True)  # XOF, the deal price
     original_price = Column(Integer, nullable=True)  # XOF, struck through
+    # The corner banner on the deal's image: "bon_plan", "flash" (short and
+    # urgent) or "promo" (the sticker look). The merchant's choice; it only
+    # changes how the card is drawn, never the price.
+    ribbon = Column(String(16), nullable=False, default="bon_plan", server_default="bon_plan")
     starts_at = Column(DateTime, nullable=False, index=True)
     ends_at = Column(DateTime, nullable=False, index=True)
     is_featured = Column(Boolean, nullable=False, default=False, index=True)
@@ -874,3 +878,24 @@ class VenueMedia(Base):
     created_at = Column(DateTime, nullable=False)
 
     venue = relationship("Venue")
+
+
+class LoyaltyConsent(Base):
+    """A customer's agreement that Djassa keeps their number to count points.
+
+    Law 2013-450 (art. 14) makes consent the basis for processing, so no
+    payment or sale is tied to a phone number without one of these rows
+    (docs/Reglementation/ARTCI.md). Given in the customer app at sign-in
+    (`source="app"`) or at a counter, where the merchant asks and ticks the box
+    (`source="counter"`, with the venue). Withdrawing erases the points and
+    unlinks past sales; the row stays, withdrawn, as proof of what was done.
+    """
+
+    __tablename__ = "loyalty_consents"
+    id = Column(Integer, primary_key=True, index=True)
+    customer_id = Column(String(128), nullable=False, unique=True, index=True)
+    source = Column(String(16), nullable=False)  # "app" | "counter"
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=True)
+    consent_version = Column(String(64), nullable=False)
+    granted_at = Column(DateTime, nullable=False)
+    withdrawn_at = Column(DateTime, nullable=True)

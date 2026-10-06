@@ -37,6 +37,7 @@ from ..core.phone import InvalidPhone, mask_phone, normalize_phone, phone_key
 from ..db import get_db
 from ..metrics import AUTH_EVENTS
 from ..rate_limiter import limiter
+from ..services import loyalty_consent
 from ..services.otp_sender import OtpDeliveryFailed, dev_echo_enabled, get_sender
 
 router = APIRouter()
@@ -151,6 +152,10 @@ class OtpRequestOut(BaseModel):
 
 class OtpVerifyIn(OtpRequestIn):
     code: str = Field(pattern=r"^\d{6}$")
+    # Customer app only: the loyalty wording version the customer agreed to on
+    # the sign-in screen (app/services/loyalty_consent.py). Absent means no
+    # consent: the account works, but no payment is tied to the number.
+    loyalty_consent_version: str | None = Field(default=None, min_length=1, max_length=64)
 
 
 class TokenPairOut(BaseModel):
@@ -348,6 +353,11 @@ async def verify_code(request: Request, payload: OtpVerifyIn, db: AsyncSession =
     if role == "customer" and "customer" not in user.role_set():
         # Proving a number is all a customer account needs.
         user.roles = ",".join(sorted(user.role_set() | {"customer"}))
+
+    if role == "customer" and payload.loyalty_consent_version:
+        await loyalty_consent.grant(
+            db, phone_key(e164), source=loyalty_consent.APP, version=payload.loyalty_consent_version, now=now
+        )
 
     user.last_login_at = now
     pair = await issue_tokens(db, user, role, otp.new_family(), now)

@@ -12,7 +12,7 @@ is in neither, so a new table cannot silently stay behind on the old number.
 
 from datetime import datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
@@ -33,6 +33,7 @@ OWNED = [
     (models.Venue, "owner_username"),
     (models.Venue, "enrolled_by"),
     (models.VenueStaff, "user_key"),
+    (models.LoyaltyConsent, "customer_id"),
 ]
 
 # Who did something, as it was at the time. Left on the old key.
@@ -71,6 +72,12 @@ async def move_account(
 
     old_e164 = user.phone_e164
     old_key, new_key = phone_key(old_e164), phone_key(new_e164)
+    # One consent per number. The new number may already have one from a
+    # counter; the person's own consent wins, and is the one that moves.
+    if (
+        await db.execute(select(models.LoyaltyConsent.id).where(models.LoyaltyConsent.customer_id == old_key))
+    ).scalar_one_or_none() is not None:
+        await db.execute(delete(models.LoyaltyConsent).where(models.LoyaltyConsent.customer_id == new_key))
     for model, column in OWNED:
         attr = getattr(model, column)
         await db.execute(update(model).where(attr == old_key).values({column: new_key}))

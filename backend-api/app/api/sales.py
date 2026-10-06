@@ -23,7 +23,7 @@ from ..core.phone import InvalidPhone, PHONE_KEY_PREFIX, mask_phone, normalize_p
 from ..core.security import SHOP_STAFF, require_role
 from ..db import get_db
 from ..schemas.customer import SaleIn, SaleOut, SaleSyncIn, SaleSyncOut, SaleSyncResult
-from ..services import sale_events
+from ..services import loyalty_consent, sale_events
 from .customer import utcnow
 from .payment_requests import _my_venue
 
@@ -66,18 +66,31 @@ def _out(event: models.SaleEvent, points: int = 0) -> SaleOut:
     )
 
 
-def _customer_id(payload: SaleIn) -> str | None:
+NO_CONSENT = "Demandez au client s'il accepte que Djassa garde son numero pour ses points, puis cochez la case."
+
+
+async def _customer_id(db: AsyncSession, venue_id: int, payload: SaleIn) -> str | None:
     """The phone key for the sale's customer, or None for an anonymous sale.
 
     An unparseable number is refused rather than dropped: the merchant told the
     customer they would earn points, so silently recording the sale without
-    them would break that promise with nobody noticing."""
+    them would break that promise with nobody noticing. So is a number with no
+    consent on file and none given now (docs/Reglementation/ARTCI.md): the
+    merchant can ask, tick the box and send again."""
     if not payload.customer_phone or not payload.customer_phone.strip():
         return None
     try:
-        return phone_key(normalize_phone(payload.customer_phone))
+        key = phone_key(normalize_phone(payload.customer_phone))
     except InvalidPhone as exc:
         raise HTTPException(status_code=422, detail=str(exc))
+    if not await loyalty_consent.has_consent(db, key):
+        if not payload.customer_consent:
+            raise HTTPException(status_code=422, detail=NO_CONSENT)
+        await loyalty_consent.grant(
+            db, key, source=loyalty_consent.COUNTER, version=loyalty_consent.CURRENT_VERSION,
+            now=utcnow(), venue_id=venue_id,
+        )
+    return key
 
 
 async def _record(
@@ -94,7 +107,7 @@ async def _record(
     one attempts synchronous IO under asyncio and fails.
     """
     occurred_at = _naive_utc(payload.occurred_at)
-    customer_id = _customer_id(payload)
+    customer_id = await _customer_id(db, venue_id, payload)
     event, existed = await sale_events.record_declared_sale(
         db,
         venue_id=venue_id,

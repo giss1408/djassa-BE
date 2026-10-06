@@ -1,14 +1,65 @@
+import os
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.countries import get_country
 from ..core.i18n import message
-from ..core.security import get_current_user
+from ..core.security import SHOP_STAFF, get_current_user
 from ..db import get_db
-from ..models import SupportRequest
+from ..models import LoyaltyEntry, SupportRequest
 from ..schemas.support import SupportRequestIn, SupportRequestOut
 
 router = APIRouter(prefix="/support", tags=["support"])
+
+# Customers unlock "send a suggestion on WhatsApp" at this many points: a
+# regular, not a stranger, so the team's WhatsApp is not a spam inbox. The
+# points are a threshold, never spent. Merchants and their cashiers always
+# have it, free: they are who Djassa is built for.
+SUGGESTION_POINTS = 100
+
+
+def suggestions_whatsapp() -> str | None:
+    """The Djassa team's WhatsApp number, digits only (wa.me format)."""
+    digits = "".join(c for c in os.getenv("DJASSA_SUGGESTIONS_WHATSAPP", "") if c.isdigit())
+    return digits or None
+
+
+class SuggestionAccessOut(BaseModel):
+    available: bool
+    # None until the number is configured, or while the customer is short.
+    whatsapp_url: str | None = None
+    points: int | None = None  # customers only: their total across venues
+    points_needed: int = SUGGESTION_POINTS
+
+
+@router.get("/suggestions/whatsapp", response_model=SuggestionAccessOut)
+async def suggestion_access(db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    """Whether this person may message the team on WhatsApp, and the link.
+
+    The apps keep the menu entry out of sight until `available` is true."""
+    number = suggestions_whatsapp()
+    staff = user["role"] in SHOP_STAFF
+    points = None
+    if not staff:
+        points = int(
+            (
+                await db.execute(
+                    select(func.coalesce(func.sum(LoyaltyEntry.points), 0)).where(
+                        LoyaltyEntry.customer_id == user["username"]
+                    )
+                )
+            ).scalar_one()
+        )
+    allowed = staff or (points or 0) >= SUGGESTION_POINTS
+    if not allowed or number is None:
+        return SuggestionAccessOut(available=False, points=points)
+    who = "commercant" if staff else "client"
+    text = f"Suggestion Djassa ({who}) : "
+    return SuggestionAccessOut(available=True, whatsapp_url=f"https://wa.me/{number}?text={quote(text)}", points=points)
 
 
 @router.post("/requests", response_model=SupportRequestOut, status_code=201)

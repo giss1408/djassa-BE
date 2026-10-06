@@ -16,8 +16,11 @@ from ..schemas.customer import (
     DealOut,
     DutyIn,
     DutyOut,
+    LoyaltyConsentIn,
+    LoyaltyConsentOut,
     LoyaltyEntryOut,
     LoyaltyOut,
+    LoyaltyWithdrawOut,
     OnDutyPharmacyOut,
     PayCodeOut,
     PayTargetOut,
@@ -30,7 +33,7 @@ from ..schemas.customer import (
     VenueDetailOut,
     VenueOut,
 )
-from ..services import sale_events
+from ..services import loyalty_consent, sale_events
 from ..services.mobile_money import ProviderUnavailable, provider_for
 
 router = APIRouter()
@@ -185,6 +188,7 @@ def deal_out(d: models.Deal) -> DealOut:
         discount_percent=d.discount_percent,
         price=d.price,
         original_price=d.original_price,
+        ribbon=d.ribbon or "bon_plan",
         starts_at=d.starts_at,
         ends_at=d.ends_at,
         is_featured=d.is_featured,
@@ -373,7 +377,10 @@ async def settle_payment(db: AsyncSession, payment: models.CustomerPayment, outc
     if request is not None:
         request.status = "paid"
     venue = payment.venue
-    points = (payment.amount // 100) * (venue.points_per_100 or 0)
+    # Paying in the app is not consent to loyalty: that is asked at sign-in
+    # (or later, in the account screen), and can be withdrawn.
+    consented = await loyalty_consent.has_consent(db, payment.customer_id)
+    points = (payment.amount // 100) * (venue.points_per_100 or 0) if consented else 0
     payment.points_awarded = points
     entry = None
     if points > 0:
@@ -565,6 +572,46 @@ async def my_loyalty(db: AsyncSession = Depends(get_db), user=Depends(require_ro
         for e in entries
     ]
     return LoyaltyOut(total_points=sum(balances.values()), venues=venues, history=history)
+
+
+def _consent_out(row: models.LoyaltyConsent | None) -> LoyaltyConsentOut:
+    if row is None:
+        return LoyaltyConsentOut(active=False, current_version=loyalty_consent.CURRENT_VERSION)
+    return LoyaltyConsentOut(
+        active=True,
+        source=row.source,
+        consent_version=row.consent_version,
+        granted_at=row.granted_at,
+        current_version=loyalty_consent.CURRENT_VERSION,
+    )
+
+
+@router.get("/customer/loyalty-consent", response_model=LoyaltyConsentOut)
+async def my_loyalty_consent(db: AsyncSession = Depends(get_db), user=Depends(require_role("customer"))):
+    """Whether Djassa may tie this customer's payments to their number."""
+    return _consent_out(await loyalty_consent.current(db, user["username"]))
+
+
+@router.put("/customer/loyalty-consent", response_model=LoyaltyConsentOut)
+async def give_loyalty_consent(
+    payload: LoyaltyConsentIn, db: AsyncSession = Depends(get_db), user=Depends(require_role("customer"))
+):
+    """Agree to loyalty after sign-in (an account opened without it, or one
+    that withdrew and changed its mind)."""
+    row = await loyalty_consent.grant(
+        db, user["username"], source=loyalty_consent.APP, version=payload.consent_version, now=utcnow()
+    )
+    await db.commit()
+    return _consent_out(row)
+
+
+@router.delete("/customer/loyalty-consent", response_model=LoyaltyWithdrawOut)
+async def withdraw_loyalty_consent(db: AsyncSession = Depends(get_db), user=Depends(require_role("customer"))):
+    """Withdraw consent: every point is erased and past sales stop naming the
+    customer. The app warns before calling this; it cannot be undone."""
+    points = await loyalty_consent.withdraw(db, user["username"], utcnow())
+    await db.commit()
+    return LoyaltyWithdrawOut(points_erased=points)
 
 
 @router.post("/customer/loyalty/redeem", response_model=RedeemOut, status_code=201)

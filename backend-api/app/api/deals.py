@@ -103,6 +103,7 @@ async def create_deal(payload: DealIn, db: AsyncSession = Depends(get_db), user=
         discount_percent=payload.discount_percent,
         price=payload.price,
         original_price=payload.original_price,
+        ribbon=payload.ribbon,
         starts_at=starts,
         ends_at=ends,
         is_featured=False,  # never self-granted, see Deal

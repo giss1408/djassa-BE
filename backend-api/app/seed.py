@@ -174,6 +174,9 @@ async def _seed_shops_and_deals(db) -> None:
                 discount_percent=percent,
                 price=price,
                 original_price=original,
+                # Demo variety for the corner banner: the shortest deals are
+                # flash sales, percentage ones wear the promo sticker.
+                ribbon="flash" if days <= 1 else ("promo" if percent else "bon_plan"),
                 starts_at=now - timedelta(days=1),
                 ends_at=now + timedelta(days=days),
                 is_featured=featured,

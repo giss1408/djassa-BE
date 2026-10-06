@@ -53,6 +53,7 @@ class DealOut(BaseModel):
     discount_percent: int | None = None
     price: int | None = None
     original_price: int | None = None
+    ribbon: str = "bon_plan"
     starts_at: datetime
     ends_at: datetime
     is_featured: bool
@@ -65,6 +66,8 @@ class DealIn(BaseModel):
     discount_percent: int | None = Field(default=None, ge=1, le=90)
     price: int | None = Field(default=None, ge=0, le=10_000_000)
     original_price: int | None = Field(default=None, ge=1, le=10_000_000)
+    # Corner banner on the deal's image (models.Deal.ribbon).
+    ribbon: Literal["bon_plan", "flash", "promo"] = "bon_plan"
     starts_at: datetime | None = None  # defaults to now
     ends_at: datetime
 
@@ -348,6 +351,10 @@ class SaleIn(BaseModel):
     # are anonymous. When present, the customer earns this venue's points on
     # the sale, keyed on the normalised number (app/core/phone.py).
     customer_phone: str | None = Field(default=None, max_length=32)
+    # The merchant asked and the customer agreed that Djassa keeps their
+    # number for points. Needed the first time a number is used; a number
+    # that already has consent (app or another counter) does not need it.
+    customer_consent: bool = False
 
 
 class SaleOut(BaseModel):
@@ -381,3 +388,22 @@ class SaleSyncResult(BaseModel):
 
 class SaleSyncOut(BaseModel):
     results: list[SaleSyncResult]
+
+
+class LoyaltyConsentIn(BaseModel):
+    # The wording version the app displayed (app/services/loyalty_consent.py).
+    consent_version: str = Field(min_length=1, max_length=64)
+
+
+class LoyaltyConsentOut(BaseModel):
+    active: bool
+    source: str | None = None
+    consent_version: str | None = None
+    granted_at: datetime | None = None
+    # The version the server currently expects, so an app can tell whether
+    # the text it shows is the one on file.
+    current_version: str
+
+
+class LoyaltyWithdrawOut(BaseModel):
+    points_erased: int

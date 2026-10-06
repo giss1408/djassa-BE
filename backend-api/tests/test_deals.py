@@ -118,3 +118,23 @@ async def test_deal_validation(client):
     assert r.status_code == 403
     # Unknown category.
     assert (await client.get("/api/deals", params={"category": "bar"}, headers=customer)).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_the_merchant_picks_the_corner_banner_and_customers_see_it(client):
+    merchant = await _auth(client, "demo", "demo123")
+    r = await client.post("/api/merchant/deals", headers=merchant,
+                          json={"title": "Flash du midi", "discount_percent": 30, "ends_at": _in(1), "ribbon": "flash"})
+    assert r.status_code == 201 and r.json()["ribbon"] == "flash"
+    deal_id = r.json()["id"]
+
+    customer = await _auth(client, "client", "client123")
+    listed = next(d for d in (await client.get("/api/deals", headers=customer)).json() if d["id"] == deal_id)
+    assert listed["ribbon"] == "flash"
+
+    plain = await client.post("/api/merchant/deals", headers=merchant,
+                              json={"title": "Sans banniere", "price": 500, "ends_at": _in(1)})
+    assert plain.json()["ribbon"] == "bon_plan"
+    odd = await client.post("/api/merchant/deals", headers=merchant,
+                            json={"title": "Inconnue", "price": 500, "ends_at": _in(1), "ribbon": "gratuit"})
+    assert odd.status_code == 422
