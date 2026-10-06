@@ -29,7 +29,7 @@ The rule: **no phone number is tied to a sale or to points without a consent on 
 
 **Withdrawal is erasure.** In *Mon compte*, switching off *Points de fidélité* asks for confirmation, then deletes every point and removes the number from past sales. The sales themselves stay in the merchant's history, anonymous. The consent row is kept, marked withdrawn, as proof of what was done and when.
 
-**Suggestions to the Djassa team.** A *Suggérer une idée* entry in the app menu opens WhatsApp to the team's number. It is hidden until the customer has 100 points (merchants and cashiers always have it). The points are not spent. The customer starts the conversation from their own WhatsApp, so it is not unsolicited, but messages then sit in WhatsApp (Meta) and count as personal data Djassa holds. Declare it with the rest.
+**Suggestions to the Djassa team.** An *Aide* (help) entry in the app menu opens WhatsApp to the team's number. It is hidden until the customer has 100 points (merchants and cashiers always have it). The points are not spent. The customer starts the conversation from their own WhatsApp, so it is not unsolicited, but messages then sit in WhatsApp (Meta) and count as personal data Djassa holds. Declare it with the rest.
 
 **Wording changes.** If the consent text changes, bump `CURRENT_VERSION` on the server and `loyaltyConsentVersion` in the customer app together. Each row records the version that person agreed to.
 
