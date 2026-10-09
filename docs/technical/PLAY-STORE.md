@@ -127,8 +127,9 @@ lists (it may report diagnostics to Google).
 * **Without the app**: the public page `/supprimer-mon-compte/` explains both,
   and gives an address to write to.
 * The privacy policy at `/confidentialite/` is a **draft**: fill in the legal
-  entity, its address and the contact address (search the page for
-  `A-COMPLETER`), and have it checked against the ARTCI declaration.
+  entity and its address (search the page for `A-COMPLETER`), and have it
+  checked against the ARTCI declaration. The contact address is
+  `contact.fidelia@regisse.com`, forwarded to the team's inbox.
 
 `<site>` is the public site's address. Play shows these links to users, so
 give a stable address: the custom domain once it exists rather than an
@@ -136,7 +137,7 @@ give a stable address: the custom domain once it exists rather than an
 
 ## 7. Before the first review
 
-1. **Contact address and entity** in the two web pages and the Play listing.
+1. **Legal entity and its address** in the privacy policy. Use `contact.fidelia@regisse.com` as the Play listing's contact email.
 2. **Screenshots**: 2 to 8 per app (§ 4).
 3. **Signing key** uploaded as in § 1.
 4. A tagged release built from `integration` (or `trunk`) that includes

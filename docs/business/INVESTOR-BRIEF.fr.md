@@ -107,6 +107,6 @@ Aucune promesse de prêt. Aucun dépôt détenu par Fidelia. Aucune donnée part
 
 ## Contact
 
-Bienvenue Kouadio (contact partenaires et investisseurs) · ptck2e@duck.mail
+Bienvenue Kouadio (contact partenaires et investisseurs) · contact.fidelia@regisse.com
 
 *Document d'information. Ne constitue ni une offre de services financiers, ni une offre de titres. Les chiffres issus de sources publiques sont cités dans [MARKET.md](MARKET.md) ; les calculs illustratifs sont signalés comme tels.*

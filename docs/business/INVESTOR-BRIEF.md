@@ -107,6 +107,6 @@ No loan promise. No deposits held by Fidelia. No data shared without consent. No
 
 ## Contact
 
-Bienvenue Kouadio (partner and investor contact) · ptck2e@duck.mail
+Bienvenue Kouadio (partner and investor contact) · contact.fidelia@regisse.com
 
 *Information document. Not an offer of financial services or of securities. Figures from public sources are cited in [MARKET.md](MARKET.md); illustrative economics are labelled as such.*
