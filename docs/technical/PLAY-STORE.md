@@ -4,8 +4,8 @@ Two apps, one Play Console account:
 
 | App | Package (permanent once published) | Repository |
 |---|---|---|
-| Fidelia (customers) | `ci.fidelia.fidelia_user` | fidelia-App-user |
-| Fidelia Pro (merchants) | `ci.fidelia.fidelia_merchant` | fidelia-App-retailer |
+| Fidelia (customers) | `com.regisse.fidelia` | fidelia-App-user |
+| Fidelia Pro (merchants) | `com.regisse.fidelia.pro` | fidelia-App-retailer |
 
 Both target Android 16 (API 36), which Play requires for new apps and updates
 since 31 August 2026.

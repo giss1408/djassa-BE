@@ -85,7 +85,7 @@ For the pilot, Firebase shows who installed which version and sends update notic
 - **Secrets:** `FIREBASE_APP_ID` (Firebase console → Project settings → your Android app, e.g. `1:123:android:abc`) and `FIREBASE_SERVICE_ACCOUNT_JSON` (a service account with the *Firebase App Distribution Admin* role).
 - **Variable (optional):** `FIREBASE_TESTER_GROUPS`, default `pilote`. Create that group in App Distribution and add testers' emails.
 
-Register one Android app per package: `ci.fidelia.fidelia_merchant` and `ci.fidelia.fidelia_user`.
+Register one Android app per package: `com.regisse.fidelia.pro` and `com.regisse.fidelia`.
 
 **Deliberately not added: Firebase Crashlytics or Analytics.** The merchant app's architecture forbids analytics and crash SDKs, because they upload silently on the merchant's prepaid data. App Distribution needs no SDK in the app. If crash reports from the field become necessary, decide it explicitly, with the merchant's consent and a data budget, and record it in the app's `ARCHITECTURE.md`.
 
