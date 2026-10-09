@@ -105,7 +105,9 @@ services:
       # one. fidelia-installer is the admin and field-agent site, at the
       # address its Render service was given. Never list a guessed
       # onrender.com name: Render names are global and may belong to someone
-      # else. The installer still runs under its original Render name; replace
-      # it here if its service is recreated as fidelia-installer.
+      # else: Render asks for it when the Blueprint is created. Enter the
+      # fidelia-installer service's address as Render shows it (usually
+      # https://fidelia-installer.onrender.com, with a suffix if that name was
+      # taken), and correct it in the dashboard if it differs.
       - key: CORS_ORIGINS
-        value: https://djassa-installer.onrender.com
+        sync: false
