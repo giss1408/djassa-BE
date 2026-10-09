@@ -272,6 +272,10 @@ class Venue(Base):
     # Seeded demo data. Shown as such in the app so nobody mistakes a sample
     # pharmacy for a real one open tonight.
     is_sample = Column(Boolean, nullable=False, default=False)
+    # "Payer en plusieurs fois" (layaway). Off by default and switched on by an
+    # admin, shop by shop: it is a pilot test with a few merchants whose goods
+    # suit it, not a feature every outlet gets (docs/business/ROADMAP.md).
+    layaway_enabled = Column(Boolean, nullable=False, default=False)
 
     duties = relationship("PharmacyDuty", back_populates="venue")
     rewards = relationship("LoyaltyReward", back_populates="venue")
@@ -899,3 +903,69 @@ class LoyaltyConsent(Base):
     consent_version = Column(String(64), nullable=False)
     granted_at = Column(DateTime, nullable=False)
     withdrawn_at = Column(DateTime, nullable=True)
+
+
+class LayawayPlan(Base):
+    """A customer paying for one named good in several installments.
+
+    Layaway, not credit: the customer pays *before* taking the good, and nobody
+    lends anything. The money goes straight to the merchant (cash, or their own
+    wallet); Hossouko only keeps the record both sides can point to. That is why
+    the plan is one named good at a price fixed at the start, with an end date:
+    an open-ended refundable balance would start to look like taking deposits,
+    which only a licensed institution may do.
+
+    open -> completed (fully paid, waiting for handover) -> delivered,
+    or open | completed -> cancelled, with what the merchant handed back.
+    """
+
+    __tablename__ = "layaway_plans"
+    __table_args__ = (Index("ix_layaway_plans_venue_status", "venue_id", "status"),)
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    # The customer's phone key (`tel:+225...`), the same one loyalty and sign-in
+    # use, so the plan shows in their app as soon as they sign in.
+    customer_id = Column(String(128), nullable=False, index=True)
+    item = Column(String(120), nullable=False)
+    price = Column(Integer, nullable=False)  # XOF has no minor unit
+    currency = Column(String(8), nullable=False, default="XOF")
+    status = Column(String(16), nullable=False, default="open", index=True)
+    due_by = Column(DateTime, nullable=False)
+    # Which wording of the terms the merchant showed and the customer agreed to.
+    terms_version = Column(String(64), nullable=False)
+    created_by = Column(String(128), nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+    delivered_at = Column(DateTime, nullable=True)
+    # The sale the handover produced, so the good counts once in the history.
+    sale_event_id = Column(Integer, ForeignKey("sale_events.id"), nullable=True, unique=True)
+    cancelled_at = Column(DateTime, nullable=True)
+    cancelled_by = Column(String(128), nullable=True)
+    cancel_reason = Column(String(255), nullable=True)
+    # What the merchant says they handed back on cancelling. Recorded, never
+    # moved by Hossouko.
+    refunded_amount = Column(Integer, nullable=True)
+
+    venue = relationship("Venue")
+    installments = relationship(
+        "LayawayInstallment", back_populates="plan", order_by="LayawayInstallment.paid_at"
+    )
+
+
+class LayawayInstallment(Base):
+    """One payment towards a plan. Append-only: the amount paid is a SUM."""
+
+    __tablename__ = "layaway_installments"
+    id = Column(Integer, primary_key=True, index=True)
+    plan_id = Column(Integer, ForeignKey("layaway_plans.id"), nullable=False, index=True)
+    amount = Column(Integer, nullable=False)
+    # Same evidence labels as `SaleEvent`. Only `cash_declared` for now: the
+    # merchant records it at the counter.
+    source = Column(String(24), nullable=False)
+    # Client-generated, so a retry after a dropped connection cannot count one
+    # payment twice.
+    idempotency_key = Column(String(160), nullable=False, unique=True, index=True)
+    recorded_by = Column(String(128), nullable=False)
+    paid_at = Column(DateTime, nullable=False)
+
+    plan = relationship("LayawayPlan", back_populates="installments")

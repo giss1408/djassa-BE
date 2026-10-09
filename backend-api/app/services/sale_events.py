@@ -143,6 +143,38 @@ async def record_wallet_sale(
     return event
 
 
+def record_layaway_sale(
+    db: AsyncSession, *, plan: models.LayawayPlan, recorded_by: str, now: datetime
+) -> models.SaleEvent:
+    """The sale a layaway plan becomes when the good is handed over.
+
+    One event for the full price, on the day of the handover: until then the
+    installments are advances on a good the customer does not yet have, and a
+    cancelled plan must not leave sales behind. Declared, because the merchant
+    took the installments at the counter.
+
+    No customer and no points on the event: the plan holds the number for the
+    contract, but tying it to the sale history is loyalty's purpose and needs
+    loyalty's consent. The key is namespaced `layaway:`, outside the `sale:`
+    space clients choose from, so a client key can never collide with it.
+    """
+    event = models.SaleEvent(
+        venue_id=plan.venue_id,
+        source=DECLARED,
+        status=RECORDED,
+        amount=plan.price,
+        currency=plan.currency,
+        type="layaway",
+        occurred_at=now,
+        recorded_at=now,
+        idempotency_key=f"layaway:{plan.id}",
+        recorded_by=recorded_by,
+        created_at=now,
+    )
+    db.add(event)
+    return event
+
+
 async def find_declared(db: AsyncSession, client_key: str) -> models.SaleEvent | None:
     return (
         await db.execute(

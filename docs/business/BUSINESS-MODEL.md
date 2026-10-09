@@ -41,8 +41,27 @@ These are options to test after the core merchant pilot; none is committed reven
 | **Brand- or distributor-funded local campaigns** | A consumer-goods brand or distributor pays a flat campaign fee to promote a product or funded offer at participating merchants. The merchant approves the offer; any discount/reward funding is explicit. | After a corridor has enough active merchants and customer attention to offer reliable placement. Label advertising clearly; share no customer-level data and do not let sponsors influence pharmacy-duty or safety information. |
 | **Association or chain setup contracts** | A merchant association, pharmacy group, or small chain pays a one-time setup/training fee plus an agreed per-outlet service fee for onboarding, configuration, and group reporting. | After one corridor proves onboarding and support costs. Keep terms transparent and do not imply access to credit is included. |
 | **Opt-in supplier introductions** | A distributor or business-service provider pays a disclosed fee for a merchant-requested introduction or qualified inquiry (for example, a wholesaler quote request). Hossouko does not take orders or handle the purchase payment. | Later, after merchants trust the service and a written partner agreement exists. The merchant chooses whether to share contact details; no sales history is passed to suppliers. |
+| **Layaway ("payer en plusieurs fois")** | Nobody pays Hossouko directly at first: the merchant gets cash up front and a sale they are sure of, the customer gets a disciplined way to buy an expensive good. It can later be a Growth-plan feature. See [Layaway test](#layaway-test). | Pilot test after the Phase 1 gate, with 2–3 merchants whose goods suit it (electronics, appliances, furniture, school supplies). Switched on per shop by an admin. |
 
 Prioritize the first three before supplier referrals. Track paid conversion, delivery cost, renewal/repeat booking, and merchant benefit separately for every experiment. Reject any offer that needs hidden advertising, sale of identifiable data, a new regulated role, or merchant payments routed through Hossouko.
+
+### Layaway test
+
+The customer pays for one named good in several installments; the merchant keeps the money and hands the good over when the price is reached. Hossouko records the plan and every installment. **It is not credit and is never called credit**: the customer pays first and nobody lends anything.
+
+Why it fits: no new habit (an installment is recorded like a sale), cash up front for the merchant, and each completed plan is proof of saving discipline that can later feed the reliability indicator (Phase 4).
+
+Guardrails, enforced by the API (`app/api/layaway.py`):
+
+- One named good, at a price fixed when the plan opens, with an end date (at most `LAYAWAY_MAX_DAYS`, default 183) and a price cap (`LAYAWAY_MAX_PRICE`, default XOF 1,000,000). An open-ended refundable balance would start to look like taking deposits from the public.
+- The merchant reads the terms to the customer and ticks their agreement before anything is recorded; the plan stores the terms version.
+- The money goes to the merchant, in cash or to their own wallet, **never through Hossouko**. No interest, no fee, no penalty.
+- The good becomes one sale, for its full price, only on handover. A cancelled plan leaves no sale behind, and records what the merchant says they refunded.
+- The customer sees the plan and each installment in the customer app.
+
+Risk to watch: the customer carries the risk of the merchant failing to deliver, and Hossouko's name is on the record. Choose pilot merchants carefully, review disputes weekly, and get legal advice on Loi 2016-412 (consumer law: down payments and earnest money) before going beyond the pilot. The safer long-term form is the same feature with the money held by a licensed partner, i.e. the goal-based savings of Phase 5.
+
+**Continue only if:** completion rate (delivered ÷ ended plans) ≥ 70%, disputes under 5% of plans, and the participating merchants say it brings new customers. KPIs in [KPI.md § 3.4](KPI.md#34-layaway-test).
 
 **Referral revenue is not the model's first assumption.** It depends on a partner agreement, regulatory review, user consent and measurable financial outcomes. Commissions must never create pressure on users or condition access to basic service. We earn the value of the credit generated without carrying its risk. Hossouko does not lend.
 
