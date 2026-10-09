@@ -65,6 +65,21 @@ pytest -q
 
 If you prefer to run tests against SQLite (quick run), unset `DATABASE_URL` and run `pytest -q` — note that some integration behaviours may differ.
 
+### Acceptance tests
+
+`tests/acceptance/features/*.feature` describe the business journeys in plain
+language (Given / When / Then): a shop joining, points and rewards, consent,
+layaway, the signed revenue statement. Anyone can read or propose a scenario
+there; the steps that run them against the real API are in
+`tests/acceptance/conftest.py`. They run with the rest of the suite, or alone:
+
+```bash
+pytest -q tests/acceptance
+```
+
+A new scenario that reuses existing sentences needs no code. A new sentence
+needs a step in `conftest.py`; pytest-bdd names the missing one when it fails.
+
 ## 5) Running the app in Docker (build and run)
 
 Build the image:

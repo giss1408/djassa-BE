@@ -2,9 +2,9 @@ name: CI — Build & Security Scan
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, integration ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, integration ]
 
 jobs:
   build-and-scan:

@@ -4,6 +4,7 @@ pydantic
 httpx
 pytest
 pytest-asyncio
+pytest-bdd
 alembic
 sqlalchemy[asyncio]>=1.4  # [asyncio] pulls greenlet, which SQLAlchemy 2.1 no longer installs by default
 asyncpg
