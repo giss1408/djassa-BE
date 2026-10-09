@@ -36,8 +36,10 @@ What watches it:
 1. Render → **New → Blueprint** → the `fidelia-BE` repository, Blueprint path
    `render.production.yaml`. Render asks for every `sync: false` value; fill
    them from the table in § 6.
-2. The API deploys with `autoDeploy: false`: a merge to `main` does not reach
-   real merchants until someone presses **Manual Deploy**. Migrations run in
+2. Production follows the `trunk` branch (the test environment follows
+   `integration`). The API deploys with `autoDeploy: false`: a merge into
+   `trunk` does not reach real merchants until someone presses **Manual
+   Deploy**. Migrations run in
    the pre-deploy step; if one fails, the previous build keeps serving.
 3. Once the API is up, copy its address into the installer site's
    `VITE_FIDELIA_API_BASE`, and the installer site's address into the API's

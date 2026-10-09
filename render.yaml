@@ -27,9 +27,9 @@ services:
     # Frankfurt: the lowest-latency Render region from Abidjan.
     region: frankfurt
     rootDir: backend-api
-    # Deploys from the default branch; the latest work is on `integration`.
-    # Merge it first, or set the branch this service should follow.
-    # branch: integration
+    # The test environment follows `integration`: every push there deploys.
+    # Production follows `trunk` (render.production.yaml).
+    branch: integration
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     # Migrations run on every start (a free instance has no pre-deploy step).
     # `upgrade head` is a no-op when the schema is current, so a wake-up from
@@ -105,6 +105,7 @@ services:
       # one. fidelia-installer is the admin and field-agent site, at the
       # address its Render service was given. Never list a guessed
       # onrender.com name: Render names are global and may belong to someone
-      # else.
+      # else. The installer still runs under its original Render name; replace
+      # it here if its service is recreated as fidelia-installer.
       - key: CORS_ORIGINS
-        value: https://fidelia-installer.onrender.com
+        value: https://djassa-installer.onrender.com

@@ -20,7 +20,9 @@ services:
     numInstances: 1
     region: frankfurt
     rootDir: backend-api
-    branch: main
+    # Production follows `trunk`; the test environment follows `integration`
+    # (render.yaml). Promote by merging integration into trunk.
+    branch: trunk
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     # Migrations run once per deploy, before traffic moves to the new build;
     # a failed migration stops the deploy and the old build keeps serving.
@@ -111,8 +113,9 @@ services:
   - type: web
     runtime: static
     name: fidelia-installer-prod
-    repo: https://github.com/giss1408/fidelia-installer
-    branch: main
+    # The repository keeps its original name until it is renamed on GitHub.
+    repo: https://github.com/giss1408/djassa-installer
+    branch: trunk
     buildCommand: npm ci && npm run lint && npm run build
     staticPublishPath: ./dist
     pullRequestPreviewsEnabled: false
