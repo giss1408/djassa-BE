@@ -530,3 +530,48 @@ def statement_forged(world):
     payload = world.statement["payload"]
     inflated = {**payload, "turnover": {**payload["turnover"], "total": "400000"}}
     assert _verify(world, inflated) is False
+
+
+# --- Account deletion ---------------------------------------------------------
+
+
+@when("the customer deletes their account in the app")
+def deletes_account(world):
+    world.sales_before = world.run(_count_sales())
+    world.call("DELETE", "/api/account", headers=world.customer)
+
+
+async def _count_sales():
+    async with AsyncSessionLocal() as db:
+        return len((await db.execute(select(models.SaleEvent))).scalars().all())
+
+
+@then("the shop no longer knows the customer's number")
+def number_forgotten(world):
+    assert world.response.status_code == 200, world.response.text
+    assert _balance(world)["points"] == 0
+
+    async def named():
+        key = "tel:+225" + "".join(c for c in world.customer_phone if c.isdigit())
+        async with AsyncSessionLocal() as db:
+            return (await db.execute(select(models.SaleEvent).where(models.SaleEvent.customer_id == key))).scalars().all()
+
+    assert world.run(named()) == []
+
+
+@then(parsers.parse("the shop still has its {count:d} sales"))
+def sales_kept(world, count):
+    assert world.run(_count_sales()) == world.sales_before
+    assert world.sales_before >= count
+
+
+@then(parsers.parse('signing in again with "{phone}" opens an empty account'))
+def empty_account(world, phone):
+    customer_signs_in(world, phone)
+    assert world.call("GET", "/api/customer/loyalty", headers=world.customer).json()["total_points"] == 0
+
+
+@then("the app says to ask from Fidelia Pro")
+def ask_from_pro(world):
+    assert world.response.status_code == 409
+    assert "Fidelia Pro" in world.response.json()["detail"]

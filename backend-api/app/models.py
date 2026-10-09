@@ -802,6 +802,28 @@ class RecoveryRequest(Base):
     created_at = Column(DateTime, nullable=False)
 
 
+class AccountDeletionRequest(Base):
+    """A merchant, cashier or field agent asking for their account to go.
+
+    Customers delete their own account at once (services/account_delete.py).
+    Staff ask instead: the shop's records and its team are the shop's, so an
+    admin closes or hands over the shop first, then deletes the account. The
+    request names the number, not a key, so it outlives the account.
+    """
+
+    __tablename__ = "account_deletion_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    phone_e164 = Column(String(16), nullable=False, index=True)
+    role = Column(String(16), nullable=False)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=True)
+    reason = Column(String(500), nullable=True)
+    status = Column(String(16), nullable=False, default="pending", index=True)  # pending | done | rejected
+    decision_note = Column(String(500), nullable=True)
+    decided_by = Column(String(128), nullable=True)
+    decided_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False)
+
+
 class PartnerRequest(Base):
     """A merchant asking to join, from the Fidelia Pro sign-in screen.
 

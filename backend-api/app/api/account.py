@@ -33,6 +33,7 @@ from ..core import otp, security
 from ..core.phone import mask_phone, phone_key
 from ..db import get_db
 from ..rate_limiter import limiter
+from ..services import account_delete
 from ..services.account_move import NumberTaken, move_account, revoke_all_sessions, revoke_role_sessions
 from ..services.otp_sender import OtpDeliveryFailed, get_sender
 from .auth import (
@@ -446,3 +447,151 @@ async def admin_revoke_role(payload: RevokeRoleIn, db: AsyncSession = Depends(ge
     await revoke_role_sessions(db, account.id, payload.role, utcnow())
     await db.commit()
     return await _user_out(db, account)
+
+
+# --- Deleting an account (Google Play's account deletion requirement) --------
+
+_DELETE_STAFF = (
+    "Votre numero est lie a un commerce Fidelia. Demandez la suppression depuis Fidelia Pro : "
+    "l'equipe Fidelia s'en occupe."
+)
+_DELETE_LAYAWAY = (
+    "Un paiement en plusieurs fois est en cours. Terminez-le ou annulez-le avec le commercant, "
+    "puis supprimez votre compte."
+)
+
+
+@router.delete("/account")
+async def delete_my_account(db: AsyncSession = Depends(get_db), user=Depends(security.require_role("customer"))):
+    """A customer deletes their own account, at once (services/account_delete.py)."""
+    account = await _phone_account(db, user)
+    try:
+        await account_delete.delete_account(db, account, utcnow())
+    except account_delete.IsShopStaff:
+        raise HTTPException(status_code=409, detail=_DELETE_STAFF)
+    except account_delete.LayawayInProgress:
+        raise HTTPException(status_code=409, detail=_DELETE_LAYAWAY)
+    await db.commit()
+    return {"deleted": True}
+
+
+class DeletionRequestIn(BaseModel):
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class DeletionRequestOut(BaseModel):
+    id: int
+    phone: str
+    role: str
+    venue_id: int | None
+    venue_name: str | None
+    reason: str | None
+    status: str
+    decision_note: str | None
+    created_at: datetime
+    decided_at: datetime | None
+
+
+async def _deletion_out(db: AsyncSession, r: models.AccountDeletionRequest) -> DeletionRequestOut:
+    venue = await db.get(models.Venue, r.venue_id) if r.venue_id else None
+    return DeletionRequestOut(
+        id=r.id, phone=r.phone_e164, role=r.role, venue_id=r.venue_id, venue_name=venue.name if venue else None,
+        reason=r.reason, status=r.status, decision_note=r.decision_note, created_at=r.created_at, decided_at=r.decided_at,
+    )
+
+
+@router.post("/account/deletion-request", status_code=202)
+async def request_account_deletion(
+    payload: DeletionRequestIn, db: AsyncSession = Depends(get_db), user=Depends(security.get_current_user)
+):
+    """Merchants, cashiers and field agents ask; an admin closes or hands over
+    the shop, then deletes. One pending request per number: asking again
+    returns the same one."""
+    account = await _phone_account(db, user)
+    existing = (
+        await db.execute(
+            select(models.AccountDeletionRequest).where(
+                models.AccountDeletionRequest.phone_e164 == account.phone_e164,
+                models.AccountDeletionRequest.status == "pending",
+            )
+        )
+    ).scalars().first()
+    if existing is None:
+        key = phone_key(account.phone_e164)
+        venue = (await db.execute(select(models.Venue).where(models.Venue.owner_username == key))).scalars().first()
+        if venue is None:
+            venue = (
+                await db.execute(
+                    select(models.Venue)
+                    .join(models.VenueStaff, models.VenueStaff.venue_id == models.Venue.id)
+                    .where(models.VenueStaff.user_key == key, models.VenueStaff.removed_at.is_(None))
+                )
+            ).scalars().first()
+        existing = models.AccountDeletionRequest(
+            phone_e164=account.phone_e164, role=user["role"], venue_id=venue.id if venue else None,
+            reason=payload.reason, status="pending", created_at=utcnow(),
+        )
+        db.add(existing)
+        await db.commit()
+    return {"id": existing.id, "status": existing.status,
+            "message": "Demande recue. L'equipe Fidelia vous contacte et supprime votre compte sous 30 jours."}
+
+
+@router.get("/admin/deletion-requests", response_model=list[DeletionRequestOut])
+async def list_deletion_requests(
+    status: str = "pending", db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))
+):
+    rows = (
+        await db.execute(
+            select(models.AccountDeletionRequest)
+            .where(models.AccountDeletionRequest.status == status)
+            .order_by(models.AccountDeletionRequest.created_at)
+        )
+    ).scalars().all()
+    return [await _deletion_out(db, r) for r in rows]
+
+
+async def _pending_deletion(db: AsyncSession, request_id: int) -> models.AccountDeletionRequest:
+    r = await db.get(models.AccountDeletionRequest, request_id)
+    if r is None:
+        raise HTTPException(status_code=404, detail="Demande introuvable")
+    if r.status != "pending":
+        raise HTTPException(status_code=409, detail="Demande deja traitee")
+    return r
+
+
+@router.post("/admin/deletion-requests/{request_id}/done", response_model=DeletionRequestOut)
+async def complete_deletion_request(
+    request_id: int, payload: DecisionIn, db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))
+):
+    """Deletes the account. Refused while it still owns a shop: close the shop
+    or give it another owner first. A cashier's place in the shop ends."""
+    r = await _pending_deletion(db, request_id)
+    if admin["username"] == phone_key(r.phone_e164):
+        raise HTTPException(status_code=422, detail="You cannot delete your own account")
+    account = (
+        await db.execute(select(models.User).where(models.User.phone_e164 == r.phone_e164))
+    ).scalar_one_or_none()
+    now = utcnow()
+    if account is not None:
+        try:
+            await account_delete.delete_account(db, account, now, staff=True, decided_by=admin["username"])
+        except account_delete.OwnsShop:
+            raise HTTPException(
+                status_code=409, detail="Ce numero possede encore un commerce : fermez-le ou changez son proprietaire d'abord."
+            )
+        except account_delete.LayawayInProgress:
+            raise HTTPException(status_code=409, detail=_DELETE_LAYAWAY)
+    r.status, r.decision_note, r.decided_by, r.decided_at = "done", payload.note, admin["username"], now
+    await db.commit()
+    return await _deletion_out(db, r)
+
+
+@router.post("/admin/deletion-requests/{request_id}/reject", response_model=DeletionRequestOut)
+async def reject_deletion_request(
+    request_id: int, payload: DecisionIn, db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))
+):
+    r = await _pending_deletion(db, request_id)
+    r.status, r.decision_note, r.decided_by, r.decided_at = "rejected", payload.note, admin["username"], utcnow()
+    await db.commit()
+    return await _deletion_out(db, r)

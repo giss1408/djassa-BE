@@ -79,7 +79,7 @@ team's address (shown publicly).
 
 | Form | Answer |
 |---|---|
-| Privacy policy | URL of the published policy (to do, see § 6) |
+| Privacy policy | `https://<site>/confidentialite/` (fidelia-Web `public/confidentialite/`) |
 | App access | Restricted: give reviewers a test number and its code. On the test API, `07 00 00 00 01` (customer) and `07 00 00 00 02` (merchant) sign in with `000000`. |
 | Ads | No ads |
 | Content rating | Questionnaire: reference / utility app; no violence, sexuality, gambling, drugs; users do not chat. Shops publish photos and deals reviewed by the team. |
@@ -88,7 +88,7 @@ team's address (shown publicly).
 | Government app | No |
 | Financial features | Declare: *payments* (the customer pays the merchant from their own mobile wallet; Fidelia holds no money) and, for layaway, *other*: "paiement d'un produit en plusieurs versements au commerçant, sans crédit, intérêts ni frais". Never describe it as credit or a loan. |
 | Health | No |
-| Account deletion | URL where anyone can ask for deletion, plus the in-app path (to do, see § 6) |
+| Account deletion | `https://<site>/supprimer-mon-compte/` (fidelia-Web `public/supprimer-mon-compte/`). In the apps: initial → **Compte** → **Supprimer mon compte**. |
 
 ### Data safety
 
@@ -107,18 +107,37 @@ count as sharing).
 | App interactions | Collected (screen views, random install id, no phone number) | Collected | Analytics | Required |
 | Crash logs, diagnostics | Collected (no phone numbers) | Collected | Analytics, app functionality | Required |
 
-Encrypted in transit: yes. Users can request deletion: yes, once § 6 exists.
+Encrypted in transit: yes. Users can request deletion: yes (§ 6).
 
 The customer app scans QR codes with Google ML Kit, bundled on the phone.
 Check ML Kit's own data disclosure page before submitting and add what it
 lists (it may report diagnostics to Google).
 
-## 6. Before the first review
+## 6. Account deletion and privacy policy
 
-1. **Account deletion** (Play requirement for apps that create accounts): a
-   *Supprimer mon compte* path in both apps, and a public web page where
-   anyone can ask for it without the app.
-2. **Privacy policy** page, public, in French, matching the ARTCI declaration
-   and the Data safety answers above.
-3. **Screenshots**: 2 to 8 per app (§ 4).
-4. **Signing key** uploaded as in § 1.
+* **Customers** delete their account at once in Fidelia (*Compte → Supprimer
+  mon compte*): number, points, consent and sessions are erased; the shops'
+  sales and payments stay, re-keyed to an anonymous key
+  (`app/services/account_delete.py`, `DELETE /api/account`). Refused while a
+  layaway plan is open.
+* **Merchants, cashiers and field agents** send a request from Fidelia Pro
+  (`POST /api/account/deletion-request`). The team handles it in the installer
+  (*Suppressions*) within 30 days: for an owner, close the shop or give it a
+  new owner first, then *Supprimer le compte*.
+* **Without the app**: the public page `/supprimer-mon-compte/` explains both,
+  and gives an address to write to.
+* The privacy policy at `/confidentialite/` is a **draft**: fill in the legal
+  entity, its address and the contact address (search the page for
+  `A-COMPLETER`), and have it checked against the ARTCI declaration.
+
+`<site>` is the public site's address. Play shows these links to users, so
+give a stable address: the custom domain once it exists rather than an
+`onrender.com` name.
+
+## 7. Before the first review
+
+1. **Contact address and entity** in the two web pages and the Play listing.
+2. **Screenshots**: 2 to 8 per app (§ 4).
+3. **Signing key** uploaded as in § 1.
+4. A tagged release built from `integration` (or `trunk`) that includes
+   account deletion, so the reviewed build has it.
