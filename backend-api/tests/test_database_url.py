@@ -23,6 +23,6 @@ def test_neon_pooled_endpoint_disables_the_prepared_statement_cache():
 
 def test_short_postgres_scheme_and_local_urls():
     assert normalize_database_url("postgres://u:p@h/db")[0] == "postgresql+asyncpg://u:p@h/db"
-    local = "postgresql+asyncpg://hossouko:hossouko@127.0.0.1:5432/hossouko"
+    local = "postgresql+asyncpg://fidelia:fidelia@127.0.0.1:5432/fidelia"
     assert normalize_database_url(local) == (local, {})
     assert normalize_database_url("sqlite+aiosqlite:///./test.db") == ("sqlite+aiosqlite:///./test.db", {})

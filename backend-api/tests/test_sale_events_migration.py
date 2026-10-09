@@ -33,10 +33,10 @@ def _alembic(db_path: Path, *args: str):
     env = {
         **os.environ,
         "DATABASE_URL": f"sqlite+aiosqlite:///{db_path}",
-        "HOSSOUKO_SECRET_KEY": "test-only-jwt-secret",
+        "FIDELIA_SECRET_KEY": "test-only-jwt-secret",
         "MOBILE_MONEY_SECRETS": "dev-secret",
         # Seeding would add venues and change the counts under test.
-        "HOSSOUKO_SEED_SAMPLE": "0",
+        "FIDELIA_SEED_SAMPLE": "0",
     }
     return subprocess.run(
         [sys.executable, "-m", "alembic", "-c", "alembic.ini", *args],
@@ -52,7 +52,7 @@ def legacy_db():
     """A database at 0013 holding both old streams, including unmappable rows."""
     import sqlite3
 
-    directory = Path(tempfile.mkdtemp(prefix="hossouko-migration-"))
+    directory = Path(tempfile.mkdtemp(prefix="fidelia-migration-"))
     db_path = directory / "legacy.db"
 
     upgraded = _alembic(db_path, "upgrade", PRIOR_REVISION)

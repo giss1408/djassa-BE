@@ -1,8 +1,8 @@
-# Hossouko — Partners and Outreach
+# Fidelia — Partners and Outreach
 
 Who to contact, why, when, and what to bring. It merges the outreach plan and the institution directory. **Verify current names, mandates and contacts on official websites before any formal contact.** No direct contact details are kept here, because they go stale.
 
-Phase references point to [ROADMAP.md](ROADMAP.md). The one-sentence pitch per audience is in [CONCEPT.md § 9](CONCEPT.md#9-explaining-hossouko-to-each-audience).
+Phase references point to [ROADMAP.md](ROADMAP.md). The one-sentence pitch per audience is in [CONCEPT.md § 9](CONCEPT.md#9-explaining-fidelia-to-each-audience).
 
 ## Recommended contact order
 
@@ -11,13 +11,13 @@ Phase references point to [ROADMAP.md](ROADMAP.md). The one-sentence pitch per a
 3. **CIFA.** Join the fintech ecosystem and follow regulatory change.
 4. **Mobile-money operators, Wave first** (Business and developer teams). With Wave, confirm webhook access for small merchants and the loyalty use of payer phone numbers: this decides the zero-habit capture route. With MTN and Orange, confirm whether payments to a merchant's static QR can be notified, and their merchant rates. Then **CinetPay** (or another licensed aggregator) as the fallback payment route.
 5. **Fin'ELLE plus one or two generalist MFIs** (UNACOOPEC-CI, Advans). Prepare the Phase 3–5 partnerships.
-6. **BCEAO or qualified regulatory counsel.** Before any feature that moves money beyond merchant payments, holds funds, produces a score for third parties, or involves credit, to confirm whether Hossouko acts as technology provider, agent, payment facilitator or another regulated role.
+6. **BCEAO or qualified regulatory counsel.** Before any feature that moves money beyond merchant payments, holds funds, produces a score for third parties, or involves credit, to confirm whether Fidelia acts as technology provider, agent, payment facilitator or another regulated role.
 
 ## Institution directory
 
 ### 1. Regulators and public institutions
 
-*They set the frame Hossouko operates in, or share its mission.*
+*They set the frame Fidelia operates in, or share its mission.*
 
 | Institution | Role | Why contact | When |
 |---|---|---|---|
@@ -25,12 +25,12 @@ Phase references point to [ROADMAP.md](ROADMAP.md). The one-sentence pitch per a
 | **ARTCI** | Personal-data protection authority | Consent, retention, data transfer, identity data | Phase 0 |
 | **APIF-CI** | Runs the National Financial Inclusion Strategy and financial education | Near-identical mission, including gender and rural inclusion; natural institutional partner | Now |
 | **SGPME** | Partial guarantee on bank and MFI credit to SMEs | Lowers the risk an MFI partner takes on merchants without bank history | Phase 5 |
-| **GUDE-PME** | SME one-stop shop for finance | Understand the support ecosystem; relay to Hossouko merchants | Monitor now |
-| **Ministry of Digital Transition** | National digital strategy, public-service interoperability | Relevant if Hossouko extends to public services | Opportunistic |
+| **GUDE-PME** | SME one-stop shop for finance | Understand the support ecosystem; relay to Fidelia merchants | Monitor now |
+| **Ministry of Digital Transition** | National digital strategy, public-service interoperability | Relevant if Fidelia extends to public services | Opportunistic |
 
 ### 2. Microfinance (MFIs)
 
-*The licensed partners that actually hold savings and grant credit. Hossouko is the intermediary; they are the regulated custodians.*
+*The licensed partners that actually hold savings and grant credit. Fidelia is the intermediary; they are the regulated custodians.*
 
 | Institution | Profile | Why contact | When |
 |---|---|---|---|
@@ -39,7 +39,7 @@ Phase references point to [ROADMAP.md](ROADMAP.md). The one-sentence pitch per a
 | **UNACOOPEC-CI** | Largest savings and credit cooperative network | Strong coverage outside Abidjan | Phases 2–5 |
 | **Advans Côte d'Ivoire** | Micro and small business MFI | Experience with alternative scoring | Phases 4–5 |
 | **Baobab Côte d'Ivoire** | Urban and peri-urban MFI | Already digitising its own operations | Phases 4–5 |
-| **PAMF-CI** | Strong rural presence | When Hossouko leaves Abidjan | Phase 6 |
+| **PAMF-CI** | Strong rural presence | When Fidelia leaves Abidjan | Phase 6 |
 | **Cofina Côte d'Ivoire** | Mesofinance, cocoa cooperatives | Agriculture horizon | Phase 6 |
 
 ### 3. Payments and fintech infrastructure
@@ -57,14 +57,14 @@ Phase references point to [ROADMAP.md](ROADMAP.md). The one-sentence pitch per a
 
 | Operator | Why it matters | When |
 |---|---|---|
-| **Wave CI** | ~1% merchant fee, ~1M QR merchants, Business API with `merchant.payment_received` webhooks. Hossouko's loyalty layer sits on top of its QR; pitch: repeat customers mean more Wave volume | **Phase 0, first technical partner** |
+| **Wave CI** | ~1% merchant fee, ~1M QR merchants, Business API with `merchant.payment_received` webhooks. Fidelia's loyalty layer sits on top of its QR; pitch: repeat customers mean more Wave volume | **Phase 0, first technical partner** |
 | **Orange Money CI** (OM Business) | Historic leader, densest agent network. Direct merchant API (checkout with confirmation callback), ~1–2%, 1–3 weeks to activate | Phase 0 check, Phase 2 adapter |
 | **MTN MoMo CI** | Second operator. MoMo API "request to pay": the customer approves on their own phone, which suits a counter; callbacks are not retried, so status must also be polled | Phase 0 check, Phase 2 adapter |
 | **Moov Africa CI** | Price-sensitive and peri-urban segments | Phase 2+ |
 
 ### 5. Funders and guarantee programmes
 
-*They mostly fund the MFIs and guarantee schemes Hossouko partners with. Useful for structuring an MFI partnership or indirect co-funding.*
+*They mostly fund the MFIs and guarantee schemes Fidelia partners with. Useful for structuring an MFI partnership or indirect co-funding.*
 
 | Institution | Why | When |
 |---|---|---|
@@ -90,10 +90,10 @@ Per channel, measure merchants activated, merchants active after 30/90 days, sup
 
 Bring to every meeting:
 
-- The problem in one paragraph, and the audience pitch ([CONCEPT.md § 9](CONCEPT.md#9-explaining-hossouko-to-each-audience)).
+- The problem in one paragraph, and the audience pitch ([CONCEPT.md § 9](CONCEPT.md#9-explaining-fidelia-to-each-audience)).
 - Target users and geography: one Abidjan corridor, one segment, pilot volume.
 - What is **actually** built ([ROADMAP.md § Where we stand](ROADMAP.md#where-we-stand)) and a working demo of both apps.
-- A simple data-flow and funds-flow diagram showing money going from wallet to merchant wallet, never through Hossouko.
+- A simple data-flow and funds-flow diagram showing money going from wallet to merchant wallet, never through Fidelia.
 - The proposed role of the partner, the revenue model and fee transparency.
 - Privacy, consent, security and incident controls.
 - Pilot duration, success metrics, exit criteria.
@@ -125,8 +125,8 @@ Regulatory or commercial assumptions to verify:
 
 ## Outreach guardrails
 
-- Never claim Hossouko provides loans, or promise approval, better rates or savings returns.
-- Present Hossouko as an accelerator of existing credit routes, never as a condition for credit.
+- Never claim Fidelia provides loans, or promise approval, better rates or savings returns.
+- Present Fidelia as an accelerator of existing credit routes, never as a condition for credit.
 - Never send real customer data in a first meeting. Use synthetic or anonymised data until a written data-sharing agreement exists.
 - Verify every public statistic and contact before publishing.
 - Never describe a continent-wide rollout. Present a specific country, corridor, segment and pilot volume.

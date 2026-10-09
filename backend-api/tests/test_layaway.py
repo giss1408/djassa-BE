@@ -99,7 +99,7 @@ async def test_layaway_is_off_until_an_admin_switches_it_on_for_the_shop(client)
     settings = (await client.get("/api/merchant/layaway/settings", headers=merchant)).json()
     assert settings["enabled"] is True
     assert settings["terms_version"] == TERMS_VERSION
-    assert "pas a Hossouko" in settings["terms"]
+    assert "pas a Fidelia" in settings["terms"]
 
 
 @pytest.mark.asyncio

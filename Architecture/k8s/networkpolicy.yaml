@@ -1,12 +1,12 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: hossouko-api-policy
-  namespace: hossouko
+  name: fidelia-api-policy
+  namespace: fidelia
 spec:
   podSelector:
     matchLabels:
-      app: hossouko-api
+      app: fidelia-api
   policyTypes:
     - Ingress
     - Egress
@@ -17,7 +17,7 @@ spec:
               name: edge
           podSelector:
             matchLabels:
-              app: hossouko-proxy
+              app: fidelia-proxy
       ports:
         - protocol: TCP
           port: 8000
@@ -28,7 +28,7 @@ spec:
               name: data
           podSelector:
             matchLabels:
-              app: hossouko-db
+              app: fidelia-db
       ports:
         - protocol: TCP
           port: 5432
@@ -38,7 +38,7 @@ spec:
               name: data
           podSelector:
             matchLabels:
-              app: hossouko-redis
+              app: fidelia-redis
       ports:
         - protocol: TCP
           port: 6379
@@ -48,7 +48,7 @@ spec:
               name: data
           podSelector:
             matchLabels:
-              app: hossouko-storage
+              app: fidelia-storage
       ports:
         - protocol: TCP
           port: 9000

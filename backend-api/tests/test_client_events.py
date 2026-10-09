@@ -13,7 +13,7 @@ from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
 from app.rate_limiter import limiter
 
-STACK = "#0      DealsTab.build (package:hossouko_user/features/deals_tab.dart:42:7)\n#1      StatelessElement.build"
+STACK = "#0      DealsTab.build (package:fidelia_user/features/deals_tab.dart:42:7)\n#1      StatelessElement.build"
 
 
 @pytest_asyncio.fixture
@@ -59,7 +59,7 @@ async def test_reports_are_accepted_without_sign_in_and_grouped(client):
     assert groups[0]["latest_version"] == "0.1.1+2"
 
     metrics = (await client.get("/metrics")).text
-    assert 'hossouko_client_events_total{app="user"' in metrics
+    assert 'fidelia_client_events_total{app="user"' in metrics
 
 
 @pytest.mark.asyncio

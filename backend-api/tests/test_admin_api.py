@@ -1,4 +1,4 @@
-"""What the hossouko-installer screen relies on: admin phone sign-in, shops, users."""
+"""What the fidelia-installer screen relies on: admin phone sign-in, shops, users."""
 
 import pytest
 import pytest_asyncio
@@ -16,7 +16,7 @@ from app.seed import DEV_ADMIN_PHONE, seed_sample_data
 async def client(monkeypatch):
     monkeypatch.setenv("OTP_SENDER", "console")
     monkeypatch.setenv("OTP_DEV_ECHO", "1")
-    monkeypatch.delenv("HOSSOUKO_ENV", raising=False)
+    monkeypatch.delenv("FIDELIA_ENV", raising=False)
     limiter.enabled = False
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

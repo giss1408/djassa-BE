@@ -1,10 +1,10 @@
 """Mobile-money payment initiation, behind one interface.
 
-Hossouko is an orchestrator, not a holder of funds: a provider moves money from
+Fidelia is an orchestrator, not a holder of funds: a provider moves money from
 the customer's wallet directly to the venue's own payout wallet through a
 licensed aggregator (CinetPay covers Wave, Orange Money, MTN MoMo and Moov in
 one API — see docs/business/CONCEPT.md § 6). Nothing in here may route money through an
-account Hossouko controls; that would be deposit-taking without a BCEAO licence.
+account Fidelia controls; that would be deposit-taking without a BCEAO licence.
 
 `MOBILE_MONEY_PROVIDER` selects the implementation. (Distinct from
 `PAYMENT_PROVIDER`, which configures the payment orchestration in
@@ -68,17 +68,17 @@ class FakeProvider(MobileMoneyProvider):
 
 
 class ProviderUnavailable(RuntimeError):
-    """This venue cannot be paid with this wallet through Hossouko yet."""
+    """This venue cannot be paid with this wallet through Fidelia yet."""
 
 
 def public_base_url() -> str:
     """Where Wave sends the customer's browser back after the payment.
     Render sets RENDER_EXTERNAL_URL for every web service."""
-    return (os.getenv("HOSSOUKO_PUBLIC_URL") or os.getenv("RENDER_EXTERNAL_URL") or "http://localhost:8000").rstrip("/")
+    return (os.getenv("FIDELIA_PUBLIC_URL") or os.getenv("RENDER_EXTERNAL_URL") or "http://localhost:8000").rstrip("/")
 
 
 class WaveProvider(MobileMoneyProvider):
-    """Checkout with the merchant's own Wave key (never Hossouko's)."""
+    """Checkout with the merchant's own Wave key (never Fidelia's)."""
 
     name = "wave"
 
@@ -123,7 +123,7 @@ async def provider_for(db, venue, wallet_provider: str) -> MobileMoneyProvider:
         account = (
             await db.execute(select(models.WaveAccount).where(models.WaveAccount.venue_id == venue.id))
         ).scalar_one_or_none()
-        if account is not None and account.api_key_sealed is None and os.getenv("HOSSOUKO_ENV") == "production":
+        if account is not None and account.api_key_sealed is None and os.getenv("FIDELIA_ENV") == "production":
             # Points-only connection: no key to create a checkout with. The
             # customer pays the shop's own Wave QR and the points still come.
             raise ProviderUnavailable(
@@ -138,9 +138,9 @@ async def provider_for(db, venue, wallet_provider: str) -> MobileMoneyProvider:
                 ) from exc
     name = os.getenv("MOBILE_MONEY_PROVIDER", "fake")
     if name == "wave":
-        if os.getenv("HOSSOUKO_ENV") == "production":
+        if os.getenv("FIDELIA_ENV") == "production":
             raise ProviderUnavailable(
-                "Ce commerce n'accepte pas encore ce portefeuille via Hossouko. Payez au comptoir."
+                "Ce commerce n'accepte pas encore ce portefeuille via Fidelia. Payez au comptoir."
             )
         return FakeProvider()
     return get_provider()
@@ -150,7 +150,7 @@ def get_provider() -> MobileMoneyProvider:
     name = os.getenv("MOBILE_MONEY_PROVIDER", "fake")
     if name == "fake":
         # A fake provider in production would "confirm" payments no one made.
-        if os.getenv("HOSSOUKO_ENV") == "production":
-            raise RuntimeError("MOBILE_MONEY_PROVIDER=fake is refused when HOSSOUKO_ENV=production")
+        if os.getenv("FIDELIA_ENV") == "production":
+            raise RuntimeError("MOBILE_MONEY_PROVIDER=fake is refused when FIDELIA_ENV=production")
         return FakeProvider()
     raise RuntimeError(f"Unknown or unimplemented MOBILE_MONEY_PROVIDER: {name!r}")

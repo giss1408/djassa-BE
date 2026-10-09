@@ -1,7 +1,7 @@
 """Issuing and verifying the revenue statement.
 
 The artifact a merchant shows a microfinance institution. Three properties it has
-that the CSV dump did not (docs/optimization_claude_hossouko.md, optimization C):
+that the CSV dump did not (docs/optimization_claude_fidelia.md, optimization C):
 
 1. **Reviewable.** Aggregates a credit officer reads in a minute, not 10,000 rows.
 2. **Tamper-evident.** Signed, so an edited figure fails verification.
@@ -126,7 +126,7 @@ async def issue_statement(
 
 @router.post("/statements/verify")
 async def verify_statement(body: StatementVerifyIn, user=Depends(get_current_user)):
-    """Check a statement is the document Hossouko issued, unedited.
+    """Check a statement is the document Fidelia issued, unedited.
 
     Open to any authenticated account, not just the issuing merchant: the point
     of verification is that the *recipient* can perform it. It reveals nothing --
@@ -140,7 +140,7 @@ async def verify_statement(body: StatementVerifyIn, user=Depends(get_current_use
         "detail": (
             "Attestation authentique et non modifiee"
             if valid
-            else "Signature invalide: le document a ete modifie ou n'a pas ete emis par Hossouko"
+            else "Signature invalide: le document a ete modifie ou n'a pas ete emis par Fidelia"
         ),
     }
 
@@ -155,7 +155,7 @@ async def issue_statement_for_venue(
 ):
     """The same statement, issued by an admin for a venue.
 
-    For the pilot: a partner conversation happens with Hossouko in the room, and a
+    For the pilot: a partner conversation happens with Fidelia in the room, and a
     merchant on the starter plan still needs their history to exist. Not plan
     gated -- an admin is not a customer of the plan -- but audited identically,
     because who issued an attestation about someone's business is exactly what a

@@ -16,7 +16,7 @@ jobs:
 
       - name: Build image
         run: |
-          docker build -t registry.example.com/hossouko/api:dev -f backend-api/Dockerfile backend-api
+          docker build -t registry.example.com/fidelia/api:dev -f backend-api/Dockerfile backend-api
 
       # Pinned to the commit of v0.36.0 (Trivy v0.70.0): tags can be moved,
       # a commit cannot. The old v0.3.0 shipped a Trivy that misread Debian 13.
@@ -25,7 +25,7 @@ jobs:
       - name: Run Trivy scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: registry.example.com/hossouko/api:dev
+          image-ref: registry.example.com/fidelia/api:dev
           scanners: vuln
           exit-code: '1'
           severity: CRITICAL

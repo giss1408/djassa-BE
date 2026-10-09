@@ -1,16 +1,16 @@
-# Hossouko — The Concept
+# Fidelia — The Concept
 
-> **Hossouko turns everyday sales at neighbourhood shops into proof: a verified business history that the merchant owns and, with consent, can take to a licensed lender.**
+> **Fidelia turns everyday sales at neighbourhood shops into proof: a verified business history that the merchant owns and, with consent, can take to a licensed lender.**
 >
 > Public tagline: *Proof infrastructure for local commerce.*
 
-This is the canonical definition of Hossouko. The website, the two mobile apps, pitch material and partner notes must say the same thing as this document. When a claim changes here, change it in [`hossouko-Web/src/content`](../../../hossouko-Web/src/content/) too.
+This is the canonical definition of Fidelia. The website, the two mobile apps, pitch material and partner notes must say the same thing as this document. When a claim changes here, change it in [`fidelia-Web/src/content`](../../../fidelia-Web/src/content/) too.
 
 ## 1. The name
 
-**Hossouko**, with the slogan **« La fidélité, ça rapporte »** (loyalty pays off). The promise works on both sides of the counter: customers earn rewards for going back to the shops they already use, and merchants turn the sales they already make into a verified history they own. We build for neighbourhood merchants whose activity is real but leaves no proof behind.
+**Fidelia**, with the slogan **« La fidélité, ça compte »** (loyalty counts). The promise works on both sides of the counter: customers earn rewards for going back to the shops they already use, and merchants turn the sales they already make into a verified history they own. We build for neighbourhood merchants whose activity is real but leaves no proof behind.
 
-Some early source documents call the financial-inclusion direction **Dkassa**. That name is retired: it is one product, Hossouko. The final brand name still has to be confirmed legally before a public launch.
+Some early source documents call the financial-inclusion direction **Dkassa**. That name is retired: it is one product, Fidelia. The final brand name still has to be confirmed legally before a public launch.
 
 ## 2. The problem
 
@@ -27,7 +27,7 @@ The customer, meanwhile, has a mobile-money wallet but no single place to find w
 
 ## 3. The idea: one habit, five uses
 
-Most merchant tools fail because each feature asks for a new habit. Hossouko asks for **one**: record the sale. Everything else is a different view of the same event.
+Most merchant tools fail because each feature asks for a new habit. Fidelia asks for **one**: record the sale. Everything else is a different view of the same event.
 
 ```text
                        THE EVENT
@@ -48,22 +48,22 @@ Loyalty, tontine, savings and credit are not five products shipped one after ano
 
 | Entry point | Who acts | Extra effort for the merchant | Extra fee | Strength of evidence |
 |---|---|---|---|---|
-| **1. Wallet payment, captured automatically** *(preferred)* | The customer pays the merchant's **existing** wallet QR as usual, and the operator notifies Hossouko. Wave first: its `merchant.payment_received` webhook carries the amount, fee, customer phone and time. | **None** | None; the merchant keeps their current rate (~1% on Wave) | Confirmed by the provider |
+| **1. Wallet payment, captured automatically** *(preferred)* | The customer pays the merchant's **existing** wallet QR as usual, and the operator notifies Fidelia. Wave first: its `merchant.payment_received` webhook carries the amount, fee, customer phone and time. | **None** | None; the merchant keeps their current rate (~1% on Wave) | Confirmed by the provider |
 | **2. Recorded sale** | The merchant records a cash sale in the merchant app, even offline; it syncs later without duplicates | One tap, plus the customer's phone for points | None | Declared by the merchant |
-| **3. Hossouko payment** | The customer scans the Hossouko QR in the customer app, or approves a request on their phone, through an operator API (MTN MoMo request-to-pay, Orange Money) or a licensed aggregator | None | Operator rate (~1–2%) or aggregator fee (~3% + 50 F) | Confirmed by the provider |
+| **3. Fidelia payment** | The customer scans the Fidelia QR in the customer app, or approves a request on their phone, through an operator API (MTN MoMo request-to-pay, Orange Money) or a licensed aggregator | None | Operator rate (~1–2%) or aggregator fee (~3% + 50 F) | Confirmed by the provider |
 
-All three feed the same history. **Entry point 1 is the strategic priority.** In Abidjan, 55–65% of a digitised merchant's takings already arrive by mobile money, and Wave charges merchants about 1% while an aggregator charges about 3% (see [MARKET.md § 9](MARKET.md#9-evidence-for-the-hossouko-model)). Asking a merchant to move payments to a more expensive rail would destroy the value we sell. Instead, Hossouko sits **on top of** the wallets merchants already use: their existing payments become the recorded history and earn customer points automatically. The merchant app handles cash, and the Hossouko payment route is kept for merchants or wallets without direct integration.
+All three feed the same history. **Entry point 1 is the strategic priority.** In Abidjan, 55–65% of a digitised merchant's takings already arrive by mobile money, and Wave charges merchants about 1% while an aggregator charges about 3% (see [MARKET.md § 9](MARKET.md#9-evidence-for-the-fidelia-model)). Asking a merchant to move payments to a more expensive rail would destroy the value we sell. Instead, Fidelia sits **on top of** the wallets merchants already use: their existing payments become the recorded history and earn customer points automatically. The merchant app handles cash, and the Fidelia payment route is kept for merchants or wallets without direct integration.
 
-This turns the concept's "one habit" into **zero habit** for mobile-money sales. It is the strongest answer to the failure pattern of African merchant tools (see [MARKET.md § 9](MARKET.md#9-evidence-for-the-hossouko-model)). Access to Wave's Business API for small merchants, and the consent rules for customer phone numbers, must be confirmed in Phase 0.
+This turns the concept's "one habit" into **zero habit** for mobile-money sales. It is the strongest answer to the failure pattern of African merchant tools (see [MARKET.md § 9](MARKET.md#9-evidence-for-the-fidelia-model)). Access to Wave's Business API for small merchants, and the consent rules for customer phone numbers, must be confirmed in Phase 0.
 
 ### Operator-neutral by design
 
-Hossouko is **not tied to Wave**. It builds on whichever wallet the merchant already uses, and each operator is an adapter behind the same event stream:
+Fidelia is **not tied to Wave**. It builds on whichever wallet the merchant already uses, and each operator is an adapter behind the same event stream:
 
 | Order | Rail | Why this order |
 |---|---|---|
-| 1 | **Wave**: automatic capture of payments to the merchant's existing QR | Most small merchants, lowest merchant fee (~1%), and a confirmed webhook that notifies payments Hossouko did not start |
-| 2 | **MTN MoMo** (request-to-pay) and **Orange Money** (merchant API) | For merchants mainly on those networks. Both confirm payments Hossouko starts; whether they can also notify payments to a merchant's static QR is to be confirmed |
+| 1 | **Wave**: automatic capture of payments to the merchant's existing QR | Most small merchants, lowest merchant fee (~1%), and a confirmed webhook that notifies payments Fidelia did not start |
+| 2 | **MTN MoMo** (request-to-pay) and **Orange Money** (merchant API) | For merchants mainly on those networks. Both confirm payments Fidelia starts; whether they can also notify payments to a merchant's static QR is to be confirmed |
 | 3 | **PI-SPI interoperable QR**, the BCEAO's instant-payment platform linking every bank and wallet in UEMOA ([what it is](MARKET.md#what-pi-spi-is)), through a licensed partner | One QR that accepts any wallet or bank in UEMOA. When it is live for merchants in Côte d'Ivoire, it becomes the single operator-neutral rail and removes the question |
 | Always | **Cash sale + phone number** | Works with any wallet or with cash, today; recorded as merchant-declared |
 
@@ -73,25 +73,25 @@ Whatever the rail, every sale lands in the same history with its evidence label,
 
 | Piece | Repository | Who uses it | What it does |
 |---|---|---|---|
-| **Merchant app** | `hossouko-App-retailer` | Merchant, at the counter | Record a sale in seconds on a cheap Android phone, offline first; see the day's total; publish deals ("bons plans"). |
-| **Customer app** | `hossouko-App-user` | Customers in Abidjan | Find a maquis by dish or commune; see on-duty pharmacies ("pharmacies de garde") with a call button; browse deals; **pay by scanning the merchant's QR code** with Wave, Orange Money, MTN MoMo or Moov; earn points and redeem rewards at that merchant. |
-| **Platform** | `hossouko-BE` | Both apps, later partners | API, offline sync with idempotency, payments orchestration, loyalty ledger, deals, tontine and consent foundations, monitoring. |
-| **Public site** | `hossouko-Web` | Investors, institutions, partners | French and English presentation of this concept. |
+| **Merchant app** | `fidelia-App-retailer` | Merchant, at the counter | Record a sale in seconds on a cheap Android phone, offline first; see the day's total; publish deals ("bons plans"). |
+| **Customer app** | `fidelia-App-user` | Customers in Abidjan | Find a maquis by dish or commune; see on-duty pharmacies ("pharmacies de garde") with a call button; browse deals; **pay by scanning the merchant's QR code** with Wave, Orange Money, MTN MoMo or Moov; earn points and redeem rewards at that merchant. |
+| **Platform** | `fidelia-BE` | Both apps, later partners | API, offline sync with idempotency, payments orchestration, loyalty ledger, deals, tontine and consent foundations, monitoring. |
+| **Public site** | `fidelia-Web` | Investors, institutions, partners | French and English presentation of this concept. |
 
 The customer app is **optional**. A customer without it still identifies at the counter with a phone number or QR code, on the merchant's device. The app gives customers a daily reason to open it: food, a pharmacy tonight, a deal, a payment. Each of those daily reasons can create a payment-confirmed event.
 
 What is actually built and what is not is tracked in [ROADMAP.md § Where we stand](ROADMAP.md#where-we-stand). Everything here is a **prototype**. Nothing moves real money yet.
 
-## 5. Customer loyalty: how Hossouko brings customers back
+## 5. Customer loyalty: how Fidelia brings customers back
 
 Loyalty is what the merchant pays for first, so its design is a business decision, not a detail.
 
 - **The customer is recognised by phone number.** No card, no app required. A Wave payment, or a phone number typed at the counter, is enough. An SMS or WhatsApp message confirms the points ("+12 points at Maquis Chez Tanti — 3 visits to a free drink").
 - **Rewards are funded by the merchant and cost them little:** a drink, a side dish, a discount, free delivery, priority service. They are never cash. The merchant sets the rule (points per 100 F) and the rewards, as the customer app already supports.
-- **Start customers with progress already made.** A new customer joins with a few points already earned. In a field study, pre-stamped cards were completed 34% of the time against 19% for empty cards with the same effort required (endowed progress effect, see [MARKET.md](MARKET.md#9-evidence-for-the-hossouko-model)).
+- **Start customers with progress already made.** A new customer joins with a few points already earned. In a field study, pre-stamped cards were completed 34% of the time against 19% for empty cards with the same effort required (endowed progress effect, see [MARKET.md](MARKET.md#9-evidence-for-the-fidelia-model)).
 - **Short distance to the first reward.** The first reward is reachable within 3–5 visits for a maquis and within 2–3 for a pharmacy, whose purchases are less frequent. Progress is always visible.
 - **Win back lapsed customers.** The merchant sees who has not returned for N days and sends an offer (Phase 2). This turns the history into revenue the merchant can see.
-- **A merchant can pay to promote a specific offer.** Basic deals remain free to list. For a one-time, fixed fee, a merchant can book a time-limited **sponsored deal** in the customer app to advertise a product, dish, service or special price to customers browsing the relevant commune and category. The placement is visibly labelled **Sponsored**, capped by commune and category, and sold/approved by the Hossouko team during the pilot; self-service purchase is not yet available. The fee buys placement, not guaranteed views, visits or sales; test the price with merchants before setting a rate. Sponsored deals bring potential first visits; loyalty points encourage customers to return.
+- **A merchant can pay to promote a specific offer.** Basic deals remain free to list. For a one-time, fixed fee, a merchant can book a time-limited **sponsored deal** in the customer app to advertise a product, dish, service or special price to customers browsing the relevant commune and category. The placement is visibly labelled **Sponsored**, capped by commune and category, and sold/approved by the Fidelia team during the pilot; self-service purchase is not yet available. The fee buys placement, not guaranteed views, visits or sales; test the price with merchants before setting a rate. Sponsored deals bring potential first visits; loyalty points encourage customers to return.
 - **Keep discovery trustworthy.** Paid placement belongs in deals/discovery and must not change official on-duty pharmacy information, safety-critical results or the order of ordinary results. Never share customer-level data with an advertiser to target the placement.
 - **Network later.** Once a corridor has enough merchants, points could be earned at one merchant and spent at another, as Safaricom's Bonga points are redeemable at 140,000+ M-Pesa merchants. This needs clear merchant settlement rules and a regulatory check, because transferable points start to look like stored value. Until then, points stay per merchant.
 
@@ -99,11 +99,11 @@ What the merchant sees each week is a single number: **how many customers came b
 
 ## 6. How money moves, and how it does not
 
-- A customer payment goes **directly from the customer's wallet to the merchant's own wallet**, through a licensed aggregator (such as CinetPay). **Hossouko never holds the money.** The app tells the customer this at the moment of payment.
-- The customer enters their PIN in the operator's app, never in Hossouko's.
+- A customer payment goes **directly from the customer's wallet to the merchant's own wallet**, through a licensed aggregator (such as CinetPay). **Fidelia never holds the money.** The app tells the customer this at the moment of payment.
+- The customer enters their PIN in the operator's app, never in Fidelia's.
 - Loyalty points are a merchant reward (a drink, a discount, a delivery). **They are not converted into cash** unless a BCEAO-compliant framework and licensed partner are in place.
-- Savings (later) go from the user's wallet straight to an account held by a licensed partner. There is no transit account at Hossouko, not even technically. A transit account would amount to deposit-taking.
-- Credit (later) is granted and carried by a licensed MFI, bank or guarantee scheme. Hossouko provides the consented history and the distribution channel, never the loan.
+- Savings (later) go from the user's wallet straight to an account held by a licensed partner. There is no transit account at Fidelia, not even technically. A transit account would amount to deposit-taking.
+- Credit (later) is granted and carried by a licensed MFI, bank or guarantee scheme. Fidelia provides the consented history and the distribution channel, never the loan.
 
 ## 7. Identity: inherit trust, do not rebuild it
 
@@ -115,13 +115,13 @@ Verification follows the risk of the feature. Nobody goes through a full identit
 | **Tier 1** | Tontine, partner savings | Phone verification plus lightweight liveness check where legally permitted | Biometric evidence verifies; it never becomes an identity database |
 | **Tier 2** | History export to a licensed lender | Tier 1 plus national-ID capture and partner-approved cross-check | Only explicitly consented fields, for the stated purpose |
 
-Hossouko prefers a provider-issued verification result to storing raw identity or biometric data. A phone number alone is not proof of identity, and operator KYC is not reused without a legal, technical and consent agreement.
+Fidelia prefers a provider-issued verification result to storing raw identity or biometric data. A phone number alone is not proof of identity, and operator KYC is not reused without a legal, technical and consent agreement.
 
 **Strategic horizon (a hypothesis, not a promise):** the event stream and these tiers could later found a *federated identity trust layer* for Côte d'Ivoire. It would orchestrate consent and normalise assurance levels between operators, KYC providers and licensed institutions, without owning national identity or copying any KYC database. This needs a separate legal and governance programme with ARTCI, BCEAO, operators and counsel. It is always presented as downstream of the merchant product.
 
 ## 8. The path to financial inclusion
 
-Hossouko is an **accelerator, not a gate**. It makes the route to credit faster and simpler. It is never presented as the only way to get credit ("no Hossouko, no loan"). That framing would be coercive, would erode trust, and would draw regulatory concern.
+Fidelia is an **accelerator, not a gate**. It makes the route to credit faster and simpler. It is never presented as the only way to get credit ("no Fidelia, no loan"). That framing would be coercive, would erode trust, and would draw regulatory concern.
 
 In order, each step unlocked only when the previous one is proven by real use:
 
@@ -133,12 +133,12 @@ In order, each step unlocked only when the previous one is proven by real use:
 
 **Gender is a primary design constraint, not an option.** Women's usage is tracked on every financial feature. Scores must not penalise smaller transaction amounts, which reflect less access to capital, not less reliability.
 
-## 9. Explaining Hossouko to each audience
+## 9. Explaining Fidelia to each audience
 
 | Audience | In one sentence | What they get | What we never say |
 |---|---|---|---|
-| **Merchants** | "Record every sale in a few seconds, even without signal. Bring your customers back, and build the history of your business." | Loyalty and deals without building software; daily totals; a revenue history they own and can show a lender. | "Hossouko will give you a loan." |
-| **Customers** | "Find where to eat or which pharmacy is open, pay with your own wallet, and earn points where you shop." | A useful daily app, clear rewards, a view of their own activity. Their money never passes through Hossouko. | "Your points are cash." |
+| **Merchants** | "Record every sale in a few seconds, even without signal. Bring your customers back, and build the history of your business." | Loyalty and deals without building software; daily totals; a revenue history they own and can show a lender. | "Fidelia will give you a loan." |
+| **Customers** | "Find where to eat or which pharmacy is open, pay with your own wallet, and earn points where you shop." | A useful daily app, clear rewards, a view of their own activity. Their money never passes through Fidelia. | "Your points are cash." |
 | **Investors** | "A merchant SaaS wedge that compounds into the proof layer financial institutions lack, in a market with high mobile-money use but low credit access." | A paying first customer (the merchant), a data moat built from consented events, and numeric exit gates per phase. See [BUSINESS-MODEL.md](BUSINESS-MODEL.md). | "Pan-African super-app." |
 | **Institutions and regulators** (APIF, BCEAO, ARTCI) | "Private execution for the national financial-inclusion strategy: structured, consented activity data for small merchants, with licensed institutions holding all funds." | Alignment with public programmes, a clear regulated perimeter, explainable indicators, gender tracking. | "We hold deposits" or "we score people opaquely." |
 | **Financial partners** (MFIs, guarantee schemes) | "A distribution channel into small merchants, with consented, structured revenue histories you can assess." | Lower acquisition and assessment cost; referral model; direct fund flows to them. | "Guaranteed repayment." |
@@ -146,17 +146,17 @@ In order, each step unlocked only when the previous one is proven by real use:
 
 The merchant message that must appear in every sales conversation:
 
-> **Every sale you record with Hossouko builds the proof of your business, the history a lender can assess when you need stock or working capital.**
+> **Every sale you record with Fidelia builds the proof of your business, the history a lender can assess when you need stock or working capital.**
 
 It is a possible benefit, never a guaranteed loan and never a condition for credit.
 
 ## 10. Principles
 
 - One country, one corridor (Abidjan first), one merchant segment at a time.
-- Validate real usage before expanding. The master metric is the **% of a merchant's real sales recorded through Hossouko**. One merchant recording 90% of sales for 60 days is a result; ten recording 10% for a week is noise.
+- Validate real usage before expanding. The master metric is the **% of a merchant's real sales recorded through Fidelia**. One merchant recording 90% of sales for 60 days is a result; ten recording 10% for a week is noise.
 - Low bandwidth and old phones are the target, not edge cases (Android 5, ~1 GB RAM, prepaid data). SMS and WhatsApp come before push notifications.
 - Charge for merchant value before monetising financial referrals.
-- **Never make a payment cost the merchant more than it does today.** Hossouko builds on the wallets merchants already use; it does not compete with them for the payment.
+- **Never make a payment cost the merchant more than it does today.** Fidelia builds on the wallets merchants already use; it does not compete with them for the payment.
 - **Operator-neutral.** No dependency on a single wallet: Wave first, other operators next, the interoperable PI-SPI QR as the target.
 - Users can see and correct their data; every score is explainable; merchant and customer data are separated and permissioned.
 - Licensed institutions handle custody, lending and settlement.
@@ -164,7 +164,7 @@ It is a possible benefit, never a guaranteed loan and never a condition for cred
 
 ## 11. Red lines
 
-Hossouko does **not**:
+Fidelia does **not**:
 
 1. Promise loans, approval, rates or savings returns.
 2. Hold deposits or savings, even temporarily, or lend without authorisation.

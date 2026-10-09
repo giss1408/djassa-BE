@@ -9,7 +9,7 @@ The generated Kubernetes Secret must expose these keys exactly:
 | Kubernetes key | Application use |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection URL |
-| `HOSSOUKO_SECRET_KEY` | JWT signing key |
+| `FIDELIA_SECRET_KEY` | JWT signing key |
 | `MOBILE_MONEY_SECRETS` | Active and previous webhook signing keys, newest first |
 | `CELERY_BROKER_URL` | Redis broker URL |
 
@@ -31,32 +31,32 @@ Do not use the old names `JWT_SECRET` or `MOBILE_MONEY_SECRET`; the application 
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
-  name: hossouko-app-secrets
-  namespace: hossouko
+  name: fidelia-app-secrets
+  namespace: fidelia
 spec:
   refreshInterval: 1h
   secretStoreRef:
-    name: hossouko-vault
+    name: fidelia-vault
     kind: SecretStore
   target:
-    name: hossouko-app-secrets
+    name: fidelia-app-secrets
     creationPolicy: Owner
   data:
     - secretKey: DATABASE_URL
       remoteRef:
-        key: hossouko/production
+        key: fidelia/production
         property: database_url
-    - secretKey: HOSSOUKO_SECRET_KEY
+    - secretKey: FIDELIA_SECRET_KEY
       remoteRef:
-        key: hossouko/production
+        key: fidelia/production
         property: jwt_secret
     - secretKey: MOBILE_MONEY_SECRETS
       remoteRef:
-        key: hossouko/production
+        key: fidelia/production
         property: mobile_money_secrets
     - secretKey: CELERY_BROKER_URL
       remoteRef:
-        key: hossouko/production
+        key: fidelia/production
         property: celery_broker_url
 ```
 

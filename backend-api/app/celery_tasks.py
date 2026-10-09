@@ -64,7 +64,7 @@ def report_quarantine_task():
     try:
         result = sale_events_service.quarantine_summary_sync()
         if result['quarantined']:
-            logging.getLogger('hossouko.sale_events').warning(
+            logging.getLogger('fidelia.sale_events').warning(
                 'sale_events quarantine: %s unresolved declared sales totalling %s -- '
                 'resolve via GET /api/admin/sale-events/quarantined',
                 result['quarantined'], result['amount'],
@@ -81,7 +81,7 @@ def purge_expired_task():
     """Delete spent sign-in codes, dead sessions and old app error reports."""
     try:
         result = purge_service.purge_expired_sync()
-        logging.getLogger('hossouko.purge').info('purge_expired: %s', result)
+        logging.getLogger('fidelia.purge').info('purge_expired: %s', result)
         record_task('maintenance.purge_expired', 'success')
         return result
     except Exception:

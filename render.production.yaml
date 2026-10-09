@@ -1,4 +1,4 @@
-# Render Blueprint: Hossouko in PRODUCTION (the pilot with real merchants).
+# Render Blueprint: Fidelia in PRODUCTION (the pilot with real merchants).
 # Render dashboard → New → Blueprint → this repository, Blueprint path
 # `render.production.yaml`. render.yaml stays the test environment: shared
 # test numbers, simulated payments, free plan. Never mix the two databases.
@@ -11,7 +11,7 @@
 services:
   - type: web
     runtime: python
-    name: hossouko-api-prod
+    name: fidelia-api-prod
     # Paid: always on (no sleep), a pre-deploy step, persistent metrics
     # between requests. One instance: Prometheus counters live in the
     # process, and Grafana Cloud scrapes the public URL, which reaches one
@@ -35,17 +35,17 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.9"
-      - key: HOSSOUKO_ENV
+      - key: FIDELIA_ENV
         value: production
       # The production database, never the test one. Neon: the direct
       # endpoint, with point-in-time restore enabled (PRODUCTION.md § Database).
       - key: DATABASE_URL
         sync: false
-      - key: HOSSOUKO_SECRET_KEY
+      - key: FIDELIA_SECRET_KEY
         generateValue: true
       # Seals merchants' Wave keys. If it ever changes, every merchant must
       # reconnect Wave: back it up in the team's password manager.
-      - key: HOSSOUKO_ENCRYPTION_KEY
+      - key: FIDELIA_ENCRYPTION_KEY
         generateValue: true
       # Payment webhook signing secrets (comma-separated: current,previous).
       - key: MOBILE_MONEY_SECRETS
@@ -62,7 +62,7 @@ services:
         sync: false
       - key: AT_API_KEY
         sync: false
-      # The approved alphanumeric sender (e.g. HOSSOUKO); empty until approved.
+      # The approved alphanumeric sender (e.g. FIDELIA); empty until approved.
       - key: AT_SENDER_ID
         sync: false
       # All numbers together, per 24 hours. A few times a normal day: past it
@@ -71,9 +71,9 @@ services:
       - key: OTP_DAILY_SMS_BUDGET
         value: "300"
 
-      # The Hossouko team's WhatsApp for suggestions (merchants always,
+      # The Fidelia team's WhatsApp for suggestions (merchants always,
       # customers from 100 points). Unset: the menu entry stays hidden.
-      - key: HOSSOUKO_SUGGESTIONS_WHATSAPP
+      - key: FIDELIA_SUGGESTIONS_WHATSAPP
         sync: false
 
       # --- Media (photos, videos) -------------------------------------------
@@ -87,7 +87,7 @@ services:
       - key: R2_SECRET_ACCESS_KEY
         sync: false
       - key: R2_BUCKET
-        value: hossouko-media-prod
+        value: fidelia-media-prod
       - key: MEDIA_PUBLIC_BASE_URL
         sync: false
 
@@ -110,8 +110,8 @@ services:
   # its own repository.
   - type: web
     runtime: static
-    name: hossouko-installer-prod
-    repo: https://github.com/giss1408/hossouko-installer
+    name: fidelia-installer-prod
+    repo: https://github.com/giss1408/fidelia-installer
     branch: main
     buildCommand: npm ci && npm run lint && npm run build
     staticPublishPath: ./dist
@@ -121,7 +121,7 @@ services:
       - key: NODE_VERSION
         value: "22.12.0"
       # The production API's address as Render shows it (https://...onrender.com).
-      - key: VITE_HOSSOUKO_API_BASE
+      - key: VITE_FIDELIA_API_BASE
         sync: false
     headers:
       - path: /assets/*

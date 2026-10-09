@@ -11,11 +11,11 @@ jobs:
         ports:
           - 5432:5432
         env:
-          POSTGRES_USER: hossouko
-          POSTGRES_PASSWORD: hossouko
-          POSTGRES_DB: hossouko
+          POSTGRES_USER: fidelia
+          POSTGRES_PASSWORD: fidelia
+          POSTGRES_DB: fidelia
         options: >-
-          --health-cmd="pg_isready -U hossouko" --health-interval=10s --health-timeout=5s --health-retries=5
+          --health-cmd="pg_isready -U fidelia" --health-interval=10s --health-timeout=5s --health-retries=5
       redis:
         image: redis:7-alpine
         ports:
@@ -37,12 +37,12 @@ jobs:
 
       - name: Wait for Postgres
         run: |
-          until pg_isready -h 127.0.0.1 -p 5432 -U hossouko; do sleep 1; done
+          until pg_isready -h 127.0.0.1 -p 5432 -U fidelia; do sleep 1; done
 
       - name: Apply migrations
         run: |
           . .venv/bin/activate
-          export DATABASE_URL=postgresql+asyncpg://hossouko:hossouko@127.0.0.1:5432/hossouko
+          export DATABASE_URL=postgresql+asyncpg://fidelia:fidelia@127.0.0.1:5432/fidelia
           alembic -c backend-api/alembic.ini upgrade head
 
       - name: Run tests

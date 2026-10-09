@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
-  namespace: hossouko-monitoring
+  namespace: fidelia-monitoring
 data:
   prometheus.yml: |
     global:

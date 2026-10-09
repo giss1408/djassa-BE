@@ -289,9 +289,9 @@ class DayTotal(BaseModel):
 
 
 class MerchantStatsOut(BaseModel):
-    """What Hossouko brought in, in words a merchant uses.
+    """What Fidelia brought in, in words a merchant uses.
 
-    Revenue, not profit: Hossouko does not know the merchant's costs (stock,
+    Revenue, not profit: Fidelia does not know the merchant's costs (stock,
     rent, staff), so it never claims a profit figure it cannot compute.
     """
 
@@ -314,7 +314,7 @@ class MerchantStatsOut(BaseModel):
     # --- The merged stream (app/services/revenue.py) --------------------------
     #
     # `revenue` above stays what it always was: money that actually arrived
-    # through Hossouko, so no existing client reads a different number than
+    # through Fidelia, so no existing client reads a different number than
     # before. The fields below add the cash the merchant recorded themselves,
     # labelled as such -- an aggregator confirmation and a typed figure are
     # never summed into one unqualified total.
@@ -351,7 +351,7 @@ class SaleIn(BaseModel):
     # are anonymous. When present, the customer earns this venue's points on
     # the sale, keyed on the normalised number (app/core/phone.py).
     customer_phone: str | None = Field(default=None, max_length=32)
-    # The merchant asked and the customer agreed that Hossouko keeps their
+    # The merchant asked and the customer agreed that Fidelia keeps their
     # number for points. Needed the first time a number is used; a number
     # that already has consent (app or another counter) does not need it.
     customer_consent: bool = False

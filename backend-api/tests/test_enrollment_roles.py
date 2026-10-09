@@ -24,7 +24,7 @@ CASHIER_KEY = "tel:+2250711223344"
 async def client(monkeypatch):
     monkeypatch.setenv("OTP_SENDER", "console")
     monkeypatch.setenv("OTP_DEV_ECHO", "1")
-    monkeypatch.delenv("HOSSOUKO_ENV", raising=False)
+    monkeypatch.delenv("FIDELIA_ENV", raising=False)
     limiter.enabled = False
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -189,7 +189,7 @@ async def test_admin_grants_and_removes_the_agent_role(client):
 
 
 @pytest.mark.asyncio
-async def test_an_owner_who_is_also_an_admin_gets_the_owner_session_in_hossouko_pro(client):
+async def test_an_owner_who_is_also_an_admin_gets_the_owner_session_in_fidelia_pro(client):
     admin = await _admin(client)
     await client.post("/api/admin/users/roles", json={"phone": OWNER, "role": "admin"}, headers=admin)
     assert (await _sign_in(client, OWNER, "merchant")).json()["role"] == "merchant"

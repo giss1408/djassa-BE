@@ -1,6 +1,6 @@
 # Skill: Research
 
-Purpose: conduct structured, evidence-based research on financial inclusion, payments, connectivity, local markets, and partner ecosystems relevant to Hossouko.
+Purpose: conduct structured, evidence-based research on financial inclusion, payments, connectivity, local markets, and partner ecosystems relevant to Fidelia.
 
 When to use:
 - Preparing literature reviews or background sections.

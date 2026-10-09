@@ -25,7 +25,7 @@ E164 = "+2250712345678"
 async def client(monkeypatch):
     monkeypatch.setenv("OTP_SENDER", "console")
     monkeypatch.setenv("OTP_DEV_ECHO", "1")
-    monkeypatch.delenv("HOSSOUKO_ENV", raising=False)
+    monkeypatch.delenv("FIDELIA_ENV", raising=False)
     limiter.enabled = False
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -225,7 +225,7 @@ async def test_disabled_user_cannot_sign_in_or_refresh(client):
 
 @pytest.mark.asyncio
 async def test_production_refuses_console_codes_and_demo_login(client, monkeypatch):
-    monkeypatch.setenv("HOSSOUKO_ENV", "production")
+    monkeypatch.setenv("FIDELIA_ENV", "production")
     with pytest.raises(RuntimeError):
         await client.post("/api/auth/otp/request", json={"phone": PHONE})
     r = await client.post("/api/token", data={"username": "demo", "password": "demo123"})
@@ -237,7 +237,7 @@ TEST_NUMBERS = "+2250700000001:000000,07 00 00 00 02:000000"
 
 @pytest.mark.asyncio
 async def test_shared_test_numbers_sign_in_with_their_fixed_code(client, monkeypatch):
-    monkeypatch.setenv("HOSSOUKO_ENV", "test")
+    monkeypatch.setenv("FIDELIA_ENV", "test")
     monkeypatch.setenv("OTP_DEV_ECHO", "0")
     monkeypatch.setenv("TEST_OTP_NUMBERS", TEST_NUMBERS)
 
@@ -268,15 +268,15 @@ async def test_shared_test_numbers_sign_in_with_their_fixed_code(client, monkeyp
 @pytest.mark.asyncio
 async def test_test_numbers_only_apply_in_the_test_environment(client, monkeypatch):
     monkeypatch.setenv("TEST_OTP_NUMBERS", TEST_NUMBERS)
-    # Unset HOSSOUKO_ENV (local development): ignored.
+    # Unset FIDELIA_ENV (local development): ignored.
     r = await client.post("/api/auth/otp/verify", json={"phone": "0700000001", "code": "000000"})
     assert r.status_code == 401
 
-    monkeypatch.setenv("HOSSOUKO_ENV", "production")
+    monkeypatch.setenv("FIDELIA_ENV", "production")
     with pytest.raises(RuntimeError):
         await client.post("/api/auth/otp/verify", json={"phone": "0700000001", "code": "000000"})
 
-    monkeypatch.setenv("HOSSOUKO_ENV", "test")
+    monkeypatch.setenv("FIDELIA_ENV", "test")
     monkeypatch.setenv("TEST_OTP_NUMBERS", "+2250700000001:123")
     with pytest.raises(RuntimeError):
         await client.post("/api/auth/otp/verify", json={"phone": "0700000001", "code": "000000"})

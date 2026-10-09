@@ -1,6 +1,6 @@
 # Skill: Writing
 
-Purpose: produce clear, concise, and audience-appropriate product, technical, partner, and support content for Hossouko.
+Purpose: produce clear, concise, and audience-appropriate product, technical, partner, and support content for Fidelia.
 
 When to use:
 - Drafting report sections, executive summaries, and outreach content.

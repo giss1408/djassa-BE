@@ -1,4 +1,4 @@
-# Contributing to Hossouko
+# Contributing to Fidelia
 
 ## Branches
 

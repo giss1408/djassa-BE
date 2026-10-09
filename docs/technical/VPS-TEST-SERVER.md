@@ -1,6 +1,6 @@
 # VPS Test Server Setup
 
-This guide sets up a temporary test server for the Hossouko backend on an Ubuntu VPS. It is intended for integration testing and demos, not production financial traffic.
+This guide sets up a temporary test server for the Fidelia backend on an Ubuntu VPS. It is intended for integration testing and demos, not production financial traffic.
 
 ## 1. VPS requirements
 
@@ -42,7 +42,7 @@ After confirming that key-based login works in a second terminal, disable root l
 
 ```bash
 sudo install -d -m 0755 /etc/ssh/sshd_config.d
-sudo tee /etc/ssh/sshd_config.d/99-hossouko-test.conf >/dev/null <<'EOF'
+sudo tee /etc/ssh/sshd_config.d/99-fidelia-test.conf >/dev/null <<'EOF'
 PermitRootLogin no
 PasswordAuthentication no
 KbdInteractiveAuthentication no
@@ -87,11 +87,11 @@ Do not expose the Docker daemon TCP socket. Do not add untrusted users to the `d
 Clone the repository into `/opt`:
 
 ```bash
-sudo mkdir -p /opt/hossouko
-sudo chown deploy:deploy /opt/hossouko
-cd /opt/hossouko
-git clone YOUR_GIT_URL hossouko
-cd /opt/hossouko/hossouko/backend-api
+sudo mkdir -p /opt/fidelia
+sudo chown deploy:deploy /opt/fidelia
+cd /opt/fidelia
+git clone YOUR_GIT_URL fidelia
+cd /opt/fidelia/fidelia/backend-api
 ```
 
 For a test server, check out a known commit or tag rather than tracking a moving branch:
@@ -114,7 +114,7 @@ The current codebase must first pass the following application checks:
 
 - `app.main` must create the FastAPI application before registering startup handlers.
 - `app.api.webhooks` must import the shared `limiter` instance.
-- The secret names must match the code: `HOSSOUKO_SECRET_KEY` and `MOBILE_MONEY_SECRETS`.
+- The secret names must match the code: `FIDELIA_SECRET_KEY` and `MOBILE_MONEY_SECRETS`.
 - The hardcoded demo account and default JWT secret must not be used on an Internet-accessible server.
 
 Until these are corrected, the container may fail during import or run with unsafe authentication defaults.
@@ -124,7 +124,7 @@ Until these are corrected, the container may fail during import or run with unsa
 Generate strong, unique test-only values. Never reuse production secrets:
 
 ```bash
-export HOSSOUKO_SECRET_KEY="$(openssl rand -hex 32)"
+export FIDELIA_SECRET_KEY="$(openssl rand -hex 32)"
 export MOBILE_MONEY_SECRETS="$(openssl rand -hex 32)"
 ```
 
@@ -151,9 +151,9 @@ Start the web service with the test secrets:
 
 ```bash
 docker compose -f docker-compose.poc.yml run -d \
-  --name hossouko-web-test \
+  --name fidelia-web-test \
   --service-ports \
-  -e HOSSOUKO_SECRET_KEY="$HOSSOUKO_SECRET_KEY" \
+  -e FIDELIA_SECRET_KEY="$FIDELIA_SECRET_KEY" \
   -e MOBILE_MONEY_SECRETS="$MOBILE_MONEY_SECRETS" \
   web
 ```
@@ -171,12 +171,12 @@ The Compose file includes an optional Nginx service that expects `nginx/conf.d` 
 Run migrations from a Python virtual environment on the VPS, or from a one-off container that includes Alembic:
 
 ```bash
-cd /opt/hossouko/hossouko/backend-api
+cd /opt/fidelia/fidelia/backend-api
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-export DATABASE_URL=postgresql+asyncpg://hossouko:hossouko@127.0.0.1:5432/hossouko
+export DATABASE_URL=postgresql+asyncpg://fidelia:fidelia@127.0.0.1:5432/fidelia
 alembic -c alembic.ini upgrade head
 ```
 
@@ -187,7 +187,7 @@ Example temporary migration container:
 ```bash
 docker run --rm \
   --network backend-api_default \
-  -e DATABASE_URL=postgresql+asyncpg://hossouko:hossouko@db:5432/hossouko \
+  -e DATABASE_URL=postgresql+asyncpg://fidelia:fidelia@db:5432/fidelia \
   -v "$PWD":/app -w /app python:3.11-slim \
   sh -c 'pip install -r requirements.txt && alembic -c alembic.ini upgrade head'
 ```
@@ -203,7 +203,7 @@ docker network ls
 After Docker is installed and the repository is checked out, run the automated test deployment from `backend-api`:
 
 ```bash
-cd /opt/hossouko/hossouko/backend-api
+cd /opt/fidelia/fidelia/backend-api
 ./deploy-vps-test.sh
 ```
 
@@ -218,7 +218,7 @@ The previous `deploy-poc.sh` command remains as a compatibility wrapper:
 Do not commit the generated `.env` file. Review the service logs if deployment fails:
 
 ```bash
-docker compose --project-name hossouko-test --env-file .env -f docker-compose.poc.yml logs --tail=100 web worker
+docker compose --project-name fidelia-test --env-file .env -f docker-compose.poc.yml logs --tail=100 web worker
 ```
 
 ## 10. Verify the service
@@ -227,7 +227,7 @@ Check the container and application logs:
 
 ```bash
 docker ps
-docker logs --tail=200 hossouko-web-test
+docker logs --tail=200 fidelia-web-test
 ```
 
 The application port is published on the VPS by the `web` service. Test locally on the VPS:

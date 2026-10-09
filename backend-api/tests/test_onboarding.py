@@ -1,5 +1,5 @@
 """Enrolling a merchant: by an agent in one call, or by the merchant's own
-request from Hossouko Pro, reviewed by an admin."""
+request from Fidelia Pro, reviewed by an admin."""
 
 import pytest
 import pytest_asyncio
@@ -20,7 +20,7 @@ E164 = "+2250744556677"
 async def client(monkeypatch):
     monkeypatch.setenv("OTP_SENDER", "console")
     monkeypatch.setenv("OTP_DEV_ECHO", "1")
-    monkeypatch.delenv("HOSSOUKO_ENV", raising=False)
+    monkeypatch.delenv("FIDELIA_ENV", raising=False)
     limiter.enabled = False
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -61,7 +61,7 @@ async def test_agent_enrols_a_shop_in_one_call(client):
     assert r.status_code == 201, r.text
     venue = r.json()
     assert venue["merchant_phone_masked"] == "07 •• •• 66 77"
-    assert venue["qr_payload"].startswith("hossouko://pay/")
+    assert venue["qr_payload"].startswith("fidelia://pay/")
 
     # The merchant signs in with that number and runs that shop.
     signed = await _merchant_sign_in(client)

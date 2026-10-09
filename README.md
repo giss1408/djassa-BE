@@ -1,12 +1,12 @@
-# Hossouko
+# Fidelia
 
-Hossouko turns everyday sales at neighbourhood shops into proof: a verified business history that the merchant owns and, with consent, can take to a licensed lender. It starts in Abidjan with merchant sales recording, loyalty and QR payments, then connects merchants and customers to licensed partners for digital tontines, savings and credit. Hossouko never holds funds or lends.
+Fidelia turns everyday sales at neighbourhood shops into proof: a verified business history that the merchant owns and, with consent, can take to a licensed lender. It starts in Abidjan with merchant sales recording, loyalty and QR payments, then connects merchants and customers to licensed partners for digital tontines, savings and credit. Fidelia never holds funds or lends.
 
-This repository is the platform behind the merchant app (`hossouko-App-retailer`), the customer app (`hossouko-App-user`) and the public site (`hossouko-Web`).
+This repository is the platform behind the merchant app (`fidelia-App-retailer`), the customer app (`fidelia-App-user`) and the public site (`fidelia-Web`).
 
 ## Start here
 
-- [Concept](docs/business/CONCEPT.md): what Hossouko is, for whom, and how to explain it to each audience.
+- [Concept](docs/business/CONCEPT.md): what Fidelia is, for whom, and how to explain it to each audience.
 - [Market](docs/business/MARKET.md): sourced figures, regulation and positioning.
 - [Business model](docs/business/BUSINESS-MODEL.md): how the project creates and earns value.
 - [Partners](docs/business/PARTNERS.md): who to contact and what to ask.
@@ -33,7 +33,7 @@ python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
 docker compose -f docker-compose.dev.yml up -d db redis
-export DATABASE_URL=postgresql+asyncpg://hossouko:hossouko@127.0.0.1:5432/hossouko
+export DATABASE_URL=postgresql+asyncpg://fidelia:fidelia@127.0.0.1:5432/fidelia
 alembic -c alembic.ini upgrade head
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -57,12 +57,12 @@ The root [Jenkinsfile](Jenkinsfile) validates the source, builds the backend ima
 
 Configure these Jenkins credentials before enabling deployment:
 
-- `hossouko-container-registry-url`: secret text containing the registry hostname.
-- `hossouko-container-registry`: username/password for the registry.
-- `hossouko-vps-ssh`: SSH private key for the test VPS.
-- `hossouko-vps-host`: secret text containing the VPS hostname.
-- `hossouko-vps-user`: secret text containing the VPS deployment username.
-- `hossouko-kubeconfig`: secret file for the Kubernetes deployment context.
+- `fidelia-container-registry-url`: secret text containing the registry hostname.
+- `fidelia-container-registry`: username/password for the registry.
+- `fidelia-vps-ssh`: SSH private key for the test VPS.
+- `fidelia-vps-host`: secret text containing the VPS hostname.
+- `fidelia-vps-user`: secret text containing the VPS deployment username.
+- `fidelia-kubeconfig`: secret file for the Kubernetes deployment context.
 
 The Jenkins agent must provide Docker, Python 3, `syft`, `trivy`, and `kubectl` when Kubernetes deployment is enabled. Kubernetes deployment requires `PUBLISH_IMAGE=true` and a `main` or `master` build. VPS test deployment is limited to the `integration` branch.
 

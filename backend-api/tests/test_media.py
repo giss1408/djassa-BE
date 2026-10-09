@@ -33,7 +33,7 @@ has_ffmpeg = FFMPEG is not None
 def _local_media(tmp_path, monkeypatch):
     monkeypatch.setenv("MEDIA_STORAGE", "local")
     monkeypatch.setenv("MEDIA_LOCAL_DIR", str(tmp_path / "media"))
-    monkeypatch.delenv("HOSSOUKO_ENV", raising=False)
+    monkeypatch.delenv("FIDELIA_ENV", raising=False)
     return tmp_path / "media"
 
 
@@ -226,7 +226,7 @@ async def test_merchants_touch_only_their_shop_and_admins_any(client):
 def test_production_refuses_local_storage(monkeypatch):
     from app.services.media_storage import get_storage
 
-    monkeypatch.setenv("HOSSOUKO_ENV", "production")
+    monkeypatch.setenv("FIDELIA_ENV", "production")
     with pytest.raises(RuntimeError):
         get_storage()
     monkeypatch.setenv("MEDIA_STORAGE", "r2")

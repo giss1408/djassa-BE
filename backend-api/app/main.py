@@ -24,7 +24,7 @@ from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 setup_logging()
 
 # Configure tracer provider with basic service resource
-resource = Resource.create({"service.name": "hossouko-backend"})
+resource = Resource.create({"service.name": "fidelia-backend"})
 provider = TracerProvider(resource=resource)
 if os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT"):
     otlp_exporter = OTLPSpanExporter()
@@ -44,7 +44,7 @@ middleware = [
 ]
 
 
-app = FastAPI(title="hossouko API", middleware=middleware)
+app = FastAPI(title="fidelia API", middleware=middleware)
 
 
 @app.on_event("startup")

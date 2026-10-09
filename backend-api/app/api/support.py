@@ -18,13 +18,13 @@ router = APIRouter(prefix="/support", tags=["support"])
 # Customers unlock "send a suggestion on WhatsApp" at this many points: a
 # regular, not a stranger, so the team's WhatsApp is not a spam inbox. The
 # points are a threshold, never spent. Merchants and their cashiers always
-# have it, free: they are who Hossouko is built for.
+# have it, free: they are who Fidelia is built for.
 SUGGESTION_POINTS = 100
 
 
 def suggestions_whatsapp() -> str | None:
-    """The Hossouko team's WhatsApp number, digits only (wa.me format)."""
-    digits = "".join(c for c in os.getenv("HOSSOUKO_SUGGESTIONS_WHATSAPP", "") if c.isdigit())
+    """The Fidelia team's WhatsApp number, digits only (wa.me format)."""
+    digits = "".join(c for c in os.getenv("FIDELIA_SUGGESTIONS_WHATSAPP", "") if c.isdigit())
     return digits or None
 
 
@@ -58,7 +58,7 @@ async def suggestion_access(db: AsyncSession = Depends(get_db), user=Depends(get
     if not allowed or number is None:
         return SuggestionAccessOut(available=False, points=points)
     who = "commercant" if staff else "client"
-    text = f"Suggestion Hossouko ({who}) : "
+    text = f"Suggestion Fidelia ({who}) : "
     return SuggestionAccessOut(available=True, whatsapp_url=f"https://wa.me/{number}?text={quote(text)}", points=points)
 
 

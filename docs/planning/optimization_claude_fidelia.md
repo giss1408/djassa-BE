@@ -1,11 +1,11 @@
-# Hossouko — Concept Review, Revenue Options and Optimization Proposals
+# Fidelia — Concept Review, Revenue Options and Optimization Proposals
 
 > Independent review of the concept as documented **and as implemented**, produced 2026-09-29.
 > Scope reviewed: `docs/` (all concept, business-model, roadmap, inclusion and research notes),
-> `backend-api/` (models, APIs, services, tests), `hossouko-App-user`, `hossouko-App-retailer`, `hossouko-Web`.
+> `backend-api/` (models, APIs, services, tests), `fidelia-App-user`, `fidelia-App-retailer`, `fidelia-Web`.
 >
 > An ordered, per-step implementation plan for these findings is in
-> [Implementation action plan](action_plan_claude_hossouko.md).
+> [Implementation action plan](action_plan_claude_fidelia.md).
 >
 > This document proposes; it does not decide. Every figure below marked *illustrative* is an
 > assumption to test with merchants and partners, not a validated number — consistent with the
@@ -36,7 +36,7 @@ Recorded so that the findings below are not read as a verdict on the whole conce
 
 - **The single-primitive framing is the right one.** One verified transaction, five views on it
   (points, revenue proof, tontine regularity, reliability signal, credit export) is a materially
-  better product thesis than five sequential features. See [hossouko-product-concept-v2.md](../business/CONCEPT.md).
+  better product thesis than five sequential features. See [fidelia-product-concept-v2.md](../business/CONCEPT.md).
 - **The regulatory guardrails are unusually disciplined** for a pre-pilot project: never hold funds,
   never lend directly, no opaque scoring, no cash-out before BCEAO clarity, and the *accelerator,
   not gatekeeper* positioning on credit access. See [dkassa-inclusion-financiere.md](../business/CONCEPT.md).
@@ -69,7 +69,7 @@ Recorded so that the findings below are not read as a verdict on the whole conce
 ### Finding 1 — There is no revenue machinery in the code (blocking)
 
 A search across `backend-api/app/` for subscription, billing, plan, invoice, commission, fee and tier
-returns nothing related to money owed to Hossouko. Only identity *verification tiers* match.
+returns nothing related to money owed to Fidelia. Only identity *verification tiers* match.
 
 Consequences:
 
@@ -163,8 +163,8 @@ require a financial partner. All figures are *illustrative*.
 Become a partner/reseller of the licensed aggregator (CinetPay, Hub2) and take a share of the merchant
 service charge on each collection.
 
-**Hossouko still never touches funds.** The aggregator settles to the merchant's own wallet and pays
-Hossouko a commission on its own fee. This is fully compatible with the non-negotiable constraint in
+**Fidelia still never touches funds.** The aggregator settles to the merchant's own wallet and pays
+Fidelia a commission on its own fee. This is fully compatible with the non-negotiable constraint in
 [dkassa-inclusion-financiere.md](../business/CONCEPT.md).
 
 *Illustrative:* a maquis at 40 sales/day × 2,500 XOF ≈ 3,000,000 XOF/month collected. A 1% share of
@@ -178,7 +178,7 @@ Why it is the better first line:
 - It is zero when the merchant gets no value, which makes the pitch honest and the objection small.
 
 Risks to accept: thin per-ticket margin at XOF ticket sizes, and the aggregator can disintermediate
-Hossouko once volume exists. **Negotiate the split before building volume, not after.**
+Fidelia once volume exists. **Negotiate the split before building volume, not after.**
 
 ### Line 2 — Featured deal placement *(fastest actual cash; nearly built)*
 
@@ -247,7 +247,7 @@ underwriter wants, and **nobody in Côte d'Ivoire can currently produce it**. Th
 moat than the loyalty program, and it falls out of optimization A for free.
 
 It also gives the merchant a reason to push customers toward digital payment — which is finding 4's
-behaviour change, now merchant-driven instead of Hossouko-driven.
+behaviour change, now merchant-driven instead of Fidelia-driven.
 
 ### C. Make the export a signed statement, not a CSV dump
 
@@ -262,7 +262,7 @@ finding-3 authorization fix — same endpoint, same work.
 
 `CATEGORIES` currently spans maquis, supérette, pharmacie, mode, beauté and téléphonie. This
 contradicts the cluster-density thesis in [Product concept](../business/CONCEPT.md): a customer should
-recognize Hossouko across several nearby outlets.
+recognize Fidelia across several nearby outlets.
 
 Pilot **maquis + supérette in one or two communes**. Both have high repeat frequency and small tickets,
 which is what the recording habit needs.
@@ -295,14 +295,14 @@ Add point expiry and a maximum redemption rate per visit or per period.
 
 ### H. Instrument the master metric's denominator
 
-[hossouko-product-concept-v2.md](../business/CONCEPT.md) states that the share of a merchant's real
+[fidelia-product-concept-v2.md](../business/CONCEPT.md) states that the share of a merchant's real
 transactions actually recorded is the one number that governs everything. Nothing currently captures
 **total real sales**, so the number cannot be computed and the phase gate cannot be enforced.
 
 Add a pilot-only daily merchant self-report ("roughly how many sales today?"). Imperfect, but a rough
 denominator beats none.
 
-### I. Resolve the hossouko / dkassa naming before institutional outreach
+### I. Resolve the fidelia / dkassa naming before institutional outreach
 
 Both names are live across `docs/`, sometimes in the same sentence. Settle it and check trademark
 availability before any partner meeting — this is already an open item in [concept.md](../business/CONCEPT.md).
@@ -340,7 +340,7 @@ long-pole external dependency and should be requested in parallel with item 1, n
 
 Related documents:
 
-- [Implementation action plan](action_plan_claude_hossouko.md) — how to execute the findings above
+- [Implementation action plan](action_plan_claude_fidelia.md) — how to execute the findings above
 - [Concept (FR)](../business/CONCEPT.md)
 - [Product concept](../business/CONCEPT.md)
 - [Product concept v2 — the event as core primitive](../business/CONCEPT.md)

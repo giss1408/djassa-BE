@@ -17,7 +17,7 @@ URL = "/api/support/suggestions/whatsapp"
 
 @pytest_asyncio.fixture
 async def client(monkeypatch):
-    monkeypatch.setenv("HOSSOUKO_SUGGESTIONS_WHATSAPP", "+225 07 00 00 00 01")
+    monkeypatch.setenv("FIDELIA_SUGGESTIONS_WHATSAPP", "+225 07 00 00 00 01")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
@@ -63,6 +63,6 @@ async def test_customers_unlock_it_at_100_points_without_spending_them(client):
 
 @pytest.mark.asyncio
 async def test_hidden_until_the_number_is_configured(client, monkeypatch):
-    monkeypatch.delenv("HOSSOUKO_SUGGESTIONS_WHATSAPP")
+    monkeypatch.delenv("FIDELIA_SUGGESTIONS_WHATSAPP")
     r = (await client.get(URL, headers=await _auth(client, "demo", "demo123"))).json()
     assert r["available"] is False

@@ -1,24 +1,24 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: hossouko-ingress
-  namespace: hossouko
+  name: fidelia-ingress
+  namespace: fidelia
   annotations:
     kubernetes.io/ingress.class: "nginx"
     cert-manager.io/cluster-issuer: "letsencrypt-production"
 spec:
   tls:
     - hosts:
-        - hossouko.example.com
-      secretName: hossouko-tls
+        - fidelia.example.com
+      secretName: fidelia-tls
   rules:
-    - host: hossouko.example.com
+    - host: fidelia.example.com
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: hossouko-api
+                name: fidelia-api
                 port:
                   number: 8000

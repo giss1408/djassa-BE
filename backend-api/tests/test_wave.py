@@ -143,7 +143,7 @@ def test_amounts_are_whole_francs():
 
 
 async def _consent(phone_e164: str):
-    """The payer agreed to loyalty in Hossouko (app or counter) beforehand."""
+    """The payer agreed to loyalty in Fidelia (app or counter) beforehand."""
     async with AsyncSessionLocal() as db:
         db.add(models.LoyaltyConsent(customer_id=f"tel:{phone_e164}", source="app", consent_version="test", granted_at=utcnow()))
         await db.commit()
@@ -266,7 +266,7 @@ async def test_unsigned_or_wrongly_signed_events_are_refused(client, fake_wave):
     assert (await _post_event(client, "/webhooks/wave/unknown-token", event)).status_code == 404
 
 
-# --- Payments outside Hossouko ---------------------------------------------
+# --- Payments outside Fidelia ---------------------------------------------
 
 
 @pytest.mark.asyncio
@@ -325,8 +325,8 @@ async def test_without_a_connected_account_production_refuses_wave(client, fake_
     customer = await _auth(client, "client", "client123")
     code = (await client.get("/api/merchant/pay-code", headers=merchant)).json()["pay_code"]
     monkeypatch.setenv("MOBILE_MONEY_PROVIDER", "wave")
-    monkeypatch.setenv("HOSSOUKO_ENV", "production")
-    monkeypatch.setenv("HOSSOUKO_ENCRYPTION_KEY", "test-key")
+    monkeypatch.setenv("FIDELIA_ENV", "production")
+    monkeypatch.setenv("FIDELIA_ENCRYPTION_KEY", "test-key")
     r = await client.post(
         "/api/customer/payments",
         json={"pay_code": code, "amount": 1000, "wallet_provider": "wave", "payer_msisdn": "0712345678",
@@ -383,8 +383,8 @@ async def test_points_only_shop_sends_wave_payers_to_the_shop_qr(client, fake_wa
     customer = await _auth(client, "client", "client123")
     await client.put("/api/merchant/wave", json={"webhook_secret": SECRET}, headers=merchant)
     code = (await client.get("/api/merchant/pay-code", headers=merchant)).json()["pay_code"]
-    monkeypatch.setenv("HOSSOUKO_ENV", "production")
-    monkeypatch.setenv("HOSSOUKO_ENCRYPTION_KEY", "test-key")
+    monkeypatch.setenv("FIDELIA_ENV", "production")
+    monkeypatch.setenv("FIDELIA_ENCRYPTION_KEY", "test-key")
     r = await client.post(
         "/api/customer/payments",
         json={"pay_code": code, "amount": 1000, "wallet_provider": "wave", "payer_msisdn": "0712345678",
@@ -398,7 +398,7 @@ async def test_points_only_shop_sends_wave_payers_to_the_shop_qr(client, fake_wa
 
 @pytest.mark.asyncio
 async def test_a_payer_who_never_agreed_is_recorded_anonymously(client, fake_wave):
-    """Wave hands over the sender's number without the payer asking Hossouko for
+    """Wave hands over the sender's number without the payer asking Fidelia for
     anything: the sale counts for the merchant, but the number is not kept."""
     merchant = await _auth(client, "demo", "demo123")
     connected = (await client.put("/api/merchant/wave", json={"webhook_secret": SECRET}, headers=merchant)).json()

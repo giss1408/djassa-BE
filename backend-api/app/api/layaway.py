@@ -2,7 +2,7 @@
 
 The customer pays for an expensive good (a phone, a fridge, school supplies)
 in installments; the merchant keeps the money and hands the good over once the
-price is reached. Hossouko never touches the money: it keeps the record both
+price is reached. Fidelia never touches the money: it keeps the record both
 sides can show, and each installment becomes evidence of saving discipline.
 
 It is not credit and is never called credit: nothing is lent, the customer pays
@@ -45,7 +45,7 @@ OPEN, COMPLETED, DELIVERED, CANCELLED = "open", "completed", "delivered", "cance
 TERMS_VERSION = "tranches-2026-10"
 TERMS = (
     "Vous payez {item} en plusieurs fois, au prix fixe de {price} F. "
-    "L'argent va directement au commerce, pas a Hossouko. "
+    "L'argent va directement au commerce, pas a Fidelia. "
     "Vous recevez le produit quand le prix est atteint, au plus tard le {due_by}. "
     "Pas d'interets, pas de frais, pas de penalite. "
     "Si vous arretez ou si le commerce ne peut pas livrer, c'est le commerce qui vous rembourse."
@@ -383,7 +383,7 @@ async def cancel(
 ):
     """Close a plan without handover. Owner only: it is about refunding money.
 
-    Hossouko records what the merchant says they handed back; it moves nothing.
+    Fidelia records what the merchant says they handed back; it moves nothing.
     """
     venue = await _my_venue(db, user, require_wallet=False)
     plan = await _load(db, plan_id, venue.id, lock=True)

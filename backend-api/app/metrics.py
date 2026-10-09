@@ -38,18 +38,18 @@ def metrics_endpoint():
 
 # Sign-in. A spike in otp_request/sent with no matching otp_verify/ok is SMS
 # pumping: someone spending our SMS budget on numbers they never verify.
-AUTH_EVENTS = Counter('hossouko_auth_events_total', 'Sign-in events', ['event', 'result'])
+AUTH_EVENTS = Counter('fidelia_auth_events_total', 'Sign-in events', ['event', 'result'])
 
 # Errors reported by the apps themselves (POST /api/client-events). Labels are
 # bounded: app and kind are enums, versions are validated before use.
 CLIENT_EVENTS = Counter(
-    'hossouko_client_events_total', 'Errors reported by Hossouko apps', ['app', 'platform', 'kind', 'app_version']
+    'fidelia_client_events_total', 'Errors reported by Fidelia apps', ['app', 'platform', 'kind', 'app_version']
 )
 
 # App usage (POST /api/usage-events). `name` is an allow-listed enum, so the
 # label stays bounded; screens and content ids live in the table, not here.
-USAGE_EVENTS = Counter('hossouko_usage_events_total', 'Usage events reported by Hossouko apps', ['app', 'name'])
+USAGE_EVENTS = Counter('fidelia_usage_events_total', 'Usage events reported by Fidelia apps', ['app', 'name'])
 
 # First launches, i.e. installs (a reinstall counts again: the install id is
 # kept in the app's own storage).
-APP_INSTALLS = Counter('hossouko_app_installs_total', 'First launches of Hossouko apps', ['app'])
+APP_INSTALLS = Counter('fidelia_app_installs_total', 'First launches of Fidelia apps', ['app'])

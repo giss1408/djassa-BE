@@ -7,9 +7,9 @@ from jose import jwt, JWTError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-SECRET_KEY = os.getenv("HOSSOUKO_SECRET_KEY")
+SECRET_KEY = os.getenv("FIDELIA_SECRET_KEY")
 if not SECRET_KEY:
-    raise RuntimeError("HOSSOUKO_SECRET_KEY must be set before starting the application")
+    raise RuntimeError("FIDELIA_SECRET_KEY must be set before starting the application")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
@@ -67,7 +67,7 @@ async def get_optional_user(token: str | None = Depends(oauth2_optional)):
     return await get_current_user(token)
 
 
-# Hossouko Pro sessions: the shop owner, and the cashiers the owner added.
+# Fidelia Pro sessions: the shop owner, and the cashiers the owner added.
 # Routes a cashier may use take `require_role(*SHOP_STAFF)`; owner-only routes
 # (money settings, deals, photos, location, statements, staff) keep "merchant".
 SHOP_STAFF = ("merchant", "cashier")

@@ -4,7 +4,7 @@ from celery import Celery
 BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 BACKEND_URL = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
 
-celery_app = Celery("hossouko",
+celery_app = Celery("fidelia",
                   broker=BROKER_URL,
                   backend=BACKEND_URL,
                   include=["app.celery_tasks"])

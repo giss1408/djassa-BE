@@ -1,4 +1,4 @@
-# Hossouko — Dossier de validation financière
+# Fidelia — Dossier de validation financière
 
 *Document de travail · 1er octobre 2026 · Côte d'Ivoire · [Version anglaise du dossier](FINANCE-VALIDATION.md) · [Budget détaillé en français](FINANCE-BUDGET.fr.md) · [Budget détaillé en anglais](FINANCE-BUDGET.md)*
 
@@ -97,11 +97,11 @@ Le tarif moyen de XOF 7 500/mois et la marge de 90 % sont des hypothèses de cal
 |---|---|---|---|
 | Prix moyen réellement encaissé : XOF 7 500/mois | Grille tarifaire testée, factures, paiements reçus, remises et jours d'impayé | Abonnements encaissés ÷ commerçants payants ; calculer le prix moyen réellement perçu | Hypothèse non testée |
 | Demande et prix des bons plans sponsorisés | Registre des réservations de 7 jours aux tarifs testés de XOF 1 000/2 000/3 000 ; factures et encaissements ; preuve de diffusion ; coûts directs de personnel/création | Compter par mois les emplacements réservés et payés ; encaissement moins coût direct de diffusion. Ne pas compter les marques d'intérêt ni les factures non encaissées comme revenus. | Hypothèse pilote non testée |
-| Marge après coûts variables : 90 % | Factures OTP/SMS/WhatsApp, coûts variables cloud, frais de paiement payés par Hossouko, commissions variables et temps de support mesuré | (Revenus encaissés − coûts variables directement attribuables) ÷ revenus encaissés | Non vérifié |
+| Marge après coûts variables : 90 % | Factures OTP/SMS/WhatsApp, coûts variables cloud, frais de paiement payés par Fidelia, commissions variables et temps de support mesuré | (Revenus encaissés − coûts variables directement attribuables) ÷ revenus encaissés | Non vérifié |
 | Coût des notifications acceptable | Devis et factures locales par canal ; volume réel de messages par point de vente | Dépenses de notification ÷ commerçants actifs et ÷ messages utiles reçus | À mesurer au pilote |
 | Les coûts fixes restent proches de XOF 2 M/mois après le pilote | Contrats et factures mensuelles pour équipe, hébergement, comptabilité, déplacements et outils | Total des coûts récurrents fixes du mois, distinct des coûts variables | Hypothèse à confirmer |
 
-Ne pas comptabiliser de commissions de paiement ou de prêteur sans contrat signé, encaissement constaté, consentement conforme et validation réglementaire. Ne pas inclure dans les revenus de Hossouko les fonds qui vont directement du client au portefeuille du commerçant.
+Ne pas comptabiliser de commissions de paiement ou de prêteur sans contrat signé, encaissement constaté, consentement conforme et validation réglementaire. Ne pas inclure dans les revenus de Fidelia les fonds qui vont directement du client au portefeuille du commerçant.
 
 ### Fiche mensuelle de marge à remplir
 

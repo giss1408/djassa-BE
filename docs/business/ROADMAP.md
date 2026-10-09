@@ -1,6 +1,6 @@
-# Hossouko — Roadmap
+# Fidelia — Roadmap
 
-A phase is complete when **real users have validated it**, not when the code ships. Each phase has an exit gate, and no phase starts before the previous one is validated. Phase numbering matches the public site (`hossouko-Web`).
+A phase is complete when **real users have validated it**, not when the code ships. Each phase has an exit gate, and no phase starts before the previous one is validated. Phase numbering matches the public site (`fidelia-Web`).
 
 *Last updated: 30 September 2026.*
 
@@ -36,7 +36,7 @@ A phase is complete when **real users have validated it**, not when the code shi
 4. No live payment provider (sandbox adapter only); no reconciliation with settlement reports.
 5. No per-resource authorisation model; no production secrets or backups; no independent security review.
 6. Dioula and other local-language support not started; no gzip on the API.
-7. **No automatic capture of wallet payments.** Merchants' existing wallet QR payments (Wave first) do not yet flow into Hossouko. This is the zero-habit entry point the concept now prioritises (see [CONCEPT.md § 3](CONCEPT.md#3-the-idea-one-habit-five-uses)).
+7. **No automatic capture of wallet payments.** Merchants' existing wallet QR payments (Wave first) do not yet flow into Fidelia. This is the zero-habit entry point the concept now prioritises (see [CONCEPT.md § 3](CONCEPT.md#3-the-idea-one-habit-five-uses)).
 
 ## Phase 0 — Discovery and compliance · *in progress*
 
@@ -44,15 +44,15 @@ A phase is complete when **real users have validated it**, not when the code shi
 
 - 5 to 10 merchant interviews in one Abidjan corridor; one segment (pharmacies and maquis are the current candidates, matching the customer app) and one acquisition channel.
 - A narrow pilot agreement.
-- **Operator capabilities**: whether Orange Money and MTN MoMo can notify payments to a merchant's static QR (not only payments Hossouko starts), their merchant rates, and activation times.
-- **PI-SPI status in Côte d'Ivoire** (the BCEAO's instant-payment interoperability platform, see [MARKET.md](MARKET.md#what-pi-spi-is)): how far interoperable merchant QR has rolled out, and which licensed payment institution could connect Hossouko to it.
-- **Wave Business API access for pilot merchants**: can a small merchant enable the `merchant.payment_received` webhook for Hossouko, and may the customer phone number be used for loyalty (Wave terms, ARTCI)? This decides the Phase 1 architecture.
+- **Operator capabilities**: whether Orange Money and MTN MoMo can notify payments to a merchant's static QR (not only payments Fidelia starts), their merchant rates, and activation times.
+- **PI-SPI status in Côte d'Ivoire** (the BCEAO's instant-payment interoperability platform, see [MARKET.md](MARKET.md#what-pi-spi-is)): how far interoperable merchant QR has rolled out, and which licensed payment institution could connect Fidelia to it.
+- **Wave Business API access for pilot merchants**: can a small merchant enable the `merchant.payment_received` webhook for Fidelia, and may the customer phone number be used for loyalty (Wave terms, ARTCI)? This decides the Phase 1 architecture.
 - Payment aggregator sandbox access (CinetPay or equivalent) as the fallback route, and confirmed PI-SPI compliance.
 - Real cost per loyalty notification: local bulk SMS and WhatsApp Business rates for Côte d'Ivoire.
 - Merchant willingness to pay against the pricing hypotheses in [BUSINESS-MODEL.md](BUSINESS-MODEL.md#pricing-experiment).
 - Data inventory and consent design; ARTCI review.
 - Identity and KYC boundary review with the payment partner.
-- Regulatory review of the QR payment flow: confirm Hossouko's role as a technology partner and the direct wallet-to-wallet flow.
+- Regulatory review of the QR payment flow: confirm Fidelia's role as a technology partner and the direct wallet-to-wallet flow.
 - Brand name confirmed.
 - Baseline metrics and support process.
 
@@ -65,7 +65,7 @@ A phase is complete when **real users have validated it**, not when the code shi
 - Tier 0 phone or operator-linked login for merchants and customers (replaces the demo user).
 - Outlet registration and merchant QR code.
 - **Automatic capture of the merchant's existing Wave payments** (signed webhook → event → points for the paying phone number). This is the priority entry point.
-- **One merchant identity and one event stream** covering captured wallet payments, recorded cash sales and Hossouko-route payments.
+- **One merchant identity and one event stream** covering captured wallet payments, recorded cash sales and Fidelia-route payments.
 - Loyalty rules, points and rewards for all entry points. New customers start with progress already made, and the first reward is reachable in 3–5 visits.
 - Customer points confirmed by app push, or by a batched SMS or WhatsApp summary (never one paid message per visit).
 - Customer app: discovery, on-duty pharmacies, deals, points; QR payment through a licensed aggregator as a fallback.
@@ -101,7 +101,7 @@ A phase is complete when **real users have validated it**, not when the code shi
 **Goal:** help existing community groups track contributions and schedules, respecting their existing rules.
 
 - Closed groups, membership, turn order, fixed amounts, reminders.
-- Contributions through the licensed payment provider, never through a Hossouko account.
+- Contributions through the licensed payment provider, never through a Fidelia account.
 - Idempotent webhooks, reconciliation and dispute workflow.
 - Proof-of-regularity per completed cycle, visible to members.
 - Tier 1 verification where required.
@@ -131,9 +131,9 @@ A phase is complete when **real users have validated it**, not when the code shi
 - Referral and outcome tracking; first commissions.
 - Contextual financial education at key moments.
 
-Hossouko remains a technology and distribution partner unless its regulatory status changes.
+Fidelia remains a technology and distribution partner unless its regulatory status changes.
 
-**Measure:** partnerships signed · merchants who obtained credit through their Hossouko history · savings volume held by partners and % of goals reached · commission revenue compared with subscription revenue · gender gap per feature.
+**Measure:** partnerships signed · merchants who obtained credit through their Fidelia history · savings volume held by partners and % of goals reached · commission revenue compared with subscription revenue · gender gap per feature.
 
 ## Phase 6 — Expansion · *later*
 

@@ -1,26 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hossouko-api
-  namespace: hossouko
+  name: fidelia-api
+  namespace: fidelia
   labels:
-    app: hossouko-api
+    app: fidelia-api
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: hossouko-api
+      app: fidelia-api
   template:
     metadata:
       labels:
-        app: hossouko-api
+        app: fidelia-api
     spec:
-      serviceAccountName: hossouko-api-sa
+      serviceAccountName: fidelia-api-sa
       imagePullSecrets:
         - name: regcred
       containers:
         - name: api
-          image: registry.example.com/hossouko/api:RELEASE-2026-09-19
+          image: registry.example.com/fidelia/api:RELEASE-2026-09-19
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -42,7 +42,7 @@ spec:
               type: RuntimeDefault
           envFrom:
             - secretRef:
-                name: hossouko-app-secrets
+                name: fidelia-app-secrets
           livenessProbe:
             httpGet:
               path: /health

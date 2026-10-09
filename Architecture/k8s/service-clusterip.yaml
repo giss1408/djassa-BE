@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: hossouko-api
-  namespace: hossouko
+  name: fidelia-api
+  namespace: fidelia
   labels:
-    app: hossouko-api
+    app: fidelia-api
 spec:
   type: ClusterIP
   ports:
@@ -13,4 +13,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app: hossouko-api
+    app: fidelia-api

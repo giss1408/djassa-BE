@@ -53,7 +53,7 @@ class SaleEvent:
     `source` is the field that matters: `mobile_money_confirmed` means an
     aggregator confirmed the money moved, `cash_declared` means the merchant
     said so. Both are real business; they are never the same evidence
-    (docs/optimization_claude_hossouko.md, finding 2).
+    (docs/optimization_claude_fidelia.md, finding 2).
     """
 
     id: int

@@ -1,5 +1,5 @@
 {
-  "uid": "hossouko-apps-auth",
+  "uid": "fidelia-apps-auth",
   "annotations": { "list": [] },
   "panels": [
     {
@@ -7,7 +7,7 @@
       "title": "App errors per minute, by app and version",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "targets": [
-        { "expr": "sum by (app, app_version) (rate(hossouko_client_events_total[5m])) * 60", "legendFormat": "{{app}} {{app_version}}", "refId": "A" }
+        { "expr": "sum by (app, app_version) (rate(fidelia_client_events_total[5m])) * 60", "legendFormat": "{{app}} {{app_version}}", "refId": "A" }
       ]
     },
     {
@@ -15,7 +15,7 @@
       "title": "Crashes per hour, by app",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "targets": [
-        { "expr": "sum by (app) (increase(hossouko_client_events_total{kind=\"crash\"}[1h]))", "legendFormat": "{{app}}", "refId": "A" }
+        { "expr": "sum by (app) (increase(fidelia_client_events_total{kind=\"crash\"}[1h]))", "legendFormat": "{{app}}", "refId": "A" }
       ]
     },
     {
@@ -23,8 +23,8 @@
       "title": "Sign-in codes: sent vs verified (per hour)",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
       "targets": [
-        { "expr": "sum(increase(hossouko_auth_events_total{event=\"otp_request\",result=\"sent\"}[1h]))", "legendFormat": "sent", "refId": "A" },
-        { "expr": "sum(increase(hossouko_auth_events_total{event=\"otp_verify\",result=\"ok\"}[1h]))", "legendFormat": "verified", "refId": "B" }
+        { "expr": "sum(increase(fidelia_auth_events_total{event=\"otp_request\",result=\"sent\"}[1h]))", "legendFormat": "sent", "refId": "A" },
+        { "expr": "sum(increase(fidelia_auth_events_total{event=\"otp_verify\",result=\"ok\"}[1h]))", "legendFormat": "verified", "refId": "B" }
       ]
     },
     {
@@ -32,10 +32,10 @@
       "title": "Sign-in failures by reason (per hour)",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "targets": [
-        { "expr": "sum by (event, result) (increase(hossouko_auth_events_total{result!~\"ok|sent\"}[1h]))", "legendFormat": "{{event}} {{result}}", "refId": "A" }
+        { "expr": "sum by (event, result) (increase(fidelia_auth_events_total{result!~\"ok|sent\"}[1h]))", "legendFormat": "{{event}} {{result}}", "refId": "A" }
       ]
     }
   ],
   "schemaVersion": 36,
-  "title": "Hossouko apps and sign-in"
+  "title": "Fidelia apps and sign-in"
 }

@@ -1,3 +1,3 @@
-path "secret/data/hossouko/*" {
+path "secret/data/fidelia/*" {
   capabilities = ["read", "list"]
 }

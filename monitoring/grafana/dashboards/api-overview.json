@@ -129,7 +129,7 @@
       },
       "targets": [
         {
-          "expr": "max by (commit) (hossouko_build_info)",
+          "expr": "max by (commit) (fidelia_build_info)",
           "legendFormat": "{{commit}}",
           "refId": "A"
         }
@@ -137,10 +137,10 @@
     }
   ],
   "schemaVersion": 36,
-  "title": "Hossouko API overview",
-  "uid": "hossouko-api-overview",
+  "title": "Fidelia API overview",
+  "uid": "fidelia-api-overview",
   "tags": [
-    "hossouko"
+    "fidelia"
   ],
   "time": {
     "from": "now-24h",

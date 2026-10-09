@@ -2,11 +2,11 @@
 
 Deliberately *not* gated, on any plan: recording a sale, issuing and redeeming
 loyalty points, publishing a bon plan. The share of a merchant's real
-transactions that reach Hossouko is the metric every downstream feature depends on
+transactions that reach Fidelia is the metric every downstream feature depends on
 -- loyalty perception, the reliability signal, the revenue history shown to a
 lender -- so putting the recording habit behind a paywall would trade the whole
 financing case for a few thousand XOF a month
-(docs/hossouko-product-concept-v2.md, docs/optimization_claude_hossouko.md).
+(docs/fidelia-product-concept-v2.md, docs/optimization_claude_fidelia.md).
 
 What is gated is the reporting and reach a paying merchant gets on top.
 """

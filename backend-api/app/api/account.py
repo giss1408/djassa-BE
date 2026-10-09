@@ -41,7 +41,7 @@ from .auth import (
 
 router = APIRouter()
 
-_NUMBER_TAKEN = "Ce numero a deja un compte Hossouko. Contactez Hossouko pour regrouper les deux."
+_NUMBER_TAKEN = "Ce numero a deja un compte Fidelia. Contactez Fidelia pour regrouper les deux."
 
 
 async def _phone_account(db: AsyncSession, user) -> models.User:
@@ -184,7 +184,7 @@ async def recovery_code(request: Request, payload: RecoveryCodeIn, db: AsyncSess
 @limiter.limit("5/minute;20/hour")
 async def file_recovery(request: Request, payload: RecoveryIn, db: AsyncSession = Depends(get_db)):
     """Files the request. The answer is the same whether or not the old number
-    has an account, so this cannot be used to find out who uses Hossouko."""
+    has an account, so this cannot be used to find out who uses Fidelia."""
     new_e164 = phone_or_422(payload.new_phone, payload.country_code)
     old_e164 = phone_or_422(payload.old_phone, payload.country_code)
     if old_e164 == new_e164:
@@ -217,12 +217,12 @@ async def file_recovery(request: Request, payload: RecoveryIn, db: AsyncSession 
     # If the old number is not actually lost, its holder hears about it now.
     await _notify(
         old_e164,
-        "Hossouko : une demande de transfert de votre compte vers un autre numero a ete faite. "
-        "Si ce n'est pas vous, contactez Hossouko avant qu'elle soit traitee.",
+        "Fidelia : une demande de transfert de votre compte vers un autre numero a ete faite. "
+        "Si ce n'est pas vous, contactez Fidelia avant qu'elle soit traitee.",
     )
     return {
         "status": "pending",
-        "message": "Demande recue. Hossouko vous contactera au nouveau numero pour verifier. "
+        "message": "Demande recue. Fidelia vous contactera au nouveau numero pour verifier. "
         "Une fois validee, connectez-vous avec ce numero.",
     }
 
@@ -331,7 +331,7 @@ async def approve_recovery(
         raise HTTPException(status_code=409, detail="The new number already has an account")
     r.status, r.decided_at, r.decided_by, r.decision_note = "approved", now, admin["username"], payload.note
     await db.commit()
-    await _notify(r.new_phone_e164, "Hossouko : votre compte est maintenant sur ce numero. Connectez-vous avec lui.")
+    await _notify(r.new_phone_e164, "Fidelia : votre compte est maintenant sur ce numero. Connectez-vous avec lui.")
     return await _out(db, r)
 
 
@@ -342,7 +342,7 @@ async def reject_recovery(
     r = await _pending(db, request_id)
     r.status, r.decided_at, r.decided_by, r.decision_note = "rejected", utcnow(), admin["username"], payload.note
     await db.commit()
-    await _notify(r.new_phone_e164, "Hossouko : votre demande de recuperation de compte n'a pas pu etre validee. Contactez Hossouko.")
+    await _notify(r.new_phone_e164, "Fidelia : votre demande de recuperation de compte n'a pas pu etre validee. Contactez Fidelia.")
     return await _out(db, r)
 
 

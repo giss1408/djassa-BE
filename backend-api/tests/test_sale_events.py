@@ -3,7 +3,7 @@
 The finding these cover: `Transaction` (whatever the retailer app typed, keyed on
 a client-supplied `merchant_id`) and `CustomerPayment` (confirmed by the
 aggregator) never touched, and the credit export read the unverified one
-(docs/optimization_claude_hossouko.md, finding 2).
+(docs/optimization_claude_fidelia.md, finding 2).
 """
 
 from decimal import Decimal
@@ -244,7 +244,7 @@ async def test_stats_split_confirmed_from_declared_and_reconcile_with_the_stream
     )
 
     stats = (await client.get("/api/merchant/stats", params={"days": 7}, headers=merchant)).json()
-    # `revenue` keeps its old meaning exactly: money that arrived through Hossouko.
+    # `revenue` keeps its old meaning exactly: money that arrived through Fidelia.
     assert stats["revenue"] == 10000
     assert stats["confirmed_revenue"] == 10000
     assert stats["declared_revenue"] == 2500

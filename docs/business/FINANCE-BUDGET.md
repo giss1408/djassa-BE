@@ -1,4 +1,4 @@
-# Hossouko — Launch and Pilot Budget (Draft)
+# Fidelia — Launch and Pilot Budget (Draft)
 
 *Planning draft · 1 October 2026 · Côte d'Ivoire · XOF · [Version française](FINANCE-BUDGET.fr.md)*
 
@@ -27,7 +27,7 @@ The XOF 30.82M (about €46,985) funds the first six months, including reusable 
 - Five to ten pharmacies, maquis or similar repeat-purchase merchants; company-owned testing devices only, with no merchant hardware purchases.
 - Test fleet assumes two Android phones, two iPhones, two Android tablets, two iPads, and two mid-range/refurbished laptops. Device prices are allowances, not quotes; reduce the budget if suitable devices are already available.
 - Production readiness includes Tier 0 phone/OTP login, access controls, production secrets/backups, one live payment-partner integration, and Wave capture if access is approved.
-- Hossouko does not hold funds, lend, underwrite, or fund merchant rewards. Customer payments continue on the merchant's existing wallet; aggregator routing is not assumed as the default.
+- Fidelia does not hold funds, lend, underwrite, or fund merchant rewards. Customer payments continue on the merchant's existing wallet; aggregator routing is not assumed as the default.
 - Budgeted amounts are **management estimates, not supplier quotes or verified Côte d'Ivoire market rates**. Confirm with local legal, security, messaging, hosting, and field-service providers before committing funds.
 - Costs are shown gross in XOF. Tax treatment, VAT recoverability, company status, and any partner onboarding or minimum-volume fees require confirmation.
 
@@ -125,7 +125,7 @@ The post-pilot XOF 2.0M (€3,048.98)/month operating-cost assumption comprises 
 
 ### Monthly operating break-even
 
-At XOF 2.0M fixed monthly costs, Hossouko needs the following active, paying merchants to cover monthly costs from subscriptions alone:
+At XOF 2.0M fixed monthly costs, Fidelia needs the following active, paying merchants to cover monthly costs from subscriptions alone:
 
 | Subscription assumption | Contribution per merchant/month (90% margin) | EUR equivalent | Paying merchants to break even |
 |---|---:|---:|---:|

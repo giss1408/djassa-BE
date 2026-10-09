@@ -4,7 +4,7 @@ This replaces `POST /api/transactions` for the retailer app. The difference that
 matters is what is *absent* from the request: there is no `merchant_id`. The
 venue is derived from the merchant's token, so a client can no longer assert
 which business a sale belongs to -- which it could, and did, before
-(docs/optimization_claude_hossouko.md, finding 2).
+(docs/optimization_claude_fidelia.md, finding 2).
 
 Never gated by plan. Recording is the habit every other feature and the whole
 financing case depend on (app/core/entitlements.py).
@@ -66,7 +66,7 @@ def _out(event: models.SaleEvent, points: int = 0) -> SaleOut:
     )
 
 
-NO_CONSENT = "Demandez au client s'il accepte que Hossouko garde son numero pour ses points, puis cochez la case."
+NO_CONSENT = "Demandez au client s'il accepte que Fidelia garde son numero pour ses points, puis cochez la case."
 
 
 async def _customer_id(db: AsyncSession, venue_id: int, payload: SaleIn) -> str | None:

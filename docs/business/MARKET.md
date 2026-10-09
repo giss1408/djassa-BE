@@ -1,4 +1,4 @@
-# Hossouko — Market, Regulation and Positioning
+# Fidelia — Market, Regulation and Positioning
 
 The evidence behind [CONCEPT.md](CONCEPT.md). Data compiled September 2026. **Every figure is published with its source. Re-verify figures before contractual or investor use**, because inclusion figures diverge by methodology (see the note at the end).
 
@@ -36,7 +36,7 @@ Microfinance is growing fast but concentrated in Abidjan and poorly adapted to s
 
 ### Regional: UEMOA / BCEAO
 
-- Any fintech operating in UEMOA needs a BCEAO status: **electronic money institution (EME)**, **payment institution (EP)**, or technical partner of a licensed institution. Hossouko operates as a **technology and distribution partner** of licensed institutions and holds no licence itself.
+- Any fintech operating in UEMOA needs a BCEAO status: **electronic money institution (EME)**, **payment institution (EP)**, or technical partner of a licensed institution. Fidelia operates as a **technology and distribution partner** of licensed institutions and holds no licence itself.
 - 2023 regulation encourages fintechs to target unbanked populations and eases multi-country expansion under common rules. About 200 fintechs were registered by BCEAO at the time.
 - **PI-SPI**, the BCEAO's instant-payment interoperability platform, connects every bank, mobile-money operator and MFI in the zone. Connection has been mandatory since 30 June 2026 (see [What PI-SPI is](#what-pi-spi-is) below).
 - BCEAO has an open workstream on **credit scoring** and has discussed a **regulatory sandbox**. Any third-party scoring must go through that route rather than launch in a grey zone.
@@ -60,11 +60,11 @@ Microfinance is growing fast but concentrated in Abidjan and poorly adapted to s
 | 30 June 2026 | Deadline for every financial institution in UEMOA to connect |
 | To confirm | How far merchant QR adoption has actually spread in Côte d'Ivoire (a Phase 0 check) |
 
-**Why it matters for Hossouko**
+**Why it matters for Fidelia**
 
-- **It ends the "which operator?" question.** It is step 3 of the operator-neutral order ([CONCEPT.md § 3](CONCEPT.md#3-the-idea-one-habit-five-uses)): Wave first, then MTN or Orange, then PI-SPI. With one interoperable QR, Hossouko would no longer need a separate integration per operator.
-- **Hossouko cannot connect directly.** Only licensed financial institutions can. Hossouko would reach it through a licensed partner (a bank or payment institution), consistent with its role as a technology partner.
-- **It is a partner requirement.** Any payment partner Hossouko signs must be PI-SPI-connected.
+- **It ends the "which operator?" question.** It is step 3 of the operator-neutral order ([CONCEPT.md § 3](CONCEPT.md#3-the-idea-one-habit-five-uses)): Wave first, then MTN or Orange, then PI-SPI. With one interoperable QR, Fidelia would no longer need a separate integration per operator.
+- **Fidelia cannot connect directly.** Only licensed financial institutions can. Fidelia would reach it through a licensed partner (a bank or payment institution), consistent with its role as a technology partner.
+- **It is a partner requirement.** Any payment partner Fidelia signs must be PI-SPI-connected.
 - **Roadmap:** Phase 0 checks its status in Côte d'Ivoire and identifies a licensed participant; Phase 2 adds it through that partner ([ROADMAP.md](ROADMAP.md)).
 
 Sources: [AllAfrica, PI-SPI launch](https://fr.allafrica.com/stories/202602120405.html) · [Ecofin, 30 June deadline](https://www.ecofinagency.com/news-finances/0404-54418-bceao-imposes-june-30-deadline-to-complete-instant-payments-integration) · [CDPI, interoperable QR](https://docs.cdpi.dev/fr/notes-techniques/payments/code-qr-interoperable) · [AllAfrica, Togo onboarding](https://fr.allafrica.com/stories/202603060731.html)
@@ -83,7 +83,7 @@ Sources: [AllAfrica, PI-SPI launch](https://fr.allafrica.com/stories/20260212040
 
 ## 5. Competitive landscape and our position
 
-| Segment | Established players | Hossouko's stance | Why |
+| Segment | Established players | Fidelia's stance | Why |
 |---|---|---|---|
 | Consumer personal finance | **Djamo**: USD 17M raised (Apr. 2025, Janngo, Partech, Oikocredit, YC), USD 4.5bn processed | **Avoid** | Established regional leader; no edge for a generalist entrant |
 | B2B payments and SME treasury | **Julaya** (debt-financed, USD 1.4M from CDC-CI Capital), **Hub2** (55 infrastructure clients incl. Djamo, Julaya, CinetPay) | **Avoid** | Already funded and structured |
@@ -91,7 +91,7 @@ Sources: [AllAfrica, PI-SPI launch](https://fr.allafrica.com/stories/20260212040
 | Mesofinance | **Cofina** (EUR 25M EIB partnership for cocoa cooperatives) | **Partner** (agriculture horizon) | Lender, not competitor |
 | Merchant activity proof, merchant loyalty, digital tontine | **No dominant Ivorian player** | **Our place** | Locally vacant, aligned with BCEAO's alternative-scoring workstream |
 
-Operator merchant offers (e.g. Orange Money Business) are payment tools for one operator. Hossouko is operator-neutral and builds history and loyalty on top of all of them.
+Operator merchant offers (e.g. Orange Money Business) are payment tools for one operator. Fidelia is operator-neutral and builds history and loyalty on top of all of them.
 
 ## 6. Digital tontines: a validated model, locally vacant
 
@@ -102,13 +102,13 @@ Regional precedents: **E-Tontine** (Senegal, since 2015, goods purchase; economi
 ## 7. SME and agricultural finance: the persistent friction
 
 - SMEs face collateral requirements most cannot meet. Public programmes (SGPME, GUDE-PME, GIZ ProFinA) explicitly look for alternatives.
-- Alternative data (sales history, mobile-money payments) is identified as a possible **partial substitute for physical collateral**. That is Hossouko's core thesis.
+- Alternative data (sales history, mobile-money payments) is identified as a possible **partial substitute for physical collateral**. That is Fidelia's core thesis.
 - Transaction-data-based cash advances are proven elsewhere in Africa (e.g. Kopo Kopo, Kenya) but not yet captured in Côte d'Ivoire.
-- Agricultural finance is the most documented weak point despite ~6% growth (2024). It is a later horizon for Hossouko (see [ROADMAP.md](ROADMAP.md)).
+- Agricultural finance is the most documented weak point despite ~6% growth (2024). It is a later horizon for Fidelia (see [ROADMAP.md](ROADMAP.md)).
 
 ## 8. Opportunity map
 
-| Opportunity | Maturity / competition | Institutional alignment | Hossouko |
+| Opportunity | Maturity / competition | Institutional alignment | Fidelia |
 |---|---|---|---|
 | Merchant activity proof and loyalty | Low | Strong | **Core (now)** |
 | Digital tontines | Low in Côte d'Ivoire | Strong | Phase 3 |
@@ -118,7 +118,7 @@ Regional precedents: **E-Tontine** (Senegal, since 2015, goods purchase; economi
 | Consumer personal finance | High (Djamo) | Weak for a new entrant | Avoid |
 | Embedded financial education | Low as a standalone product | Strong | Built into every phase |
 
-## 9. Evidence for the Hossouko model
+## 9. Evidence for the Fidelia model
 
 External research gathered on 30 September 2026 to test the two things that matter most: **earning money** and **building customer loyalty**.
 
@@ -138,11 +138,11 @@ External research gathered on 30 September 2026 to test the two things that matt
 | Private pharmacies (officines), Côte d'Ivoire | **1,217** (Aug. 2025); 80–90% of medicine supply | economie-ivoirienne.ci |
 | Wave Business API | Checkout, QR and signed webhooks in CI, including `merchant.payment_received` with amount, fee, **sender phone number** and time | docs.wave.com |
 
-**Implications:** payment acceptance is a commodity, and the cheapest rail (Wave) is winning. Hossouko must **not** try to become the merchant's payment rail: routing a maquis's takings through an aggregator would add about 2 points of cost, which is more than any loyalty uplift can repay. Hossouko's value is what sits **on top of** the rails: recognising customers, bringing them back, and turning payments into proof. Wave's webhook makes this possible with no new habit for the merchant, subject to confirming access and consent in Phase 0. No source found shows Wave offering loyalty or customer-retention tools to its merchants.
+**Implications:** payment acceptance is a commodity, and the cheapest rail (Wave) is winning. Fidelia must **not** try to become the merchant's payment rail: routing a maquis's takings through an aggregator would add about 2 points of cost, which is more than any loyalty uplift can repay. Fidelia's value is what sits **on top of** the rails: recognising customers, bringing them back, and turning payments into proof. Wave's webhook makes this possible with no new habit for the merchant, subject to confirming access and consent in Phase 0. No source found shows Wave offering loyalty or customer-retention tools to its merchants.
 
-### Other rails: Hossouko is operator-neutral
+### Other rails: Fidelia is operator-neutral
 
-| Rail | What it offers Hossouko | Merchant cost | Source |
+| Rail | What it offers Fidelia | Merchant cost | Source |
 |---|---|---|---|
 | **Orange Money CI**, direct merchant API | Checkout started by the merchant's system: OAuth token, transaction, redirect, server-to-server callback (verified with a notification token, not HMAC). OM Pay launched for simpler mobile payments | ~1–2%; 1–3 weeks to activate | Kolonell 2026; FinDev Gateway |
 | **MTN MoMo**, Collections API (Côte d'Ivoire supported) | "Request to pay": the customer approves on their own phone. Asynchronous callback over HTTPS, **no retry**, so status must also be polled | Negotiated | MTN MoMo developer docs |
@@ -152,13 +152,13 @@ External research gathered on 30 September 2026 to test the two things that matt
 
 ### What worked elsewhere
 
-| Comparable | What happened | Lesson for Hossouko |
+| Comparable | What happened | Lesson for Fidelia |
 |---|---|---|
-| **Moniepoint** (Nigeria) | Payments to 6M+ businesses, then credit underwritten from payment data: over ₦1 trillion (~USD 721M) lent to small businesses by 2025, a **36% rise in transaction value after loans**, ~30% repeat loans, low NPLs. | Payments are the hook and credit is the engine. Payment data is what makes merchant credit safe. Hossouko reaches the same data through partners rather than by becoming an acquirer. |
+| **Moniepoint** (Nigeria) | Payments to 6M+ businesses, then credit underwritten from payment data: over ₦1 trillion (~USD 721M) lent to small businesses by 2025, a **36% rise in transaction value after loans**, ~30% repeat loans, low NPLs. | Payments are the hook and credit is the engine. Payment data is what makes merchant credit safe. Fidelia reaches the same data through partners rather than by becoming an acquirer. |
 | **Kopo Kopo Grow** (Kenya) | Merchant cash advance repaid as a % of daily digital takings: USD 2M+ lent to 500–600 merchants; **42% higher transaction growth** afterwards. Merchants doubled digital transactions before applying, re-borrowed after a median of 3 days, and took the maximum offered. | The partner-credit model works, but it needs responsible-lending safeguards: help merchants choose the amount, show cost against expected return, and avoid perpetual borrowing. |
 | **Safaricom Bonga** (Kenya) | Points redeemable at **140,000+ Lipa na M-Pesa merchants**; 1 billion points redeemed in two months during a campaign. | Customers value points they can spend widely. A merchant network (coalition) is the long-term loyalty moat, once regulation allows. |
 | **Bumpa** (Nigeria) | Free tier (25 products, 50 orders a month), paid subscriptions above that, plus transaction commissions and a 20% reseller programme; 50,000+ businesses. | Freemium with a usage cap converts; partner or reseller commissions lower acquisition cost. |
-| **CGAP merchant research** | Payment acceptance alone does not drive adoption. Merchants want records, **loyalty and CRM**, store credit, supplier payments and working capital. Digital must be "decidedly better than cash". | Hossouko's bundle (records, loyalty, proof for credit) matches what merchants ask for. |
+| **CGAP merchant research** | Payment acceptance alone does not drive adoption. Merchants want records, **loyalty and CRM**, store credit, supplier payments and working capital. Digital must be "decidedly better than cash". | Fidelia's bundle (records, loyalty, proof for credit) matches what merchants ask for. |
 
 ### What failed
 
@@ -177,7 +177,7 @@ External research gathered on 30 September 2026 to test the two things that matt
 
 - Wave Business API and webhook access for small merchants, and whether customer phone numbers may be used for loyalty (Wave terms and ARTCI).
 - Whether Orange Money and MTN MoMo can notify payments to a merchant's static QR, as Wave's webhook does; only flows started by the merchant's system were found.
-- Actual PI-SPI merchant-QR adoption in Côte d'Ivoire, and a licensed participant willing to connect Hossouko.
+- Actual PI-SPI merchant-QR adoption in Côte d'Ivoire, and a licensed participant willing to connect Fidelia.
 - WhatsApp Business rates for Côte d'Ivoire, and local bulk SMS rates. These drive the cost per loyalty notification.
 - Number of maquis and small restaurants in the target corridor; no reliable source was found.
 - Merchant willingness to pay, measured in the paid pilot rather than estimated.

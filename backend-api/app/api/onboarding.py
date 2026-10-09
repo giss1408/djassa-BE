@@ -5,10 +5,10 @@ Two doors to the same room:
 * **A field agent or admin enrols the merchant** in one call:
       POST /api/admin/venues
   creates the shop, makes the merchant's phone its login, and issues the
-  Hossouko QR code when a wallet is given. The shop records who enrolled it;
+  Fidelia QR code when a wallet is given. The shop records who enrolled it;
   an agent sees their own shops at
       GET  /api/agent/venues
-* **The merchant asks to join** from the Hossouko Pro sign-in screen:
+* **The merchant asks to join** from the Fidelia Pro sign-in screen:
       POST /api/partner-requests/code   code to their phone
       POST /api/partner-requests        what the shop is
   and an admin reviews it, confirming APPROVAL_CHECKS before approving:
@@ -17,7 +17,7 @@ Two doors to the same room:
       POST /api/admin/partner-requests/{id}/reject
   The merchant is told by SMS either way, and signs in with the same number.
 
-Wave comes after, from Hossouko Pro itself (`app/api/wave.py`): the merchant's
+Wave comes after, from Fidelia Pro itself (`app/api/wave.py`): the merchant's
 own account, points only by default.
 """
 
@@ -70,10 +70,10 @@ class VenueIn(BaseModel):
     description: str | None = Field(default=None, max_length=2000)
     points_per_100: int = Field(default=1, ge=0, le=20)
     # The merchant's own wallet that customers pay into. Without it the shop
-    # is listed and runs loyalty, but has no Hossouko payment QR.
+    # is listed and runs loyalty, but has no Fidelia payment QR.
     payout_provider: WalletProvider | None = None
     payout_account: str | None = Field(default=None, max_length=32)
-    # The merchant's login for Hossouko Pro. Usually also the wallet number.
+    # The merchant's login for Fidelia Pro. Usually also the wallet number.
     merchant_phone: str | None = Field(default=None, max_length=32)
     country_code: str = Field(default="CI", min_length=2, max_length=2)
 
@@ -110,7 +110,7 @@ async def create_venue(db: AsyncSession, payload: VenueIn, now: datetime, enroll
         specialties=payload.specialties, description=payload.description,
         points_per_100=payload.points_per_100, payout_provider=payload.payout_provider,
         payout_account=wallet, is_sample=False,
-        # The Hossouko QR only makes sense when there is a wallet to pay into.
+        # The Fidelia QR only makes sense when there is a wallet to pay into.
         pay_code=new_pay_code() if wallet else None,
         enrolled_by=enrolled_by,
     )
@@ -132,7 +132,7 @@ async def admin_create_venue(
     venue = await create_venue(db, payload, utcnow(), enrolled_by=user["username"])
     await db.commit()
     if venue.owner_username and venue.owner_username.startswith("tel:"):
-        await _notify(venue.owner_username[4:], f"Hossouko Pro : {venue.name} est inscrit. Connectez-vous a Hossouko Pro avec ce numero.")
+        await _notify(venue.owner_username[4:], f"Fidelia Pro : {venue.name} est inscrit. Connectez-vous a Fidelia Pro avec ce numero.")
     return _venue_out(venue)
 
 
@@ -221,7 +221,7 @@ async def file_partner_request(request: Request, payload: PartnerRequestIn, db: 
     account = (await db.execute(select(models.User).where(models.User.phone_e164 == e164))).scalar_one_or_none()
     if account is not None and "merchant" in account.role_set():
         await db.commit()
-        raise HTTPException(status_code=409, detail="Ce numero est deja commercant Hossouko : connectez-vous.")
+        raise HTTPException(status_code=409, detail="Ce numero est deja commercant Fidelia : connectez-vous.")
     pending = (
         await db.execute(
             select(models.PartnerRequest.id).where(
@@ -247,7 +247,7 @@ async def file_partner_request(request: Request, payload: PartnerRequestIn, db: 
     await db.commit()
     return {
         "status": "pending",
-        "message": "Demande recue. Un agent Hossouko vous appelle pour finaliser votre inscription.",
+        "message": "Demande recue. Un agent Fidelia vous appelle pour finaliser votre inscription.",
     }
 
 
@@ -326,7 +326,7 @@ async def approve_partner_request(
     r.status, r.venue_id, r.decided_at, r.decided_by, r.decision_note = "approved", venue.id, now, admin["username"], payload.note
     r.review_checks = ",".join(k for k in APPROVAL_CHECKS if k in required)
     await db.commit()
-    await _notify(r.phone_e164, f"Hossouko Pro : {venue.name} est inscrit. Connectez-vous a Hossouko Pro avec ce numero.")
+    await _notify(r.phone_e164, f"Fidelia Pro : {venue.name} est inscrit. Connectez-vous a Fidelia Pro avec ce numero.")
     return _venue_out(venue)
 
 
@@ -337,7 +337,7 @@ async def reject_partner_request(
     r = await _pending(db, request_id)
     r.status, r.decided_at, r.decided_by, r.decision_note = "rejected", utcnow(), admin["username"], payload.note
     await db.commit()
-    await _notify(r.phone_e164, "Hossouko Pro : votre demande d'inscription n'a pas pu etre acceptee pour l'instant. Contactez Hossouko.")
+    await _notify(r.phone_e164, "Fidelia Pro : votre demande d'inscription n'a pas pu etre acceptee pour l'instant. Contactez Fidelia.")
     return _request_out(r)
 
 

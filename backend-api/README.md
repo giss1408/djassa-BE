@@ -1,6 +1,6 @@
-# hossouko — backend-api (skeleton)
+# fidelia — backend-api (skeleton)
 
-Minimal FastAPI skeleton for the `hossouko` backend.
+Minimal FastAPI skeleton for the `fidelia` backend.
 
 Run locally:
 
@@ -13,7 +13,7 @@ Run with Postgres (development):
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d db
-export DATABASE_URL=postgresql+asyncpg://hossouko:hossouko@127.0.0.1:5432/hossouko
+export DATABASE_URL=postgresql+asyncpg://fidelia:fidelia@127.0.0.1:5432/fidelia
 alembic -c alembic.ini upgrade head
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -21,7 +21,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 Docker build (example):
 
 ```bash
-docker build -t registry.example.com/hossouko/api:dev .
+docker build -t registry.example.com/fidelia/api:dev .
 ```
 
 Endpoints:

@@ -51,7 +51,7 @@ async def test_graphql_my_sales_reads_the_merged_stream():
     """`mySales` takes no merchant id: the venue comes from the token.
 
     The deprecated `myTransactions` still accepts one, which is exactly why it is
-    deprecated (docs/optimization_claude_hossouko.md, finding 2).
+    deprecated (docs/optimization_claude_fidelia.md, finding 2).
     """
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         from app.seed import seed_sample_data

@@ -76,8 +76,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=hossouko
-      - POSTGRES_USER=hossouko_app
+      - POSTGRES_DB=fidelia
+      - POSTGRES_USER=fidelia_app
       - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
     secrets:
       - db_password

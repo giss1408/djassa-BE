@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: hossouko-api-sa
-  namespace: hossouko
+  name: fidelia-api-sa
+  namespace: fidelia
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: hossouko-api-role
-  namespace: hossouko
+  name: fidelia-api-role
+  namespace: fidelia
 rules:
   - apiGroups: [""]
     resources: ["pods", "services", "endpoints"]
@@ -19,12 +19,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: hossouko-api-rolebinding
-  namespace: hossouko
+  name: fidelia-api-rolebinding
+  namespace: fidelia
 subjects:
   - kind: ServiceAccount
-    name: hossouko-api-sa
+    name: fidelia-api-sa
 roleRef:
   kind: Role
-  name: hossouko-api-role
+  name: fidelia-api-role
   apiGroup: rbac.authorization.k8s.io

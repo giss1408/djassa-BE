@@ -1,14 +1,14 @@
-# Hossouko — Key Performance Indicators
+# Fidelia — Key Performance Indicators
 
-This document defines what Hossouko measures, how each number is computed, where the data lives in the platform, and what value moves a phase gate. It turns the metric lists in [BUSINESS-MODEL.md](BUSINESS-MODEL.md#unit-economics) and [ROADMAP.md](ROADMAP.md) into one scorecard.
+This document defines what Fidelia measures, how each number is computed, where the data lives in the platform, and what value moves a phase gate. It turns the metric lists in [BUSINESS-MODEL.md](BUSINESS-MODEL.md#unit-economics) and [ROADMAP.md](ROADMAP.md) into one scorecard.
 
 *Last updated: 6 October 2026. Stage: pre-pilot (Phase 0).*
 
-**How to read the targets.** Hossouko has no pilot data yet. Every target here is one of three kinds, and is labelled as such:
+**How to read the targets.** Fidelia has no pilot data yet. Every target here is one of three kinds, and is labelled as such:
 
 - **Gate**: already decided in [ROADMAP.md](ROADMAP.md) or [BUSINESS-MODEL.md](BUSINESS-MODEL.md#decision-gates).
 - **Proposed**: a starting threshold for the pilot, to be replaced by the pilot's own baseline after 60 days.
-- **Benchmark**: an external reference (sources in [§ 10](#10-external-benchmarks-and-sources)). Most come from global SaaS, app or mobile-money data and do **not** describe Ivorian neighbourhood merchants. Use them for orientation only, never in investor or partner material as if they were Hossouko's own results.
+- **Benchmark**: an external reference (sources in [§ 10](#10-external-benchmarks-and-sources)). Most come from global SaaS, app or mobile-money data and do **not** describe Ivorian neighbourhood merchants. Use them for orientation only, never in investor or partner material as if they were Fidelia's own results.
 
 ---
 
@@ -28,7 +28,7 @@ This document defines what Hossouko measures, how each number is computed, where
 
 ```text
                     NORTH STAR
-       % of a merchant's real sales recorded in Hossouko
+       % of a merchant's real sales recorded in Fidelia
                          │
      ┌──────────────┬────┴─────────┬───────────────┬───────────────┐
      ▼              ▼              ▼               ▼               ▼
@@ -56,7 +56,7 @@ Track only what the current phase needs. A KPI from a later phase stays off the 
 |---|---|---|
 | Merchant interviews completed | Interviews in the chosen corridor and segment | 5–10 (**Gate**) |
 | Willingness to pay | Share of interviewed merchants who accept a price within the [pricing experiment](BUSINESS-MODEL.md#pricing-experiment) range | ≥ 50% (**Proposed**) |
-| Baseline repeat-visit rate | Merchant's own estimate of how many customers return within 30 days, recorded **before** Hossouko | Recorded for every pilot merchant (**Gate**: needed for the before/after comparison) |
+| Baseline repeat-visit rate | Merchant's own estimate of how many customers return within 30 days, recorded **before** Fidelia | Recorded for every pilot merchant (**Gate**: needed for the before/after comparison) |
 | Baseline daily sales and wallet share | Tickets per day, average basket, % paid by mobile money | Recorded for every pilot merchant |
 | Real cost per loyalty notification | Quoted bulk-SMS and WhatsApp Business price per message in Côte d'Ivoire | Known before Phase 1 |
 | Partner confirmations | Payment partner, Wave webhook access, ARTCI review | All answered (**Gate**: no blocker on data or funds flow) |
@@ -90,7 +90,7 @@ The core dashboard. Definitions are in §§ 4–8.
 | 4 Indicator | Appeals and corrections, and time to resolve | All resolved < 15 days (**Proposed**) |
 | 4 Indicator | Indicator gap by ticket-size quintile and by gender | No penalty for small tickets (**Gate**: bias monitoring) |
 | 5 Finance | Qualified, consented referrals → applications → approvals | Funnel tracked per partner (**Gate**) |
-| 5 Finance | Merchants who obtained credit through their Hossouko history | Tracked (**Gate**) |
+| 5 Finance | Merchants who obtained credit through their Fidelia history | Tracked (**Gate**) |
 | 5 Finance | Portfolio at risk > 30 days (PAR30), where the partner may share it | Benchmark: microfinance PAR30 is typically under 5%; the partner's own figure applies |
 | 5 Finance | Re-borrowing within 7 days of repayment | Flagged, never targeted (responsible-credit guardrail) |
 | 5 Finance | Commission revenue / subscription revenue | Reported; **never** assumed in the plan before a signed agreement |
@@ -117,7 +117,7 @@ Runs only at shops where an admin switched it on. Read from `GET /api/admin/laya
 
 | KPI | Formula | Source in the platform | Status |
 |---|---|---|---|
-| **Recorded share** (North Star) | Sales the server holds for a day ÷ the merchant's end-of-day estimate (`daily_report`), per merchant, over report days | `GET /api/admin/usage?app=retailer` → `merchants[].recorded_share`; `sale_events` + `usage_events` | **Live** (pilot-only self-report, see [action plan W4-3](../planning/action_plan_claude_hossouko.md)) |
+| **Recorded share** (North Star) | Sales the server holds for a day ÷ the merchant's end-of-day estimate (`daily_report`), per merchant, over report days | `GET /api/admin/usage?app=retailer` → `merchants[].recorded_share`; `sale_events` + `usage_events` | **Live** (pilot-only self-report, see [action plan W4-3](../planning/action_plan_claude_fidelia.md)) |
 | Enrolled outlets | Venues created, excluding `is_sample` | `venues` | Live |
 | Activation rate | Outlets with ≥ 1 recorded sale within 7 days of enrolment ÷ enrolled | `venues.created_at`, `sale_events` | Computable (query) |
 | Time to first sale | Enrolment → first `SaleEvent` | as above | Computable |
@@ -145,7 +145,7 @@ Runs only at shops where an admin switched it on. Read from `GET /api/admin/laya
 | Points issued and redeemed | Sum of positive and negative `LoyaltyEntry.points`, per outlet | `loyalty_entries` | Computable |
 | Redemption rate | Points redeemed ÷ points issued, trailing 90 days | `loyalty_entries` | Computable. Benchmark: ~60% across loyalty platforms |
 | Time to first reward | First visit → first `redeem` entry | `loyalty_entries` | Computable. Target from concept: 3–5 visits (maquis), 2–3 (pharmacy) |
-| **Outstanding points liability** (counter-metric) | Unredeemed points × reward value per point, per outlet | `loyalty_entries`, `loyalty_rewards` | Computable. Points have no expiry yet ([W4-5](../planning/action_plan_claude_hossouko.md)) |
+| **Outstanding points liability** (counter-metric) | Unredeemed points × reward value per point, per outlet | `loyalty_entries`, `loyalty_rewards` | Computable. Points have no expiry yet ([W4-5](../planning/action_plan_claude_fidelia.md)) |
 | Reward cost as a share of member sales | Value of rewards redeemed ÷ sales by identified customers | as above | Computable |
 | Customer app installs and active installs (1 / 7 / 30-day) | First launches, installs with activity in the window | `GET /api/admin/usage?app=user` | Live |
 | Customer app retention D1 / D7 / D30 | Installs active on day *n* after install, by install cohort | `usage_events` | Computable. Benchmark (global finance apps): D1 ≈ 22%, D30 ≈ 4% |
@@ -170,10 +170,10 @@ All amounts in XOF. "Outlet" means one paying venue.
 | ARPU per paying outlet | MRR ÷ paying outlets | derived | Live |
 | Sponsored placements sold, revenue, paid rate | Placements with `paid_at` set, price sum | `deal_placements` | Computable |
 | **CAC per outlet** | (Field-agent pay, reseller commission, materials, travel) ÷ outlets that became active | Not in the platform | **Gap** |
-| CAC payback | CAC ÷ monthly gross profit per outlet | derived | Gap until CAC exists. Gate: < 12 months. Benchmark (early-stage SaaS): 18–24 months, so Hossouko's gate is deliberately stricter |
+| CAC payback | CAC ÷ monthly gross profit per outlet | derived | Gap until CAC exists. Gate: < 12 months. Benchmark (early-stage SaaS): 18–24 months, so Fidelia's gate is deliberately stricter |
 | **Notification cost per active outlet** | SMS + WhatsApp spend attributed to an outlet ÷ active outlets | Not in the platform (OTP spend is only budget-capped) | **Gap** |
 | Support cost per outlet | Support hours × cost ÷ active outlets; support requests per outlet | `support_requests` (count only) | Partial |
-| Payment cost per transaction | Aggregator fees on Hossouko-route payments ÷ payments | provider reports | Gap |
+| Payment cost per transaction | Aggregator fees on Fidelia-route payments ÷ payments | provider reports | Gap |
 | Gross margin by plan | (Plan revenue − notification, payment, hosting and support costs) ÷ plan revenue | derived | Gap |
 | **Contribution margin per corridor, excluding credit commissions** | | derived | Gate: positive before expansion |
 | LTV : CAC | (ARPU × gross margin ÷ monthly churn) ÷ CAC | derived | Benchmark: ≥ 3 : 1 for SMB SaaS |
@@ -192,7 +192,7 @@ This is what a lender, ARTCI or BCEAO will check. These KPIs are what makes the 
 | Exports with audit record | Audited exports ÷ exports | `export_audits` | 100% |
 | Customer-level exports with valid consent | | `export_audits`, `consents` | 100% |
 | Data-subject requests (access, correction, withdrawal) answered on time | | manual log | 100% within the ARTCI deadline |
-| OTP verification rate | `otp_verify ok` ÷ `otp_request sent` | `hossouko_auth_events_total` | Alert below 30% (SMS pumping) |
+| OTP verification rate | `otp_verify ok` ÷ `otp_request sent` | `fidelia_auth_events_total` | Alert below 30% (SMS pumping) |
 | SMS spend vs daily budget | | `OTP_DAILY_SMS_BUDGET`, alert `OtpDailyBudgetReached` | Never reached in normal use |
 | Account recoveries: time to decision | `recovery_requests` | | Proposed: < 48 h |
 | Security incidents, and time to close | | incident log | 0 critical open |
@@ -228,8 +228,8 @@ What this scorecard needs and the platform cannot produce yet, in priority order
 | **No acquisition cost record** | CAC and the unit-economics gate cannot be computed | Log agent and reseller payments per enrolled outlet (`venues.enrolled_by` already names the agent) |
 | **No notification cost record** | The [hidden risk](BUSINESS-MODEL.md#why-a-merchant-pays-the-value-equation) in the model | Record each paid SMS/WhatsApp send with its venue and unit cost |
 | No log of consent *requests* | Consent rate has no denominator | Event when the counter or app shows the consent prompt |
-| No pre-Hossouko baseline in the platform | The repeat-visit lift is the number that sells the subscription | Phase 0 interview form, stored per venue |
-| Points never expire | Liability grows without limit | Expiry and redemption cap ([W4-5](../planning/action_plan_claude_hossouko.md)) |
+| No pre-Fidelia baseline in the platform | The repeat-visit lift is the number that sells the subscription | Phase 0 interview form, stored per venue |
+| Points never expire | Liability grows without limit | Expiry and redemption cap ([W4-5](../planning/action_plan_claude_fidelia.md)) |
 | No reconciliation with settlement reports | Confirmed revenue cannot be certified | Phase 1 payment work |
 | No KPI dashboard combining billing and usage | The gate review needs one page | One admin endpoint or Grafana dashboard over the queries above; `investor_room_metrics` stays curated by hand ([INVESTOR-ROOM-SETUP.md](INVESTOR-ROOM-SETUP.md)) |
 
@@ -250,7 +250,7 @@ What this scorecard needs and the platform cannot produce yet, in priority order
 | Finance app retention | D1 ≈ 22%, D30 ≈ 4% | Global finance apps | App retention benchmark compilations, 2025 |
 | Gender indicators | % new women borrowers, average loan size, retention, PAR and staff retention for women | Microfinance institutions | Women's World Banking and MIX, *Select Five Gender Performance Indicators* |
 | Portfolio at risk > 30 days | Most common MFI loan-quality indicator | Microfinance | MIX / MicroFinance Gateway |
-| Endowed progress effect | 34% completion with pre-stamped cards vs 19% | Loyalty card design | Field study cited in [MARKET.md § 9](MARKET.md#9-evidence-for-the-hossouko-model) |
+| Endowed progress effect | 34% completion with pre-stamped cards vs 19% | Loyalty card design | Field study cited in [MARKET.md § 9](MARKET.md#9-evidence-for-the-fidelia-model) |
 
 Links:
 

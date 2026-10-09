@@ -1,6 +1,6 @@
 apiVersion: 1
 providers:
-  - name: 'Hossouko'
+  - name: 'Fidelia'
     orgId: 1
     folder: ''
     type: file
