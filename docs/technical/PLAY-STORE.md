@@ -8,7 +8,8 @@ Two apps, one Play Console account:
 | Fidelia Pro (merchants) | `com.regisse.fidelia.pro` | fidelia-App-retailer |
 
 Both target Android 16 (API 36), which Play requires for new apps and updates
-since 31 August 2026.
+since 31 August 2026. The order of the steps, for the first release and every
+later one, is in [PLAY-RELEASE.md](PLAY-RELEASE.md).
 
 ## 1. Signing: keep one key for Play and the website
 
