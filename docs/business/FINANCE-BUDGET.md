@@ -15,7 +15,7 @@ This draft budgets a **six-month launch and pilot** in one Abidjan corridor, for
 | **Total funding envelope** | **XOF 30,820,000 (€46,984.79)** |
 | Rounded planning request | **XOF 30.8M (about €46,985)** |
 
-The total includes a reusable test-device fleet and modest, part-time founder stipends. Deferring both stipends removes **XOF 6.0M (€9,146.94)** in direct costs and lowers the funding envelope to about **XOF 23.92M (€36,465.80)** after recalculating contingency. That is deferred compensation, not a zero-cost operating model. This is a six-month pilot budget, **not** the 12–18-month pre-seed amount in the investor brief.
+The total includes a reusable test-device fleet and modest, part-time founder stipends. Deferring both stipends removes **XOF 6.0M (€9,146.94)** in direct costs and lowers the funding envelope to about **XOF 23.92M (€36,465.80)** after recalculating contingency. That is deferred compensation, not a zero-cost operating model. This six-month pilot budget is the amount of the pre-seed pilot round in the investor brief (XOF 31M, in two tranches matching the readiness gate below).
 
 ### In brief
 

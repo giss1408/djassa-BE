@@ -2,7 +2,7 @@
 
 *Pré-amorçage · Abidjan, Côte d'Ivoire · octobre 2026* · [English version](INVESTOR-BRIEF.md)
 
-> **Éléments à compléter.** Tout ce qui est marqué `[À COMPLÉTER]` (immatriculation, actionnariat, levée) est une donnée fictive à remplacer avant tout envoi. Les chiffres de marché sont sourcés dans [MARKET.md](MARKET.md) et doivent être revérifiés avant tout usage contractuel.
+> **Éléments à compléter.** Tout ce qui est marqué `[À COMPLÉTER]` (immatriculation, actionnariat) est une donnée fictive à remplacer avant tout envoi. Les chiffres de marché sont sourcés dans [MARKET.md](MARKET.md) et doivent être revérifiés avant tout usage contractuel.
 >
 > Ce document est la traduction de [INVESTOR-BRIEF.md](INVESTOR-BRIEF.md). Toute modification doit être reportée dans les deux versions, ainsi que dans la page web (`fidelia-Web/public/brief/`).
 
@@ -66,13 +66,15 @@ Fidelia évite les finances personnelles grand public (Djamo) et le paiement B2B
 
 ## Jalons financés par ce tour
 
-| Étape | Preuve attendue |
-|---|---|
-| **Phase 0 : découverte et conformité** | 5 à 10 entretiens avec des maquis et des épiceries dans une commune d'Abidjan ; accès à l'API Wave confirmé ; périmètre réglementaire et revue ARTCI ; un partenaire de paiement ; une ou deux IMF interrogées sur un outil, avec consentement, de suivi des ventes de leurs commerçants emprunteurs |
-| **Phase 1 : pilote avec 5 à 10 commerçants** | Connexion par numéro (OTP), capture Wave automatique, un partenaire de paiement en production. **Sortie :** les commerçants enregistrent la plupart de leurs ventes réelles pendant 60 jours ou plus, l'application leur amène de nouveaux clients, et ils acceptent la formule payante à la fin du pilote gratuit |
-| **Seuil d'économie unitaire** | Coût d'acquisition inférieur à 12 mois de marge brute ; 3 mois de rétention ; coûts de support et de messagerie connus par point de vente |
+Le tour finance le pilote de six mois, en deux tranches. Chaque tranche paie une phase ; la seconde n'est versée qu'une fois le seuil de sortie de la première atteint.
 
-Aucune expansion géographique avant qu'un corridor ait franchi ce seuil.
+| Tranche · phase | Preuve attendue |
+|---|---|
+| **Tranche 1 · Phase 0 : découverte, conformité et préparation à la production** (mois 1–2) | 5 à 10 entretiens avec des maquis et des épiceries dans une commune d'Abidjan ; accès à l'API Wave confirmé ; périmètre réglementaire et revue ARTCI ; un partenaire de paiement ; une ou deux IMF interrogées sur un outil, avec consentement, de suivi des ventes de leurs commerçants emprunteurs |
+| **Tranche 2 · Phase 1 : pilote gratuit avec 5 à 10 commerçants** (mois 3–6) | Connexion par numéro (OTP), capture Wave automatique, un partenaire de paiement en production. **Sortie :** ≥ 70 % des ventes réelles enregistrées au jour 30, en progression vers 85 % au jour 60 ; l'application amène de nouveaux clients, enregistrés au comptoir ; ≥ 40 % des commerçants acceptent la formule payante à la fin du pilote gratuit |
+| **Après ce tour** | Un tour d'amorçage valorisé sur les résultats du pilote. Puis le seuil d'économie unitaire avant toute deuxième commune : coût d'acquisition inférieur à 12 mois de marge brute, 3 mois de rétention, coûts de support et de messagerie connus par point de vente |
+
+Aucune expansion géographique avant qu'une commune ait franchi ce seuil.
 
 ## L'équipe
 
@@ -97,11 +99,17 @@ Aucune expansion géographique avant qu'un corridor ait franchi ce seuil.
 
 | | |
 |---|---|
-| Tour | `[À COMPLÉTER]` Pré-amorçage |
-| Montant | `[À COMPLÉTER]` 000 000 USD |
-| Instrument | `[À COMPLÉTER]` SAFE / obligation convertible, plafond à convenir |
-| Utilisation des fonds (12 à 18 mois) | `[À COMPLÉTER]` Opérations du pilote et équipe terrain ~35 % · produit (connexion OTP, capture des portefeuilles, deuxième opérateur) ~35 % · juridique, réglementaire et revue de sécurité ~15 % · marketing et partenariats ~15 % |
-| Horizon | Seuil de sortie de la phase 1 : une commune pilote qui démontre rétention et acceptation de la formule payante |
+| Tour | Pré-amorçage, **tour pilote : 31 M FCFA (47 260 €, environ 53 000 USD)**. Il finance uniquement le pilote de six mois, tel que budgété dans [FINANCE-BUDGET.fr.md](FINANCE-BUDGET.fr.md) |
+| Tranche 1, à la signature | **14 M FCFA (21 340 €)** pour les mois 1–2 : revue réglementaire et protection des données, préparation à la production (connexion par numéro, capture Wave, revue de sécurité), appareils de test |
+| Tranche 2, au seuil de sortie de la phase 0 | **17 M FCFA (25 920 €)** pour les mois 3–6, le pilote sur le terrain. Versée quand un partenaire de paiement agréé est confirmé et que Wave a répondu sur l'accès à son API, que 5 à 10 maquis et épiceries ont signé l'accord de pilote, et que la revue de préparation à la production n'a plus de point critique ouvert |
+| Instrument | BSA AIR adapté au droit OHADA (modèle ABAN, revu par un avocat OHADA) : ni intérêts ni remboursement ; converti en actions au prochain tour valorisé |
+| Conditions | Plafond de valorisation **1,3 M USD post-money** (environ 4 % pour l'ensemble du tour) · décote de 20 % sur le prochain tour · mêmes conditions pour les deux tranches |
+| Utilisation des fonds | Équipe 29 % · juridique, réglementaire et sécurité 15 % · produit et infrastructure 15 % · appareils de test 10 % · opérations terrain 8 % · lancement 6 % · administration 4 % · provision pour imprévus 13 % |
+| Horizon | La fin du pilote (mois 6), quand le seuil de sortie de la phase 1 est mesuré |
+| Prochain tour | Amorçage, valorisé sur les résultats du pilote, auprès de fonds qui investissent davantage à mesure que des indicateurs convenus sont atteints |
+| Non dilutif | Subventions visées en parallèle (projet fintech de l'APIF-CI, facilité d'inclusion financière numérique de la BAD, develoPPP) ; une subvention réduit le montant levé |
+
+*USD à environ 1 € = 1,13 USD (octobre 2026) ; le franc CFA est fixé à l'euro (1 € = 655,957 FCFA). Conditions proposées, à confirmer avec un avocat OHADA.*
 
 ## Nos lignes rouges
 

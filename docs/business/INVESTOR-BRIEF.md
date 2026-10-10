@@ -2,7 +2,7 @@
 
 *Pre-seed · Abidjan, Côte d'Ivoire · October 2026* · [Version française](INVESTOR-BRIEF.fr.md)
 
-> **Placeholders.** Everything marked `[PLACEHOLDER]` (company registration, ownership, the round) is dummy data to be replaced before this brief is sent to anyone. Market figures carry their sources in [MARKET.md](MARKET.md) and must be re-checked before contractual use.
+> **Placeholders.** Everything marked `[PLACEHOLDER]` (company registration, ownership) is dummy data to be replaced before this brief is sent to anyone. Market figures carry their sources in [MARKET.md](MARKET.md) and must be re-checked before contractual use.
 >
 > Keep this file, its French translation ([INVESTOR-BRIEF.fr.md](INVESTOR-BRIEF.fr.md)) and the web page (`fidelia-Web/public/brief/`) in step: a change to one is a change to all three.
 
@@ -66,13 +66,15 @@ Fidelia avoids consumer personal finance (Djamo) and B2B payments (Julaya, Hub2)
 
 ## Milestones this round funds
 
-| Gate | Evidence required |
-|---|---|
-| **Phase 0: discovery and compliance** | 5–10 interviews with maquis and grocery owners in one Abidjan commune; Wave API access confirmed; regulatory perimeter and ARTCI review; one payment partner; one or two MFIs asked whether they would pay for a consented tool to follow their merchant borrowers' sales |
-| **Phase 1: pilot, 5–10 merchants** | Phone login (OTP), automatic Wave capture, one live payment partner. **Exit:** merchants record most real sales for 60+ days, the app brings them new customers, and they accept the paid plan when the free pilot ends |
-| **Unit-economics gate** | Acquisition cost below 12 months of gross profit; 3 months of retention; known support and messaging cost per outlet |
+The round funds the six-month pilot, in two tranches. Each tranche pays for one phase; the second is released only when the first phase's exit gate is met.
 
-No geographic expansion before one corridor passes the gate.
+| Tranche · phase | Evidence required |
+|---|---|
+| **Tranche 1 · Phase 0: discovery, compliance and production readiness** (months 1–2) | 5–10 interviews with maquis and grocery owners in one Abidjan commune; Wave API access confirmed; regulatory perimeter and ARTCI review; one payment partner; one or two MFIs asked whether they would pay for a consented tool to follow their merchant borrowers' sales |
+| **Tranche 2 · Phase 1: free pilot, 5–10 merchants** (months 3–6) | Phone login (OTP), automatic Wave capture, one live payment partner. **Exit:** ≥ 70% of real sales recorded at day 30, rising toward 85% at day 60; the app brings new customers, recorded at the counter; ≥ 40% of merchants accept the paid plan when the free pilot ends |
+| **After this round** | A seed round priced on the pilot's results. Then the unit-economics gate before any second commune: acquisition cost below 12 months of gross profit, 3 months of retention, known support and messaging cost per outlet |
+
+No geographic expansion before one commune passes the gate.
 
 ## Team
 
@@ -97,11 +99,17 @@ No geographic expansion before one corridor passes the gate.
 
 | | |
 |---|---|
-| Round | `[PLACEHOLDER]` Pre-seed |
-| Amount | `[PLACEHOLDER]` USD 000,000 |
-| Instrument | `[PLACEHOLDER]` SAFE / convertible note, cap to be agreed |
-| Use of funds (12–18 months) | `[PLACEHOLDER]` Pilot operations and field team ~35% · product (OTP login, wallet capture, second operator) ~35% · legal, regulatory and security review ~15% · marketing and partnerships ~15% |
-| Runway to | Phase 1 exit gate: a pilot commune showing retention and merchants accepting the paid plan |
+| Round | Pre-seed **pilot round: XOF 31M (€47,260, about USD 53,000)**. It funds the six-month pilot only, as budgeted in [FINANCE-BUDGET.md](FINANCE-BUDGET.md) |
+| Tranche 1, at signing | **XOF 14M (€21,340)** for months 1–2: regulatory and data-protection review, production readiness (phone login, Wave capture, security review), test devices |
+| Tranche 2, at the Phase 0 exit gate | **XOF 17M (€25,920)** for months 3–6, the field pilot. Released when a licensed payment partner is confirmed and Wave has answered on API access, 5–10 maquis and grocery owners have signed the pilot agreement, and the production-readiness review has no open critical issue |
+| Instrument | BSA AIR adapted to OHADA law (ABAN template, reviewed by OHADA counsel): no interest and no repayment; converts into shares at the next priced round |
+| Terms | Valuation cap **USD 1.3M post-money** (about 4% for the full round) · 20% discount on the next round · same terms for both tranches |
+| Use of funds | People 29% · legal, regulatory and security 15% · product and infrastructure 15% · test devices 10% · field operations 8% · launch 6% · administration 4% · contingency 13% |
+| Runway to | The end of the pilot (month 6), when the Phase 1 exit gate is measured |
+| Next round | Seed, priced on the pilot's results, aimed at funds that add capital as agreed KPIs are met |
+| Non-dilutive | Grants targeted in parallel (APIF-CI fintech project, AfDB digital financial inclusion facility, develoPPP); a grant lowers the amount raised |
+
+*USD at about €1 = USD 1.13 (October 2026); the CFA franc is fixed to the euro (€1 = XOF 655.957). Terms are a proposal, to be confirmed with OHADA counsel.*
 
 ## Red lines
 

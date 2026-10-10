@@ -15,7 +15,7 @@ Ce budget couvre un **lancement et un pilote de six mois** dans un corridor d'Ab
 | **Enveloppe totale de financement** | **XOF 30 820 000 (€46 984,79)** |
 | Demande indicative arrondie | **XOF 30,8 M (environ €46 985)** |
 
-Le total comprend un parc réutilisable d'appareils de test et des indemnités modestes à temps partiel pour les fondateurs. Le report de ces deux indemnités réduit les coûts directs de **XOF 6,0 M (€9 146,94)** et ramène l'enveloppe de financement à environ **XOF 23,92 M (€36 465,80)** après recalcul de la provision. Il s'agit d'une rémunération différée, et non d'un modèle d'exploitation sans coût. Ce budget de pilote sur six mois **ne correspond pas** au montant de pré-amorçage sur 12 à 18 mois mentionné dans le dossier investisseur.
+Le total comprend un parc réutilisable d'appareils de test et des indemnités modestes à temps partiel pour les fondateurs. Le report de ces deux indemnités réduit les coûts directs de **XOF 6,0 M (€9 146,94)** et ramène l'enveloppe de financement à environ **XOF 23,92 M (€36 465,80)** après recalcul de la provision. Il s'agit d'une rémunération différée, et non d'un modèle d'exploitation sans coût. Ce budget de pilote sur six mois est le montant du tour pilote de pré-amorçage présenté dans le dossier investisseur (31 M FCFA, en deux tranches calées sur le jalon de préparation ci-dessous).
 
 ### En bref
 

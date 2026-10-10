@@ -151,6 +151,7 @@ Bring to every meeting:
 - Pilot duration, success metrics, exit criteria.
 - The specific decision or introduction you are asking for.
 - The [investor brief](INVESTOR-BRIEF.md) (fill its placeholders first); the public site for context.
+- A letter of interest to sign at the end of the meeting, for merchants and MFIs ([templates](LETTERS-OF-INTEREST.md); the French version is the one to sign).
 
 ## Questions to ask
 

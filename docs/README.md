@@ -12,7 +12,8 @@
 | [Roadmap](business/ROADMAP.md) | Where we stand today, phases 0–6 with exit gates, strategic horizon. |
 | [KPIs](business/KPI.md) | The North Star, the scorecard per phase, how each KPI is computed and where the data lives, targets, external benchmarks, measurement gaps. |
 | [Partners](business/PARTNERS.md) | Institution directory, contact order, acquisition channels, meeting kit, guardrails. |
-| Investor brief ([EN](business/INVESTOR-BRIEF.md) · [FR](business/INVESTOR-BRIEF.fr.md)) | The two-page summary for investors: problem, product, model, traction, milestones, team, company status and the ask. *Contains placeholders to fill before sending.* |
+| Investor brief ([EN](business/INVESTOR-BRIEF.md) · [FR](business/INVESTOR-BRIEF.fr.md)) | The two-page summary for investors: problem, product, model, traction, milestones, team, company status and the ask (a XOF 31M pilot round in two tranches). *Company details and team bios still to fill before sending.* |
+| Letters of interest ([EN](business/LETTERS-OF-INTEREST.md) · [FR](business/LETTERS-OF-INTEREST.fr.md)) | Non-binding templates for a pilot merchant and an MFI to sign. The French version is the one to sign. |
 
 ## Planning: reviews and action plans
 
