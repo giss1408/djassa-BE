@@ -24,6 +24,11 @@ until 6 October 2026, then **Hossouko**, and is **Fidelia** since 9 October.
   Letter PDFs are rebuilt with `scripts/build-letters.sh`.
 - **Pilot boundaries** in the business docs: maquis and grocery shops, the
   customer app with a focused scope, everything free during the pilot.
+- **Investor brief rewritten** for investors (`/brief/`, EN and FR, and
+  `INVESTOR-BRIEF.md` / `.fr.md`): one-sentence story, the product by day 1,
+  week 1 and month 3, honest traction (built vs. expected from Phase 0),
+  market sizing, competition, a three-year forecast with its assumptions,
+  team needs, how investors get a return, and risks. Terms unchanged.
 - **Roadmap status** brought up to date: phone/SMS-code sign-in and automatic
   Wave capture are built (prototype); gaps 1 and 7 say what remains.
 - **Funders for Fidelia** in `docs/business/PARTNERS.md`: grants and public

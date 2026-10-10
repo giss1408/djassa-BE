@@ -173,6 +173,18 @@ th {
   font-weight: 600;
 }
 
+/* Column headers (comparison and forecast tables) size with their content;
+   the fixed width above is for row labels. */
+thead th {
+  width: auto;
+}
+
+/* Figures line up on the right in the forecast table. */
+table.num td + td,
+table.num th + th {
+  text-align: right;
+}
+
 .team dt {
   margin-top: 0.4rem;
   font-weight: 700;

@@ -8,61 +8,83 @@
 
 ## In one sentence
 
-**Fidelia turns everyday sales at neighbourhood shops into proof: a verified business history that the merchant owns and, with consent, can take to a licensed lender.** Merchants pay for it because it brings their customers back.
+**Fidelia helps neighbourhood shops bring their customers back, and turns their everyday sales into proof a lender can trust.**
 
-## The problem
+## The opportunity
 
-- Côte d'Ivoire has **25M+ active mobile-money accounts** but a **31.2% strict banking rate** (BCEAO; national indicators 2023). Payment access is largely solved; **proof of business activity is not**.
-- A maquis or grocery shop has frequent customers but **no usable sales history**, so no working-capital or stock credit. SMEs are ~20% of GDP and face collateral they cannot provide.
-- Customer loyalty lives on paper cards and memory. Nothing brings a regular back on purpose.
+- **2.72M merchant payment points** in Côte d'Ivoire in 2024, up from 1.13M a year earlier (BCEAO data). Merchants are going digital, fast.
+- Accepting payments now costs almost nothing (Wave charges merchants ~1%). What is missing sits on top: recognising customers, bringing them back, proving activity.
+- Banks and MFIs want to lend to small merchants but cannot assess them: the strict banking rate is **31.2%** (BCEAO; national indicators 2023). Public programmes (APIF, SGPME, GUDE-PME) are looking for private partners to close that gap.
 
 ## The product
 
-One habit, recording the sale, produces five uses: loyalty, revenue history, tontine regularity, a reliability indicator and a financing case for a licensed partner.
-
-- **One daily cash book from day 1.** Every wallet payment and every cash sale in one daily total, so the merchant no longer reconciles Wave, Orange and MTN by hand. This is what the merchant sees in the first week; loyalty is why they stay.
-- **Zero extra effort on mobile money.** Fidelia builds on the wallet the merchant already uses. The merchant's existing QR payments are captured automatically, Wave first, then other operators and the interoperable QR of **PI-SPI**, the central bank's platform that links every bank and mobile wallet in the UEMOA zone ([details](MARKET.md#what-pi-spi-is)). **No extra fee, no new habit.**
-- **Cash sales count too.** They take one tap in the merchant app, even offline. With the customer's phone number, the customer earns points.
-- **Loyalty the merchant can see.** Points, rewards handed over at the counter, deals, and a weekly "customers who came back" figure.
-- **Proof for credit, with consent.** Each sale is labelled *confirmed by the provider* or *declared by the merchant*, and exported only with consent to a licensed MFI or guarantee scheme.
-- **New customers for the merchant.** Merchants attract customers today by word of mouth, by being nearby and through social networks. The customer app turns that into a map of nearby maquis and grocery shops, free merchant offers with notifications, and points. On-duty pharmacies give people a daily reason to install it.
-- **Three pieces in the pilot:** a merchant app (offline-first, cheap Android), a customer app, and the platform. **The pilot is free for every merchant**; the paid plan is offered when it ends.
-
-**Fidelia never holds funds and never lends.** Licensed institutions keep custody and credit. Fidelia is the technology and distribution partner.
-
-## Why now
-
-- **Merchant payments are taking off:** 2.72M merchant payment points in Côte d'Ivoire in 2024, up from 1.13M. Merchant payments are 23.3% of mobile-money volume, up from 3.3% in 2020 (BCEAO data).
-- **Payment acceptance is a commodity** (Wave ~1% for the merchant). What is missing sits on top of it: recognising customers and proving activity.
-- **The BCEAO** has opened a workstream on alternative credit scoring and launched **PI-SPI** (interoperable instant payments, mandatory since June 2026). Public programmes (APIF, SGPME, GUDE-PME) are looking for private execution partners.
-- **Comparables:** in Nigeria, Moniepoint's loans underwritten from payment data were followed by **+36%** transaction value. In Kenya, Kopo Kopo saw **+42%** transaction growth after cash advances.
-
-## Business model
-
-Merchant software first, financial infrastructure second.
-
-| Stream | When |
+| When | What the merchant gets |
 |---|---|
-| Merchant subscription: capped free plan, then ~5,000 F and ~10,000–15,000 F / month / outlet *(hypotheses to test)* | After the pilot (the pilot is free) |
-| Sponsored deals and campaigns: one-off, time-limited placement for a merchant product, service or special offer in the customer app; pricing is to be tested | After the pilot (offers are free during the pilot) |
-| Multi-outlet and network contracts | After proof |
-| Consented partner commissions (credit, savings, tontine): Fidelia earns distribution fees, never carries credit risk | After partnership |
+| Day 1 | A cash book: cash and mobile-money sales in one daily total |
+| Week 1 | Loyalty by phone number, and each week the number of customers who came back and of new customers brought by the Fidelia app |
+| Month 3 and after | A sales history the merchant owns, shown to a licensed lender only with their consent |
 
-**Why a merchant pays:** a small maquis earning +5% from returning customers gains about 73,000 F of gross profit a month against a 5,000 F subscription (illustrative; see [BUSINESS-MODEL.md](BUSINESS-MODEL.md)). Routing its payments through a ~3% aggregator would cost it more than that. This is why Fidelia never replaces the merchant's wallet.
+Fidelia plugs into the wallet the merchant already uses (Wave first, then other operators and the interoperable **PI-SPI** QR, [details](MARKET.md#what-pi-spi-is)): no new payment rail, no extra fee. Two apps (merchant and customer) and the platform exist as working prototypes.
 
-## Positioning
-
-Fidelia avoids consumer personal finance (Djamo) and B2B payments (Julaya, Hub2), and partners with payment rails (Wave, Orange, MTN, CinetPay). **Customer loyalty and merchant activity proof** have no dominant Ivorian player.
+**Fidelia never holds funds and never lends.** Licensed institutions keep custody and credit.
 
 ## Traction
 
-**Pre-pilot. No users, merchants or revenue yet.** What exists is working prototypes (on the `integration` branch):
+**Pre-pilot. No users, merchants or revenue yet.**
 
-- A merchant app recording sales offline, tested on a real device, with no duplicates after a dropped connection.
-- A customer app for discovery, on-duty pharmacies, deals, sandbox QR payment and points.
-- **Points on cash sales by phone**, with balance and rewards handed over at the counter.
-- **One sale history** labelled by evidence, sold featured slots, a billing ledger, and an audited consented export.
-- A public site built for low bandwidth (~120 KB on first visit, works offline).
+| Built (prototypes, `integration` branch) | Evidence expected from Phase 0 |
+|---|---|
+| Sign-in by phone number and SMS code | Interviews with 5–10 maquis and grocery owners in one commune |
+| Offline sales, synced without duplicates, tested on a real phone | Signed letters of interest: merchants and one MFI ([templates](LETTERS-OF-INTEREST.md)) |
+| Points and rewards; deal alerts; "Client venu" at the counter | Wave's answer on API access |
+| Capture of the merchant's Wave payments, in test | A first merchant in real conditions |
+
+## The market
+
+| Level | Outlets | Value per year | How it is built |
+|---|---:|---:|---|
+| Total: merchants accepting QR in Côte d'Ivoire | ~1,000,000 | ~XOF 90bn | Wave CI QR merchants, ~1M reported in 2026 ([MARKET.md](MARKET.md)) × 7,500 F × 12 |
+| Reachable: maquis and grocery outlets in Abidjan | ~120,000 | ~XOF 10.8bn (€16.5M) | × 40% in Abidjan × 30% food, drink and grocery *(assumptions)* |
+| Three-year goal: paying Fidelia merchants | 1,800 | ~XOF 171M ARR | 1.5% of the reachable market |
+
+*Top-down estimate: no reliable count of maquis and grocery shops in Abidjan exists. To verify in Phase 0.*
+
+## Business model
+
+| Stream | When |
+|---|---|
+| Merchant subscription: capped free plan, then ~5,000 F and ~10,000–15,000 F / month / outlet, paid in mobile money *(hypotheses to test)* | After the pilot (the pilot is free) |
+| Sponsored deals: one-off, time-limited placement in the customer app; pricing to be tested | From year 2 |
+| Multi-outlet and network contracts | After proof |
+| Consented partner commissions (credit, savings): Fidelia earns distribution fees, never carries credit risk. **Not in the forecast** | After partnership |
+
+**Why a merchant pays:** a small maquis earning +5% from returning customers gains about 73,000 F of gross profit a month against a 5,000–7,500 F subscription (illustrative; see [BUSINESS-MODEL.md](BUSINESS-MODEL.md)).
+
+## Competition
+
+| Today | What is missing | Fidelia |
+|---|---|---|
+| Paper notebook and loyalty cards | No totals, no customer recognised, no proof | A faster cash book, loyalty without cards |
+| Wallet merchant apps (Wave, Orange Money, MTN MoMo) | One operator each, no cash, no loyalty tool found | Every wallet plus cash; partner, not competitor |
+| WhatsApp Business and Facebook | No sales recorded, no measure of who came back | Offers by notification, measured at the counter |
+| Point-of-sale apps with loyalty | Not connected to mobile money, no proof for a lender | Wallet capture, offline, consented proof |
+| Payment aggregators (CinetPay) | ~3% + 50 F per payment, no loyalty | Never reroutes payments |
+
+Main risk: an operator adds loyalty. Answer: be the only tool that covers every wallet and cash, and the proof MFIs accept.
+
+## Three-year forecast
+
+| XOF millions | Year 1 | Year 2 | Year 3 |
+|---|---:|---:|---:|
+| Paying merchants at year end | 100 | 600 | 1,800 |
+| Revenue | 2.1 | 29.2 | 105.5 |
+| Total costs (year 1 includes the 30.8 pilot) | 47.2 | 73.5 | 164.0 |
+| **Net result** | **−45.1** | **−44.4** | **−58.6** |
+| Cumulative funding need | 45.1 | 89.5 | 148.1 |
+
+Fixed costs are covered from about **1,250 paying merchants**, reached in year 3. The total need, about **XOF 148M**, is funded in two rounds: this pilot round, then a seed round of about XOF 120M priced on the pilot's results.
+
+*A forecast, not results. Assumptions: average subscription 7,500 F; sponsored deals +400 F per merchant from year 2; 40% of pilot merchants paying; acquisition cost 40,000 F per new merchant; variable cost 1,500 F a month per merchant; fixed costs XOF 2M a month after the pilot, then 4M (year 2) and 8M (year 3); no partner commissions.*
 
 ## Milestones this round funds
 
@@ -71,17 +93,17 @@ The round funds the six-month pilot, in two tranches. Each tranche pays for one 
 | Tranche · phase | Evidence required |
 |---|---|
 | **Tranche 1 · Phase 0: discovery, compliance and production readiness** (months 1–2) | 5–10 interviews with maquis and grocery owners in one Abidjan commune; Wave API access confirmed; regulatory perimeter and ARTCI review; one payment partner; one or two MFIs asked whether they would pay for a consented tool to follow their merchant borrowers' sales |
-| **Tranche 2 · Phase 1: free pilot, 5–10 merchants** (months 3–6) | Phone login (OTP), automatic Wave capture, one live payment partner. **Exit:** ≥ 70% of real sales recorded at day 30, rising toward 85% at day 60; the app brings new customers, recorded at the counter; ≥ 40% of merchants accept the paid plan when the free pilot ends |
+| **Tranche 2 · Phase 1: free pilot, 5–10 merchants** (months 3–6) | **Exit:** ≥ 70% of real sales recorded at day 30, rising toward 85% at day 60; the app brings new customers, recorded at the counter; ≥ 40% of merchants accept the paid plan when the free pilot ends |
 | **After this round** | A seed round priced on the pilot's results. Then the unit-economics gate before any second commune: acquisition cost below 12 months of gross profit, 3 months of retention, known support and messaging cost per outlet |
-
-No geographic expansion before one commune passes the gate.
 
 ## Team
 
 | | Role | Responsible for |
 |---|---|---|
-| **Stanislas Regisse** | CEO | Technical implementation and security |
+| **Stanislas Regisse** | CEO | Product, technology and security |
 | **Bienvenue Kouadio** | Marketing | Partner and investor contact, finances, marketing strategy |
+| Field lead | Hiring, funded by this round | Merchant onboarding and support |
+| Advisors | Being recruited | Microfinance, mobile money, UEMOA law |
 
 ## Company status
 
@@ -111,9 +133,20 @@ No geographic expansion before one commune passes the gate.
 
 *USD at about €1 = USD 1.13 (October 2026); the CFA franc is fixed to the euro (€1 = XOF 655.957). Terms are a proposal, to be confirmed with OHADA counsel.*
 
-## Red lines
+## How investors get their return
 
-No loan promise. No deposits held by Fidelia. No data shared without consent. No opaque score. No pan-African launch. No reusable biometric database. These shape what we build and what we refuse to sell ([CONCEPT.md § 11](CONCEPT.md#11-red-lines)).
+The pilot round converts into shares at the seed round, with a discount. Long-term value comes from a network of merchants and their consented histories, which interests operators, banks and MFIs, and regional fintechs (Moniepoint built its lending on the same kind of data, [MARKET.md](MARKET.md)). No exit is promised; these are the plausible paths.
+
+## Risks
+
+| Risk | Mitigation |
+|---|---|
+| Wave refuses API access | A cash sale with the customer's phone number works without Wave; stop-or-change rule if merchants also refuse ([CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries)) |
+| Merchants stop recording | A cash book from day 1; the share of sales recorded is measured weekly and decides every next step |
+| Regulation | Fidelia never holds funds or lends; licensed partners do; ARTCI and legal review in Phase 0 |
+| Small team | Field lead hired during the pilot; advisors; spending tied to gates |
+
+**Red lines:** no loan promise, no deposits held by Fidelia, no data shared without consent, no opaque score, no pan-African launch, no reusable biometric database ([CONCEPT.md § 11](CONCEPT.md#11-red-lines)).
 
 ## Contact
 
