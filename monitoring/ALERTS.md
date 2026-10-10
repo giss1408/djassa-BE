@@ -6,7 +6,7 @@ Monitoring configuration lives in this directory. Thresholds must be tuned with 
 
 The rules are in [`rules/alerts.yml`](rules/alerts.yml), loaded by the local
 Prometheus and, in production, by Grafana Cloud. What to do when each fires:
-[`docs/technical/PRODUCTION.md` § 7](../docs/technical/PRODUCTION.md#7-when-an-alert-fires).
+[`docs/technical/PRODUCTION.md` § 7](https://github.com/giss1408/fidelia-docs/blob/main/docs/technical/PRODUCTION.md#7-when-an-alert-fires).
 
 | Alert | Fires when | Severity |
 |---|---|---|
