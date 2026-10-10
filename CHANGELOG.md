@@ -24,7 +24,8 @@ until 6 October 2026, then **Hossouko**, and is **Fidelia** since 9 October.
   Letter PDFs are rebuilt with `scripts/build-letters.sh`.
 - **Pilot boundaries** in the business docs: maquis and grocery shops, the
   customer app with a focused scope, everything free during the pilot.
-- **Investor readiness** (`docs/business/INVESTOR-READINESS.md`): the gaps
+- **Investor readiness** (`docs/business/INVESTOR-READINESS.md`, French in
+  `INVESTOR-READINESS.fr.md`): the gaps
   investors will find, the rewritten story, market sizing, forecast
   assumptions, competitor table and next steps.
 - **Investor brief rewritten** for investors (`/brief/`, EN and FR, and

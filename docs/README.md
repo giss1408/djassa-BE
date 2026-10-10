@@ -13,7 +13,7 @@
 | [KPIs](business/KPI.md) | The North Star, the scorecard per phase, how each KPI is computed and where the data lives, targets, external benchmarks, measurement gaps. |
 | [Partners](business/PARTNERS.md) | Institution directory, contact order, acquisition channels, meeting kit, guardrails. |
 | Investor brief ([EN](business/INVESTOR-BRIEF.md) · [FR](business/INVESTOR-BRIEF.fr.md)) | The summary for investors: opportunity, product, traction, market, model, competition, three-year forecast, team, the ask (a XOF 31M pilot round in two tranches), return and risks. *Company details and team track records still to fill before sending.* |
-| [Investor readiness](business/INVESTOR-READINESS.md) | Internal: what investors and a crowdfunding campaign will look for and not find yet, the rewritten story, market sizing, the forecast's assumptions, competitors and next steps. |
+| Investor readiness ([EN](business/INVESTOR-READINESS.md) · [FR](business/INVESTOR-READINESS.fr.md)) | Internal: what investors and a crowdfunding campaign will look for and not find yet, the rewritten story, market sizing, the forecast's assumptions, competitors and next steps. |
 | Letters of interest ([EN](business/LETTERS-OF-INTEREST.md) · [FR](business/LETTERS-OF-INTEREST.fr.md)) | Non-binding templates for a pilot merchant and an MFI to sign. The French version is the one to sign. |
 
 ## Planning: reviews and action plans

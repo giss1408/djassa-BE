@@ -1,6 +1,6 @@
 # Fidelia — Investor readiness: findings, story and numbers
 
-*10 October 2026 · internal working document, not for investors.* The investor-facing version is [INVESTOR-BRIEF.md](INVESTOR-BRIEF.md) ([French](INVESTOR-BRIEF.fr.md)), served behind the password at `<API>/brief/`. Keep the numbers here and there in step.
+*10 October 2026 · internal working document, not for investors.* · [Version française](INVESTOR-READINESS.fr.md). The investor-facing version is [INVESTOR-BRIEF.md](INVESTOR-BRIEF.md) ([French](INVESTOR-BRIEF.fr.md)), served behind the password at `<API>/brief/`. Keep the numbers here and there in step.
 
 ## Findings: what investors will look for and not find
 
