@@ -82,18 +82,18 @@ The customer app is **optional**. A customer without it still identifies at the 
 
 What is actually built and what is not is tracked in [ROADMAP.md § Where we stand](ROADMAP.md#where-we-stand). Everything here is a **prototype**. Nothing moves real money yet.
 
-**For the pilot, the customer app is frozen and pharmacies are out of scope.** See [§ 12 Pilot boundaries](#12-pilot-boundaries).
+**For the pilot, the customer app runs with a focused scope, pharmacies are not paying merchants, and everything is free.** See [§ 12 Pilot boundaries](#12-pilot-boundaries).
 
 ## 5. Customer loyalty: how Fidelia brings customers back
 
 Loyalty is what the merchant pays for first, so its design is a business decision, not a detail.
 
-- **The customer is recognised by phone number.** No card, no app required. A Wave payment, or a phone number typed at the counter, is enough. An SMS or WhatsApp message confirms the points ("+12 points at Maquis Chez Tanti — 3 visits to a free drink").
+- **The customer is recognised by phone number.** No card, no app required. A Wave payment, or a phone number typed at the counter, is enough. The customer app shows the points with a push notification ("+12 points at Maquis Chez Tanti — 3 visits to a free drink"); a customer without the app checks their balance at the counter. WhatsApp and SMS alerts are not used: customers in Abidjan do not follow them.
 - **Rewards are funded by the merchant and cost them little:** a drink, a side dish, a discount, free delivery, priority service. They are never cash. The merchant sets the rule (points per 100 F) and the rewards, as the customer app already supports.
 - **Start customers with progress already made.** A new customer joins with a few points already earned. In a field study, pre-stamped cards were completed 34% of the time against 19% for empty cards with the same effort required (endowed progress effect, see [MARKET.md](MARKET.md#9-evidence-for-the-fidelia-model)).
 - **Short distance to the first reward.** The first reward is reachable within 3–5 visits for a maquis and within 2–3 for a pharmacy, whose purchases are less frequent. Progress is always visible.
 - **Win back lapsed customers.** The merchant sees who has not returned for N days and sends an offer (Phase 2). This turns the history into revenue the merchant can see.
-- **A merchant can pay to promote a specific offer.** Basic deals remain free to list. For a one-time, fixed fee, a merchant can book a time-limited **sponsored deal** in the customer app to advertise a product, dish, service or special price to customers browsing the relevant commune and category. The placement is visibly labelled **Sponsored**, capped by commune and category, and sold/approved by the Fidelia team during the pilot; self-service purchase is not yet available. The fee buys placement, not guaranteed views, visits or sales; test the price with merchants before setting a rate. Sponsored deals bring potential first visits; loyalty points encourage customers to return.
+- **A merchant can pay to promote a specific offer.** Basic deals remain free to list. For a one-time, fixed fee, a merchant can book a time-limited **sponsored deal** in the customer app to advertise a product, dish, service or special price to customers browsing the relevant commune and category. The placement is visibly labelled **Sponsored**, capped by commune and category, and sold and approved by the Fidelia team; self-service purchase is not yet available. **Not sold during the pilot**, where every offer is free. The fee buys placement, not guaranteed views, visits or sales; test the price with merchants before setting a rate. Sponsored deals bring potential first visits; loyalty points encourage customers to return.
 - **Keep discovery trustworthy.** Paid placement belongs in deals/discovery and must not change official on-duty pharmacy information, safety-critical results or the order of ordinary results. Never share customer-level data with an advertiser to target the placement.
 - **Network later.** Once a corridor has enough merchants, points could be earned at one merchant and spent at another, as Safaricom's Bonga points are redeemable at 140,000+ M-Pesa merchants. This needs clear merchant settlement rules and a regulatory check, because transferable points start to look like stored value. Until then, points stay per merchant.
 
@@ -156,7 +156,7 @@ It is a possible benefit, never a guaranteed loan and never a condition for cred
 
 - One country, one corridor (Abidjan first), one merchant segment at a time.
 - Validate real usage before expanding. The master metric is the **% of a merchant's real sales recorded through Fidelia**. One merchant recording 90% of sales for 60 days is a result; ten recording 10% for a week is noise.
-- Low bandwidth and old phones are the target, not edge cases (Android 5, ~1 GB RAM, prepaid data). SMS and WhatsApp come before push notifications.
+- Low bandwidth and old phones are the target, not edge cases (Android 5, ~1 GB RAM, prepaid data). Push notifications in the customer app are the alert channel; WhatsApp and SMS alerts are not, because customers do not follow them.
 - Charge for merchant value before monetising financial referrals.
 - **Never make a payment cost the merchant more than it does today.** Fidelia builds on the wallets merchants already use; it does not compete with them for the payment.
 - **Operator-neutral.** No dependency on a single wallet: Wave first, other operators next, the interoperable PI-SPI QR as the target.
@@ -180,16 +180,17 @@ Fidelia does **not**:
 
 ## 12. Pilot boundaries
 
-*Decided 10 October 2026. These boundaries hold until the Phase 1 exit gate ([ROADMAP.md](ROADMAP.md#phase-1--merchant-mvp-record-pay-reward--next)). Where an earlier section of this document describes something wider, this section wins for the pilot. The long-term concept stays as written.*
+*Decided 10 October 2026, revised the same day after founder input on how merchants attract customers in Abidjan. These boundaries hold until the Phase 1 exit gate ([ROADMAP.md](ROADMAP.md#phase-1--merchant-mvp-record-pay-reward--next)). Where an earlier section of this document describes something wider, this section wins for the pilot. The long-term concept stays as written.*
 
-**Why.** Two founders and a XOF 30.82M pilot budget ([FINANCE-BUDGET.md](FINANCE-BUDGET.md)) cannot validate a two-sided product, five uses and six phases at once. The code is already ahead of the business validation. For the pilot, we validate one thing: **do maquis and grocery owners keep using Fidelia and pay for it?**
+**Why.** Two founders and a XOF 30.82M pilot budget ([FINANCE-BUDGET.md](FINANCE-BUDGET.md)) cannot validate five uses and six phases at once. The code is already ahead of the business validation. For the pilot, we validate two things: **do maquis and grocery owners keep using Fidelia, and does the customer app bring them customers?** Merchants attract customers today by word of mouth, by being nearby and through social networks. The customer app turns that into a map, offers with notifications, and points. Bringing new customers is the main thing a merchant will later pay for.
 
 ### Decisions
 
 1. **Day-1 hook: the daily cash book.** In the first week, the merchant gets one daily total across every wallet they use plus their recorded cash sales. They do not have to reconcile Wave, Orange and MTN by hand anymore. Loyalty is the reason they stay, and the proof for lenders builds up underneath without the merchant having to ask for it. The value must be visible on day 1; loyalty only proves itself after weeks.
-2. **Segment: maquis and grocery shops (supérettes, boutiques), in one commune.** These are the most frequent repeat purchases, and both fit the "customers who came back" report. **Pharmacies are out of the pilot**, both as merchants and as customer-app content: they have less frequent visits and regulated prices, and their professional rules may restrict rewards and advertising on medicines.
-3. **Customer side: a phone number, no app.** Customers identify at the counter by phone number. Points are confirmed by a batched WhatsApp or SMS message, never one paid message per visit. The customer app (`fidelia-App-user`) is **frozen**: with 5–10 merchants, a discovery map is empty and a sponsored placement has nobody to reach. It comes back once one area has enough active merchants.
-4. **MFI as a possible first payer: tested in Phase 0, not built.** In the Phase 0 interviews, ask one or two MFIs (Fin'ELLE, Advans) whether they would pay for a consented tool that lets them follow the sales of the merchants they already lend to. Ask the merchants whether they would accept it. Until the answer is yes on both sides, the merchant subscription remains the default model.
+2. **Segment: maquis and grocery shops (supérettes, boutiques), in one commune.** These are the most frequent repeat purchases, and both fit the "customers who came back" report. **Pharmacies are not paying merchants in the pilot**: they have less frequent visits and regulated prices, and their professional rules may restrict rewards and advertising on medicines. **On-duty pharmacies stay in the customer app as information**: it is the daily reason to install the app, and it is useful even while only 5–10 merchants are listed.
+3. **Customer side: the customer app, with a focused scope.** The app (`fidelia-App-user`) is how merchants reach new customers, so it is part of the pilot: a map of pilot merchants with directions, merchant offers with **push notifications**, on-duty pharmacies, and points and rewards per merchant. Customers without the app still identify at the counter by phone number. WhatsApp and SMS alerts are not a channel: customers in Abidjan do not follow them. To prove the app's value to the merchant, a customer who uses an app offer at the counter is recorded in the merchant app, which gives a weekly **"new customers brought by Fidelia"** figure next to "customers who came back".
+4. **Everything is free during the pilot.** No subscription, no fee for offers, no paid placement. Every merchant can publish offers for free. The test of willingness to pay moves to the end of the pilot: after 60+ days of use, each merchant is offered the paid plan, and **the share who accept is the pilot's revenue result**. Billing stays built so that the paid plan can start the day the pilot ends.
+5. **MFI as a possible first payer: tested in Phase 0, not built.** In the Phase 0 interviews, ask one or two MFIs (Fin'ELLE, Advans) whether they would pay for a consented tool that lets them follow the sales of the merchants they already lend to. Ask the merchants whether they would accept it. Until the answer is yes on both sides, the merchant subscription remains the default model.
 
 ### In scope
 
@@ -197,9 +198,10 @@ Fidelia does **not**:
 |---|---|
 | Merchant app | Cash sale + customer phone, offline; **daily cash book** across wallets and cash; per-merchant loyalty; weekly "customers who came back" report |
 | Payments | Automatic capture through **one** wallet rail (Wave if access is granted) |
-| Platform | Phone/OTP login, outlet registration, subscription billing, per-resource authorisation, backups |
+| Customer app | Map of pilot merchants with directions; free merchant offers with push notifications; on-duty pharmacies; points and rewards |
+| Platform | Phone/OTP login, outlet registration, per-resource authorisation, backups; billing ready for the paid plan at the end of the pilot, but nothing charged |
 | Proof | A signed revenue statement with consent, used as a demo for MFIs, not sold |
-| Customers | Phone number at the counter; batched WhatsApp/SMS points summary |
+| Customers | The customer app, or a phone number at the counter for customers without it |
 
 ### Frozen
 
@@ -207,9 +209,11 @@ Frozen means the code stays and tests keep passing, but the feature is not expos
 
 | Frozen | Reopens when |
 |---|---|
-| Customer app (discovery, on-duty pharmacies, deals, Fidelia-route payment) | One area has enough active merchants for discovery to be useful (Phase 2) |
-| Sponsored deals | The customer app is back and has an audience |
-| Pharmacy merchants and pharmacy content | The professional rules on loyalty and advertising for pharmacies are confirmed in writing |
+| Payment through Fidelia in the customer app | Phase 2; the merchant's own wallet payments are captured anyway |
+| Discovery beyond the pilot commune | More communes join (Phase 6) |
+| Paid featured placement (sponsored deals) and every other paid offer | After the pilot; all offers are free until then |
+| "Share this offer" button | Not planned; revisit only if merchants ask for it |
+| Pharmacies as paying merchants | The professional rules on loyalty and advertising for pharmacies are confirmed in writing |
 | Layaway | Phase 2, as already planned |
 | Tontine, reliability indicator, Tier 1–2 verification | Their own phase gates (Phases 3–5) |
 | A second operator, PI-SPI | Phase 2 |
@@ -223,7 +227,7 @@ Do not mention these in pitches, the investor brief, the public site or partner 
 
 The "zero habit" entry point depends on Wave letting small merchants enable its webhook for Fidelia, and on the payer's phone number being allowed for loyalty (Wave terms, ARTCI). If Wave refuses, the pilot runs on **cash sale + phone at the counter**, with wallet payments entered by the merchant as one daily total for the cash book.
 
-**Stop-or-change rule.** If Wave refuses access **and** fewer than half of the merchants interviewed say they would record their cash sales, do not write more code. Reassess the model, starting with the MFI tool in decision 4.
+**Stop-or-change rule.** If Wave refuses access **and** fewer than half of the merchants interviewed say they would record their cash sales, do not write more code. Reassess the model, starting with the MFI tool in decision 5.
 
 ## Related documents
 

@@ -25,7 +25,8 @@ One habit, recording the sale, produces five uses: loyalty, revenue history, ton
 - **Cash sales count too.** They take one tap in the merchant app, even offline. With the customer's phone number, the customer earns points.
 - **Loyalty the merchant can see.** Points, rewards handed over at the counter, deals, and a weekly "customers who came back" figure.
 - **Proof for credit, with consent.** Each sale is labelled *confirmed by the provider* or *declared by the merchant*, and exported only with consent to a licensed MFI or guarantee scheme.
-- **The pilot product:** a merchant app (offline-first, cheap Android) and the platform. Customers are recognised by phone number at the counter and receive their points by WhatsApp or SMS. The customer app exists as a prototype and returns once one area has enough merchants.
+- **New customers for the merchant.** Merchants attract customers today by word of mouth, by being nearby and through social networks. The customer app turns that into a map of nearby maquis and grocery shops, free merchant offers with notifications, and points. On-duty pharmacies give people a daily reason to install it.
+- **Three pieces in the pilot:** a merchant app (offline-first, cheap Android), a customer app, and the platform. **The pilot is free for every merchant**; the paid plan is offered when it ends.
 
 **Fidelia never holds funds and never lends.** Licensed institutions keep custody and credit. Fidelia is the technology and distribution partner.
 
@@ -42,8 +43,8 @@ Merchant software first, financial infrastructure second.
 
 | Stream | When |
 |---|---|
-| Merchant subscription: capped free plan, then ~5,000 F and ~10,000–15,000 F / month / outlet *(hypotheses to test)* | Pilot |
-| Sponsored deals and campaigns: one-off, time-limited placement for a merchant product, service or special offer in the customer app; pricing is to be tested | After the pilot, when the customer app returns |
+| Merchant subscription: capped free plan, then ~5,000 F and ~10,000–15,000 F / month / outlet *(hypotheses to test)* | After the pilot (the pilot is free) |
+| Sponsored deals and campaigns: one-off, time-limited placement for a merchant product, service or special offer in the customer app; pricing is to be tested | After the pilot (offers are free during the pilot) |
 | Multi-outlet and network contracts | After proof |
 | Consented partner commissions (credit, savings, tontine): Fidelia earns distribution fees, never carries credit risk | After partnership |
 
@@ -58,7 +59,7 @@ Fidelia avoids consumer personal finance (Djamo) and B2B payments (Julaya, Hub2)
 **Pre-pilot. No users, merchants or revenue yet.** What exists is working prototypes (on the `integration` branch):
 
 - A merchant app recording sales offline, tested on a real device, with no duplicates after a dropped connection.
-- A customer app for discovery, deals, sandbox QR payment and points, frozen during the pilot.
+- A customer app for discovery, on-duty pharmacies, deals, sandbox QR payment and points.
 - **Points on cash sales by phone**, with balance and rewards handed over at the counter.
 - **One sale history** labelled by evidence, sold featured slots, a billing ledger, and an audited consented export.
 - A public site built for low bandwidth (~120 KB on first visit, works offline).
@@ -68,7 +69,7 @@ Fidelia avoids consumer personal finance (Djamo) and B2B payments (Julaya, Hub2)
 | Gate | Evidence required |
 |---|---|
 | **Phase 0: discovery and compliance** | 5–10 interviews with maquis and grocery owners in one Abidjan commune; Wave API access confirmed; regulatory perimeter and ARTCI review; one payment partner; one or two MFIs asked whether they would pay for a consented tool to follow their merchant borrowers' sales |
-| **Phase 1: pilot, 5–10 merchants** | Phone login (OTP), automatic Wave capture, one live payment partner. **Exit:** merchants record most real sales for 60+ days and pay or renew |
+| **Phase 1: pilot, 5–10 merchants** | Phone login (OTP), automatic Wave capture, one live payment partner. **Exit:** merchants record most real sales for 60+ days, the app brings them new customers, and they accept the paid plan when the free pilot ends |
 | **Unit-economics gate** | Acquisition cost below 12 months of gross profit; 3 months of retention; known support and messaging cost per outlet |
 
 No geographic expansion before one corridor passes the gate.
@@ -100,7 +101,7 @@ No geographic expansion before one corridor passes the gate.
 | Amount | `[PLACEHOLDER]` USD 000,000 |
 | Instrument | `[PLACEHOLDER]` SAFE / convertible note, cap to be agreed |
 | Use of funds (12–18 months) | `[PLACEHOLDER]` Pilot operations and field team ~35% · product (OTP login, wallet capture, second operator) ~35% · legal, regulatory and security review ~15% · marketing and partnerships ~15% |
-| Runway to | Phase 1 exit gate: a pilot corridor showing retention and paid renewal |
+| Runway to | Phase 1 exit gate: a pilot commune showing retention and merchants accepting the paid plan |
 
 ## Red lines
 

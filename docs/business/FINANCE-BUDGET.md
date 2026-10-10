@@ -6,7 +6,7 @@ Euro equivalents use the fixed peg **€1 = XOF 655.957** and are rounded to two
 
 ## Executive summary
 
-This draft budgets a **six-month launch and pilot** in one Abidjan corridor, for **5–10 merchants**. It assumes about two months for discovery, compliance, partner setup and production readiness, followed by four months of field operation. That leaves enough time to observe at least 60 days of real merchant use and test paid renewal.
+This draft budgets a **six-month launch and pilot** in one Abidjan corridor, for **5–10 merchants**. It assumes about two months for discovery, compliance, partner setup and production readiness, followed by four months of field operation. That leaves enough time to observe at least 60 days of real merchant use. **The pilot is free for every merchant** ([CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries)); at the end, each merchant is offered the paid plan.
 
 | Budget view | Amount |
 |---|---:|
@@ -105,7 +105,7 @@ Any material payment-provider charge must be disclosed before the customer pays 
 
 The funding requirement is **gross spend**; no revenue is deducted. The pricing hypotheses are XOF 5,000/month for Starter and XOF 10,000–15,000/month for Growth, but willingness to pay and conversion are not validated. Sponsored-deal revenue is also unproven. The optional 7-day placement test at XOF 1,000–3,000 is shown only as an upside sensitivity in the [finance validation pack](FINANCE-VALIDATION.md) and its [French version](FINANCE-VALIDATION.fr.md); it does not reduce the funding request or baseline forecast. No payment share, lender referral fee, or credit-related income is included: each depends on partner terms, consent, reconciliation, and regulatory review.
 
-For scale only, if all 5–10 pilot merchants paid for four months, subscription receipts at the documented price hypotheses would range from **XOF 100,000 (€152.45) to XOF 600,000 (€914.69) gross**. This is an upside illustration, not a forecast; actual receipts may be zero during onboarding or trial periods.
+**Pilot receipts are zero by design**: subscriptions and offers are free during the pilot. For scale only, if all 5–10 pilot merchants accepted the paid plan, the first four months after the pilot would bring **XOF 100,000 (€152.45) to XOF 600,000 (€914.69) gross** at the documented price hypotheses. This is an illustration, not a forecast.
 
 ## 24-month break-even model (illustrative)
 
@@ -181,7 +181,7 @@ Use three approval gates to avoid spending ahead of evidence:
 
 1. **Readiness gate:** approve legal/regulatory scope, confirm a licensed payment partner and Wave access, agree the pilot cohort, and validate local vendor quotes. Do not expose real users or money while authentication, authorisation, backups, reconciliation, and the funds-flow review remain unresolved.
 2. **Pilot gate:** release field and customer-activation spend only after the production-readiness review and written partner/merchant arrangements are in place.
-3. **Continuation gate:** after 60+ days, review the share of real sales recorded, merchant activity, paid conversion/renewal, repeat visits, support cost, messaging cost, and unresolved privacy/security/regulatory issues before extending the pilot.
+3. **Continuation gate:** after 60+ days, review the share of real sales recorded, merchant activity, new customers brought by the customer app, repeat visits, the share of merchants accepting the paid plan when the free pilot ends, support cost, messaging cost, and unresolved privacy/security/regulatory issues before extending the pilot.
 
 Track actuals monthly by category. Obtain at least two local quotes for legal/security, messaging, and field services; reconcile merchant acquisition and subscription receipts separately. Keep the contingency controlled by founder approval and do not treat it as an automatic spend target.
 

@@ -75,9 +75,11 @@ The core dashboard. Definitions are in §§ 4–8.
 | Adoption | Merchant retention at 30 / 60 / 90 days | ≥ 90% / 80% / 75% (**Proposed**) |
 | Day-1 hook | Days per week the merchant opens the daily cash book, per active outlet | ≥ 4 days a week from week 1 (**Proposed**; needs a usage event for the cash-book screen) |
 | Loyalty | Repeat-visit rate of identified customers vs baseline | Positive lift the merchant can state (**Gate**). Proposed: +5 pts at a maquis; grocery target set from Phase 0 interviews, matching the [value equation](BUSINESS-MODEL.md#why-a-merchant-pays-the-value-equation) |
-| Revenue | Free-to-paid conversion | ≥ 40% of active pilot outlets (**Proposed**) |
-| Revenue | Renewal | 3 consecutive months (**Gate**) |
-| Cost | Notification cost per active outlet | < 30% of the outlet's subscription (**Proposed**) |
+| Customer app | Installs still active at 7 and 30 days, in the pilot commune | Tracked from launch; target set after the first month (**Proposed**) |
+| Customer app | New customers brought by app offers: first visits where an app offer was used at the counter, per outlet per week | Positive for most outlets; the merchant can state it (**Gate**) |
+| Revenue | Acceptance of the paid plan when the free pilot ends | ≥ 40% of active pilot outlets (**Gate**; the pilot is free, so this is its revenue result) |
+| Revenue | Renewal | 3 consecutive months after the pilot (**Gate** for the unit-economics review) |
+| Cost | Notification cost per active outlet | < 30% of the planned subscription price (**Proposed**); push notifications are free, so this should stay near zero |
 | Cost | CAC | < 12 months of expected gross profit per outlet (**Gate**) |
 | Payments | Payment success rate | ≥ 95% (**Proposed**) |
 | Trust | Exports with an audit record | 100% (**Gate**: hard rule) |
@@ -151,11 +153,10 @@ Runs only at shops where an admin switched it on. Read from `GET /api/admin/laya
 | Time to first reward | First visit → first `redeem` entry | `loyalty_entries` | Computable. Target from concept: 3–5 visits (maquis); grocery to set from Phase 0 |
 | **Outstanding points liability** (counter-metric) | Unredeemed points × reward value per point, per outlet | `loyalty_entries`, `loyalty_rewards` | Computable. Points have no expiry yet ([W4-5](../planning/action_plan_claude_fidelia.md)) |
 | Reward cost as a share of member sales | Value of rewards redeemed ÷ sales by identified customers | as above | Computable |
-| *Customer app rows below: off the dashboard while the app is frozen for the pilot* | | | |
 | Customer app installs and active installs (1 / 7 / 30-day) | First launches, installs with activity in the window | `GET /api/admin/usage?app=user` | Live |
 | Customer app retention D1 / D7 / D30 | Installs active on day *n* after install, by install cohort | `usage_events` | Computable. Benchmark (global finance apps): D1 ≈ 22%, D30 ≈ 4% |
-| Discovery use | Venue views and deal opens per active install | `usage_events` | Live |
-| Scan → payment conversion | `payment_completed` ÷ `scan_opened` | `usage_events` | Live |
+| Discovery use | Venue views, offer opens and on-duty pharmacy views per active install | `usage_events` | Live |
+| Scan → payment conversion | `payment_completed` ÷ `scan_opened` | `usage_events` | Live; off the pilot dashboard (payment through Fidelia is frozen) |
 
 ---
 

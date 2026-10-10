@@ -6,7 +6,7 @@ Les équivalents en euros sont calculés au taux fixe de **1 € = 655,957 XOF**
 
 ## Synthèse
 
-Ce budget couvre un **lancement et un pilote de six mois** dans un corridor d'Abidjan, auprès de **5 à 10 commerçants**. Il prévoit environ deux mois pour la découverte, la conformité, la mise en place des partenariats et la préparation à la production, puis quatre mois d'opérations sur le terrain. Cette durée permet d'observer au moins 60 jours d'utilisation réelle et de tester le renouvellement payant.
+Ce budget couvre un **lancement et un pilote de six mois** dans un corridor d'Abidjan, auprès de **5 à 10 commerçants**. Il prévoit environ deux mois pour la découverte, la conformité, la mise en place des partenariats et la préparation à la production, puis quatre mois d'opérations sur le terrain. Cette durée permet d'observer au moins 60 jours d'utilisation réelle. **Le pilote est gratuit pour tous les commerçants** ([CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries)) ; à la fin, la formule payante est proposée à chacun.
 
 | Vue budgétaire | Montant |
 |---|---:|
@@ -105,7 +105,7 @@ Tout frais matériel du prestataire de paiement doit être communiqué avant le 
 
 Le besoin de financement correspond aux **dépenses brutes** ; aucun revenu n'en est déduit. Les hypothèses de prix sont de XOF 5 000/mois (environ €7,62) pour Starter et XOF 10 000 à 15 000/mois (environ €15,24 à €22,87) pour Growth. La volonté de payer et le taux de conversion ne sont pas validés. Les revenus des bons plans sponsorisés ne sont pas non plus prouvés. Le test facultatif d'un emplacement de 7 jours à XOF 1 000–3 000 figure uniquement comme scénario favorable dans le [dossier de validation financière](FINANCE-VALIDATION.fr.md) et sa [version anglaise](FINANCE-VALIDATION.md) ; il ne réduit ni la demande de financement ni le scénario de base. Aucun partage de revenus sur les paiements, frais de recommandation de prêteurs ou revenus liés au crédit n'est comptabilisé : ils dépendent d'accords partenaires, du consentement, du rapprochement des paiements et de la validation réglementaire.
 
-À titre indicatif, si les 5 à 10 commerçants du pilote payaient pendant quatre mois, les recettes d'abonnement aux tarifs envisagés seraient de **XOF 100 000 (€152,45) à XOF 600 000 (€914,69) bruts**. Il s'agit d'une illustration optimiste, pas d'une prévision ; les recettes réelles pourraient être nulles pendant l'intégration ou la période d'essai.
+**Les recettes du pilote sont nulles par choix** : abonnement et bons plans sont gratuits pendant le pilote. À titre indicatif, si les 5 à 10 commerçants du pilote acceptaient la formule payante, les quatre premiers mois après le pilote rapporteraient **XOF 100 000 (€152,45) à XOF 600 000 (€914,69) bruts** aux tarifs envisagés. Il s'agit d'une illustration, pas d'une prévision.
 
 ## Seuil de rentabilité sur 24 mois (illustratif)
 
@@ -181,7 +181,7 @@ Utiliser trois étapes de validation pour éviter de dépenser avant d'avoir obt
 
 1. **Jalon de préparation :** approuver le périmètre juridique et réglementaire, confirmer un partenaire de paiement agréé et l'accès à Wave, définir le groupe pilote et valider les devis locaux. Ne pas ouvrir le service à de vrais utilisateurs ni à de vrais paiements tant que l'authentification, les autorisations, les sauvegardes, le rapprochement et l'audit des flux financiers ne sont pas réglés.
 2. **Jalon pilote :** engager les dépenses terrain et d'activation des clients uniquement après la revue de préparation à la production et la mise en place d'accords écrits avec les partenaires et commerçants.
-3. **Jalon de poursuite :** après plus de 60 jours, examiner la part des ventes réelles enregistrées, l'activité des commerçants, la conversion/renouvellement payants, les visites répétées, le coût du support, le coût des notifications et les éventuels problèmes non résolus de confidentialité, sécurité ou réglementation avant de prolonger le pilote.
+3. **Jalon de poursuite :** après plus de 60 jours, examiner la part des ventes réelles enregistrées, l'activité des commerçants, les nouveaux clients amenés par l'application client, les visites répétées, la part des commerçants qui acceptent la formule payante à la fin du pilote gratuit, le coût du support, le coût des notifications et les éventuels problèmes non résolus de confidentialité, sécurité ou réglementation avant de prolonger le pilote.
 
 Suivre les dépenses réelles par catégorie chaque mois. Obtenir au moins deux devis locaux pour les services juridiques/de sécurité, la messagerie et les opérations terrain ; rapprocher séparément l'acquisition des commerçants et les recettes d'abonnement. La provision pour imprévus doit rester soumise à l'approbation des fondateurs et ne constitue pas un objectif de dépense.
 

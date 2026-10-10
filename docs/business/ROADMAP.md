@@ -69,24 +69,25 @@ A phase is complete when **real users have validated it**, not when the code shi
 - **Automatic capture of the merchant's existing Wave payments** (signed webhook → event → points for the paying phone number). This is the priority entry point.
 - **One merchant identity and one event stream** covering captured wallet payments, recorded cash sales and Fidelia-route payments.
 - Loyalty rules, points and rewards for all entry points. New customers start with progress already made, and the first reward is reachable in 3–5 visits.
-- Customer points confirmed by a batched SMS or WhatsApp summary (never one paid message per visit). **The customer app is frozen for the pilot** ([CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries)): customers identify by phone number at the counter.
-- Merchant reporting: **daily cash book** (one total across every wallet and cash, the day-1 hook), a **weekly "customers who came back" report**, and a signed, consented revenue statement for MFI demos.
-- Free-tier cap and paid plans enforced; payment of the subscription in mobile money.
+- **Customer app, focused scope** ([CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries)): map of pilot merchants with directions, free merchant offers with push notifications, on-duty pharmacies, points and rewards. Customers without the app identify by phone number at the counter. No WhatsApp or SMS alerts.
+- **Offer use recorded at the counter** in the merchant app, to count the new customers the app brings.
+- Merchant reporting: **daily cash book** (one total across every wallet and cash, the day-1 hook), a weekly report of **"customers who came back"** and **"new customers brought by Fidelia"**, and a signed, consented revenue statement for MFI demos.
+- **Everything free during the pilot.** Billing and paid plans stay ready (subscription paid in mobile money) so the paid plan can be offered when the pilot ends.
 - Offline queue and sync (built).
 - Per-resource authorisation and ownership checks; production secrets.
 - French first; Dioula for the merchant app.
 
-**Measure:** % of real sales recorded (master metric) · repeat-visit rate of identified customers, before and after joining · notification cost per active outlet · active merchants · transactions per merchant · customer repeat rate · payment success rate · merchant retention 30/60/90 · paid conversion and renewal · support cost per outlet · data consumed per user.
+**Measure:** % of real sales recorded (master metric) · repeat-visit rate of identified customers, before and after joining · notification cost per active outlet · active merchants · transactions per merchant · customer repeat rate · payment success rate · customer app installs active at 7 and 30 days · new customers brought by app offers · merchant retention 30/60/90 · **share of merchants accepting the paid plan at the end of the pilot** · support cost per outlet · data consumed per user.
 
 **Identity gate:** no biometric or national-ID check for loyalty or payments; the operator identity signal and consent are defined before relying on them; duplicate-account prevention tested without exposing unnecessary data.
 
-**Exit gate:** merchants record a high and growing share of real sales for 60+ days, and pay or renew.
+**Exit gate:** merchants record a high and growing share of real sales for 60+ days, and **accept the paid plan when the free pilot ends**.
 
 ## Phase 2 — Operations and network · *planned*
 
 **Goal:** make the merchant product repeatable in the first corridor before adding financial complexity.
 
-- **Customer app returns** once one area has enough active merchants for discovery to be useful; deals, featured placement (paid), campaigns and customer reactivation by SMS/WhatsApp.
+- First paid plans running; **paid featured placement** for offers in the customer app; lapsed-customer win-back offers by push notification; payment through Fidelia in the customer app.
 - Association and merchant-referral onboarding; multi-outlet accounts.
 - A second operator adapter for merchants mainly on other networks: MTN MoMo request-to-pay or the Orange Money merchant API, at the operator's own rate rather than an aggregator's.
 - PI-SPI interoperable QR through a licensed partner, if it is live for merchants in Côte d'Ivoire: one QR for every wallet and bank, and the end of per-operator work.
