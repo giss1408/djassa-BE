@@ -54,6 +54,33 @@ SMS delivery is `app/services/otp_sender.py`, chosen by `OTP_SENDER`:
 Sending SMS is the only part with a cost: a few cents per message, set by the
 provider. The `OtpSentButNotVerified` alert watches for SMS pumping.
 
+## Offer alerts and offer use at the counter
+
+When a merchant publishes a deal, `app/services/push.py` sends one push to
+the Firebase Cloud Messaging topics `offers_<commune>` and `venue_<id>`. The
+customer app subscribes the phone to the commune the customer chose and to
+their favourite shops, so Fidelia never stores who receives what. At most one
+alert per shop per 24 hours; a sample shop or a deal starting later is not
+announced. The outcome is stored on the deal (`notify_status`) and shown to the
+merchant. The alert is sent after the response, in the API process, so it
+needs no worker.
+
+| Variable | Meaning |
+|---|---|
+| `PUSH_PROVIDER=console` | Default. Logs the alert; customers receive nothing. |
+| `PUSH_PROVIDER=fcm` | Real pushes. Needs `FCM_PROJECT_ID` and `FCM_SERVICE_ACCOUNT_JSON` (Firebase console > Project settings > Service accounts > Generate new private key; paste the file's content). |
+
+The customer app enables alerts only when built with the four `FIREBASE_*`
+defines (`fidelia-App-user/lib/core/config/env.dart`), taken from the same
+Firebase project's Android app.
+
+A customer who comes to the counter with a deal is recorded by the merchant
+or cashier with **Client venu** in the merchant app
+(`POST /api/merchant/deals/{id}/uses`), answering only whether the customer is
+new. No customer data is stored. `GET /api/merchant/deals/uses/summary` gives
+the week's count, the "new customers brought by Fidelia" figure of the pilot
+([KPI.md](../business/KPI.md)).
+
 Locally, with sample data seeded, `07 00 00 00 02` is a merchant that runs
 *Chez Tantie Awa*. Any other number signs in to the customer app.
 
@@ -345,6 +372,7 @@ Required production-like variables:
 | `FIDELIA_ENCRYPTION_KEY` | Seals merchants' Wave keys at rest; changing it forces merchants to reconnect |
 | `MEDIA_STORAGE=r2` + `R2_*`, `MEDIA_PUBLIC_BASE_URL` | Shop photos and videos (see Shop photos and videos) |
 | `OTP_SENDER` + provider keys | Sign-in codes by SMS (see Sign-in) |
+| `PUSH_PROVIDER=fcm` + `FCM_PROJECT_ID`, `FCM_SERVICE_ACCOUNT_JSON` | Offer alerts to the customer app (see Offer alerts) |
 | `CELERY_BROKER_URL` | Redis broker URL |
 
 Do not use the demo credentials or placeholder secrets on an Internet-accessible server.

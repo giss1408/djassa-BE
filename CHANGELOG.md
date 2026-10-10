@@ -5,6 +5,21 @@ test environment deploys `integration`, production deploys `trunk`. Entries
 are grouped by the day the work landed. The product was called **Djassa**
 until 6 October 2026, then **Hossouko**, and is **Fidelia** since 9 October.
 
+## 2026-10-10
+
+- **Offer alerts**: publishing a deal sends one push to the Firebase topics of
+  the shop's commune and of the shop (`app/services/push.py`), at most once
+  per shop per 24 hours, never for sample shops or deals starting later. The
+  outcome is on the deal (`alert_status`). `PUSH_PROVIDER=console` by default;
+  `fcm` with `FCM_PROJECT_ID` and `FCM_SERVICE_ACCOUNT_JSON` sends real pushes.
+- **Offer use at the counter**: `POST /api/merchant/deals/{id}/uses` records a
+  customer who came with a deal and whether they are new (idempotent, live
+  deals of the caller's own shop only, owner or cashier); no customer data is
+  stored. `GET /api/merchant/deals/uses/summary` gives the week's count.
+- Migration `0027_deal_alerts_and_uses`.
+- **Pilot boundaries** in the business docs: maquis and grocery shops, the
+  customer app with a focused scope, everything free during the pilot.
+
 ## 2026-10-09
 
 - **Account deletion** (Google Play requirement): a customer deletes their

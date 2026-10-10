@@ -1,10 +1,17 @@
 """Deals ("bons plans"): customers browse them, merchants publish their own,
-admins sell the featured slot."""
+admins sell the featured slot.
 
-from datetime import timezone
+Publishing a deal announces it by push to the customers following the shop's
+commune or the shop itself (app/services/push.py). A customer who comes to the
+counter with a deal is recorded by the merchant in one tap, which is how the
+merchant sees the new customers the app brings.
+"""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import func, select, update
+from datetime import timedelta, timezone
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from sqlalchemy import case, func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -12,7 +19,18 @@ from .. import models
 from ..core.security import SHOP_STAFF, require_role
 from ..db import get_db
 from ..rate_limiter import limiter, public_read_limit
-from ..schemas.customer import DealIn, DealOut, PlacementIn, PlacementOut, PlacementPaidIn
+from ..schemas.customer import (
+    DealIn,
+    DealOut,
+    DealUseCount,
+    DealUseIn,
+    DealUseOut,
+    DealUsesSummaryOut,
+    PlacementIn,
+    PlacementOut,
+    PlacementPaidIn,
+)
+from ..services import push
 from .customer import CATEGORIES, deal_out, live_deals_filter, utcnow
 from .payment_requests import _my_venue
 
@@ -83,7 +101,12 @@ async def my_deals(db: AsyncSession = Depends(get_db), user=Depends(require_role
 
 
 @router.post("/merchant/deals", response_model=DealOut, status_code=201)
-async def create_deal(payload: DealIn, db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
+async def create_deal(
+    payload: DealIn,
+    background: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(require_role("merchant")),
+):
     venue = await _my_venue(db, user, require_wallet=False)
     now = utcnow()
     starts = _naive_utc(payload.starts_at) if payload.starts_at else now
@@ -117,6 +140,9 @@ async def create_deal(payload: DealIn, db: AsyncSession = Depends(get_db), user=
     db.add(deal)
     await db.commit()
     await db.refresh(deal)
+    # After the response: the merchant never waits on FCM, and a failed alert
+    # does not fail the publication.
+    background.add_task(push.announce_deal, deal.id, now)
     return deal_out(deal)
 
 
@@ -129,6 +155,92 @@ async def end_deal(deal_id: int, db: AsyncSession = Depends(get_db), user=Depend
         raise HTTPException(status_code=404, detail="deal not found")
     deal.active = False
     await db.commit()
+
+
+# --- Merchant: customers who came with a deal ----------------------------------
+
+
+@router.post("/merchant/deals/{deal_id}/uses", response_model=DealUseOut, status_code=201)
+async def record_deal_use(
+    deal_id: int,
+    payload: DealUseIn,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(require_role(*SHOP_STAFF)),
+):
+    """A customer came to the counter with this deal. Cashiers record it too:
+    they are the ones at the counter.
+
+    Only a live deal of the merchant's own shop. Idempotent on the phone's key:
+    the same tap retried after a dropped connection records one use.
+    """
+    venue = await _my_venue(db, user, require_wallet=False)
+    deal = await db.get(models.Deal, deal_id)
+    if deal is None or deal.venue_id != venue.id:
+        raise HTTPException(status_code=404, detail="deal not found")
+
+    key = f"use:{venue.id}:{payload.idempotency_key}"
+    existing = (await db.execute(select(models.DealUse).where(models.DealUse.idempotency_key == key))).scalar_one_or_none()
+    if existing is not None:
+        if existing.deal_id != deal.id or existing.new_customer != payload.new_customer:
+            raise HTTPException(status_code=409, detail="Cette cle a deja servi pour un autre enregistrement")
+        return _use_out(existing)
+
+    now = utcnow()
+    if not deal.active or deal.starts_at > now or deal.ends_at <= now:
+        raise HTTPException(status_code=409, detail="Ce bon plan n'est plus en cours")
+    use = models.DealUse(
+        deal_id=deal.id,
+        venue_id=venue.id,
+        new_customer=payload.new_customer,
+        idempotency_key=key,
+        recorded_by=user["username"],
+        created_at=now,
+    )
+    db.add(use)
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Two retries racing on the same key: the other one won.
+        await db.rollback()
+        use = (await db.execute(select(models.DealUse).where(models.DealUse.idempotency_key == key))).scalar_one()
+    return _use_out(use)
+
+
+@router.get("/merchant/deals/uses/summary", response_model=DealUsesSummaryOut)
+async def deal_uses_summary(
+    days: int = Query(7, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    user=Depends(require_role(*SHOP_STAFF)),
+):
+    """Customers who came with a deal over the last `days`, and how many were
+    new: the number that shows the merchant what the app brings."""
+    venue = await _my_venue(db, user, require_wallet=False)
+    since = utcnow() - timedelta(days=days)
+    rows = (
+        await db.execute(
+            select(
+                models.DealUse.deal_id,
+                models.Deal.title,
+                func.count(models.DealUse.id),
+                func.sum(case((models.DealUse.new_customer.is_(True), 1), else_=0)),
+            )
+            .join(models.Deal, models.DealUse.deal_id == models.Deal.id)
+            .where(models.DealUse.venue_id == venue.id, models.DealUse.created_at >= since)
+            .group_by(models.DealUse.deal_id, models.Deal.title)
+            .order_by(func.count(models.DealUse.id).desc(), models.DealUse.deal_id)
+        )
+    ).all()
+    by_deal = [DealUseCount(deal_id=d, title=t, uses=n, new_customers=int(new or 0)) for d, t, n, new in rows]
+    return DealUsesSummaryOut(
+        days=days,
+        uses=sum(c.uses for c in by_deal),
+        new_customers=sum(c.new_customers for c in by_deal),
+        by_deal=by_deal,
+    )
+
+
+def _use_out(use: models.DealUse) -> DealUseOut:
+    return DealUseOut(id=use.id, deal_id=use.deal_id, new_customer=use.new_customer, created_at=use.created_at)
 
 
 # --- Admin: selling the featured slot -----------------------------------------

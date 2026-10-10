@@ -199,6 +199,7 @@ def deal_out(d: models.Deal) -> DealOut:
         ends_at=d.ends_at,
         is_featured=d.is_featured,
         is_sample=d.venue.is_sample,
+        alert_status=d.notify_status,
     )
 
 

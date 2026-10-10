@@ -72,6 +72,11 @@ services:
       # as any number: never on a deployment holding real data.
       - key: OTP_SENDER
         value: console
+      # Offer alerts to the customer app (app/services/push.py). "console" logs
+      # them; set "fcm" plus FCM_PROJECT_ID and FCM_SERVICE_ACCOUNT_JSON (the
+      # Firebase service account key file's content) to send real pushes.
+      - key: PUSH_PROVIDER
+        value: console
       # Shared test accounts: these numbers sign in with their fixed code, no
       # SMS, no log line. 07 00 00 00 01 is a customer; 07 00 00 00 02 is the
       # seeded merchant of the second sample maquis, 07 00 00 00 03 its

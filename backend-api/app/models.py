@@ -309,6 +309,12 @@ class Deal(Base):
     is_featured = Column(Boolean, nullable=False, default=False, index=True)
     active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, nullable=False)
+    # The push alert announcing the deal (app/services/push.py): when it went
+    # out, and what happened -- sent | skipped_recent | skipped_future |
+    # skipped_sample | failed. Null until the attempt. At most one alert per
+    # venue per day, so `skipped_recent` is the anti-spam rule doing its job.
+    notified_at = Column(DateTime, nullable=True)
+    notify_status = Column(String(16), nullable=True)
 
     venue = relationship("Venue", back_populates="deals")
     placements = relationship("DealPlacement", back_populates="deal")
@@ -346,6 +352,34 @@ class DealPlacement(Base):
 
     deal = relationship("Deal", back_populates="placements")
     venue = relationship("Venue")
+
+
+class DealUse(Base):
+    """A customer came to the counter with a deal seen in the customer app.
+
+    The merchant taps the deal and answers one question: is this a new
+    customer? That count is what proves the app's value to the merchant
+    ("new customers brought by Fidelia", docs/business/CONCEPT.md § 12).
+
+    Deliberately holds no customer: no phone, no account. It is the merchant's
+    own declaration about their counter, so it needs no consent and leaves
+    nothing to erase when a customer deletes their account.
+    """
+
+    __tablename__ = "deal_uses"
+    __table_args__ = (Index("ix_deal_uses_venue_created_at", "venue_id", "created_at"),)
+    id = Column(Integer, primary_key=True, index=True)
+    deal_id = Column(Integer, ForeignKey("deals.id"), nullable=False, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    # Declared by the merchant: first visit to this shop, or a known face.
+    new_customer = Column(Boolean, nullable=False)
+    # The merchant app's key for this tap, so a retry after a dropped
+    # connection records one use, not two. Namespaced by venue in the index.
+    idempotency_key = Column(String(160), nullable=False, unique=True, index=True)
+    recorded_by = Column(String(128), nullable=False)
+    created_at = Column(DateTime, nullable=False)
+
+    deal = relationship("Deal")
 
 
 class PharmacyDuty(Base):

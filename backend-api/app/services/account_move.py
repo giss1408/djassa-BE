@@ -41,6 +41,7 @@ OWNED = [
 AUDIT = [
     (models.ExportAudit, "exported_by"),
     (models.DealPlacement, "created_by"),
+    (models.DealUse, "recorded_by"),
     (models.WaveAccount, "connected_by"),
     (models.BillingEvent, "recorded_by"),
     (models.SaleEvent, "recorded_by"),

@@ -57,6 +57,15 @@ services:
       - key: MOBILE_MONEY_PROVIDER
         value: wave
 
+      # --- Offer alerts (app/services/push.py) -----------------------------
+      - key: PUSH_PROVIDER
+        value: fcm
+      - key: FCM_PROJECT_ID
+        sync: false
+      # The Firebase service account key file's content (JSON), one line.
+      - key: FCM_SERVICE_ACCOUNT_JSON
+        sync: false
+
       # --- Sign-in codes ---------------------------------------------------
       - key: OTP_SENDER
         value: africastalking

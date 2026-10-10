@@ -58,6 +58,40 @@ class DealOut(BaseModel):
     ends_at: datetime
     is_featured: bool
     is_sample: bool
+    # The push alert for this deal (app/services/push.py): sent,
+    # skipped_recent, skipped_future, skipped_sample, failed; null until tried.
+    alert_status: str | None = None
+
+
+class DealUseIn(BaseModel):
+    """The merchant says a customer came with this deal."""
+
+    # Generated on the phone for this tap; a retry sends the same one.
+    idempotency_key: str = Field(min_length=8, max_length=120, pattern=r"^[A-Za-z0-9_-]+$")
+    new_customer: bool
+
+
+class DealUseOut(BaseModel):
+    id: int
+    deal_id: int
+    new_customer: bool
+    created_at: datetime
+
+
+class DealUseCount(BaseModel):
+    deal_id: int
+    title: str
+    uses: int
+    new_customers: int
+
+
+class DealUsesSummaryOut(BaseModel):
+    """What the app's offers brought to the counter, over the last `days`."""
+
+    days: int
+    uses: int
+    new_customers: int
+    by_deal: list[DealUseCount]
 
 
 class DealIn(BaseModel):
