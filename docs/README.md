@@ -14,6 +14,7 @@
 | [Partners](business/PARTNERS.md) | Institution directory, contact order, acquisition channels, meeting kit, guardrails. |
 | Investor brief ([EN](business/INVESTOR-BRIEF.md) · [FR](business/INVESTOR-BRIEF.fr.md)) | The summary for investors: opportunity, product, traction, market, model, competition, three-year forecast, team, the ask (a XOF 31M pilot round in two tranches), return and risks. *Company details and team track records still to fill before sending.* |
 | Investor readiness ([EN](business/INVESTOR-READINESS.md) · [FR](business/INVESTOR-READINESS.fr.md)) | Internal: what investors and a crowdfunding campaign will look for and not find yet, the rewritten story, market sizing, the forecast's assumptions, competitors and next steps. |
+| [Fin'ELLE pilot proposal](business/PROPOSITION-PILOTE-FINELLE.fr.md) (FR) | Draft proposal to Fin'ELLE: a free six-month pilot where 10–20 of its merchant clients use Fidelia and, with their consent, share a signed sales statement; safeguards, timeline, success measures. *Placeholders to fill and an internal note to remove before sending.* |
 | Letters of interest ([EN](business/LETTERS-OF-INTEREST.md) · [FR](business/LETTERS-OF-INTEREST.fr.md)) | Non-binding templates for a pilot merchant and an MFI to sign. The French version is the one to sign. |
 
 ## Planning: reviews and action plans
