@@ -2,7 +2,7 @@
 
 A phase is complete when **real users have validated it**, not when the code ships. Each phase has an exit gate, and no phase starts before the previous one is validated. Phase numbering matches the public site (`fidelia-Web`).
 
-*Last updated: 30 September 2026.*
+*Last updated: 10 October 2026.*
 
 ## Where we stand
 
@@ -12,6 +12,8 @@ A phase is complete when **real users have validated it**, not when the code shi
 |---|---|---|
 | Merchant app: offline sale recording and batched sync | **Built, verified on a real device** | Galaxy A51 against the live backend; a dropped response after commit does not create a duplicate |
 | Merchant app: deals ("bons plans") | Prototype | Create and list deals |
+| **Phone sign-in (code by SMS)** | Prototype *(integration)* | Merchants, cashiers (each with their own number) and customers; refresh tokens; codes expire after 5 minutes, sends capped per number. SMS go through a provider in production (`OTP_SENDER`), to the console in test |
+| **Automatic Wave capture** | Prototype *(integration)* | The merchant connects their own Wave Business webhook (`merchant.payment_received`); each payment to their usual QR becomes a confirmed sale and earns the payer's points with consent. Not yet tried with a real merchant; Wave's agreement for small merchants is unconfirmed |
 | Customer app: venues, search by dish or commune | Prototype | Demo data |
 | Customer app: on-duty pharmacies | Prototype | Weekly rotation entered by an admin from the official list; no official API exists |
 | Customer app: QR payment, receipt, points, rewards | Prototype, **sandbox only** | No live payment provider; money would flow wallet to merchant wallet |
@@ -27,17 +29,17 @@ A phase is complete when **real users have validated it**, not when the code shi
 | Consent records, verification tiers (request only) | Foundation only | Tier 1 and 2 cannot be self-approved; they need a licensed KYC adapter |
 | Payment state machine, signed and idempotent webhooks, refunds, disputes | Prototype | Reconciliation incomplete |
 | Monitoring, CI/CD with SBOM and image scanning | Built | |
-| Public site (FR/EN) | Built | |
+| Public site (FR/EN) | Built | Aligned with the pilot boundaries on 10 October 2026; the investor brief is served behind a password by the API |
 
 **Known gaps blocking the pilot:**
 
-1. **Authentication is a hardcoded demo user.** No registration, no phone/OTP Tier 0 login, no refresh token.
+1. ~~Authentication is a hardcoded demo user.~~ **Built on `integration`:** phone/OTP Tier 0 login with refresh tokens. Remaining: a live SMS provider for production, and the session revocation strategy in `Architecture/SECURITY.md`.
 2. ~~Two data models are not yet linked.~~ **In progress on `integration`:** recorded sales and customer payments now write one `SaleEvent` stream, and the merchant app posts to it. Remaining: automatic Wave capture as a third source (gap 7), and resolving the quarantined legacy sales.
 3. No outlet registration or onboarding flow (on `integration` the merchant is derived from the login, but accounts are still created by hand); points earned by phone at the counter are not yet visible in the customer app, because a Tier 0 profile declares a number without proving it (needs OTP login, gap 1).
 4. No live payment provider (sandbox adapter only); no reconciliation with settlement reports.
 5. No per-resource authorisation model; no production secrets or backups; no independent security review.
 6. Dioula and other local-language support not started; no gzip on the API.
-7. **No automatic capture of wallet payments.** Merchants' existing wallet QR payments (Wave first) do not yet flow into Fidelia. This is the zero-habit entry point the concept now prioritises (see [CONCEPT.md § 3](CONCEPT.md#3-the-idea-one-habit-five-uses)).
+7. **Automatic capture of wallet payments not yet proven.** Wave capture is built (the merchant connects their own Wave Business webhook) but has not run with a real merchant, and Wave's agreement for small merchants is unconfirmed. This is the zero-habit entry point the concept prioritises (see [CONCEPT.md § 3](CONCEPT.md#3-the-idea-one-habit-five-uses)); other operators are not started.
 
 ## Phase 0 — Discovery and compliance · *in progress*
 
