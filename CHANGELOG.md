@@ -24,6 +24,9 @@ until 6 October 2026, then **Hossouko**, and is **Fidelia** since 9 October.
   Letter PDFs are rebuilt with `scripts/build-letters.sh`.
 - **Pilot boundaries** in the business docs: maquis and grocery shops, the
   customer app with a focused scope, everything free during the pilot.
+- **Funders for Fidelia** in `docs/business/PARTNERS.md`: grants and public
+  programmes, pre-seed investors, accelerators and later-phase funders, with
+  their status as checked on 10 October 2026.
 
 ## 2026-10-09
 
