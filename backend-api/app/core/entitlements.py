@@ -34,6 +34,12 @@ class Feature(str, Enum):
 
 _PLANS: dict[str, frozenset[Feature]] = {
     "starter": frozenset(),
+    # The free pilot (docs/business/CONCEPT.md § 12): everything a pilot
+    # merchant needs is free, including the signed statement a partner MFI
+    # reads (docs/business/PROPOSITION-PILOTE-FINELLE.fr.md). Never billed:
+    # the admin endpoint refuses an amount on this plan. Paid SMS/WhatsApp
+    # campaigns stay out, as the pilot does not use them.
+    "pilot": frozenset({Feature.LONG_STATS, Feature.REVENUE_STATEMENT}),
     "growth": frozenset({Feature.LONG_STATS, Feature.CAMPAIGNS}),
     "network": frozenset(
         {Feature.LONG_STATS, Feature.CAMPAIGNS, Feature.MULTI_OUTLET, Feature.REVENUE_STATEMENT}
@@ -41,6 +47,7 @@ _PLANS: dict[str, frozenset[Feature]] = {
 }
 
 DEFAULT_PLAN = "starter"
+PILOT_PLAN = "pilot"
 PLAN_NAMES = tuple(_PLANS)
 
 

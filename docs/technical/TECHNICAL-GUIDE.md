@@ -120,6 +120,8 @@ signs in by phone, grant the first admin role directly in the database
 
 One phone number runs one shop (409 otherwise), because Fidelia Pro finds "my shop" from the token. After sign-in the merchant sets the shop position from their phone, and connects Wave (points only by default). See [DEPLOY-TEST.md § 6](DEPLOY-TEST.md).
 
+**Pilot merchants** go on the free `pilot` plan (`app/core/entitlements.py`): it includes long history and the signed revenue statement a partner MFI reads, and never anything paid. An admin sets it with `PUT /api/admin/venues/{id}/subscription {"plan": "pilot", "amount": 0, "status": "trialing"}`; any other amount is refused (422), so a pilot merchant is never invoiced and never counted in MRR. At the end of the pilot, the same call moves the merchant to a paid plan.
+
 ## Shop photos and videos
 
 `app/api/media.py`. Each shop has up to **10 photos and 3 videos of 60 s**. Merchants add them in Fidelia Pro (*Photos et vidéos*) and admins in fidelia-installer; customers see them on the shop page (`media` in `GET /api/venues/{id}`).

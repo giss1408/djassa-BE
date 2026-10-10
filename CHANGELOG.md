@@ -24,6 +24,10 @@ until 6 October 2026, then **Hossouko**, and is **Fidelia** since 9 October.
   Letter PDFs are rebuilt with `scripts/build-letters.sh`.
 - **Pilot boundaries** in the business docs: maquis and grocery shops, the
   customer app with a focused scope, everything free during the pilot.
+- **Free `pilot` plan**: includes the signed revenue statement and long
+  history, so pilot merchants can share a statement with a partner MFI.
+  Set by an admin with amount 0; any price is refused (422), so it is never
+  invoiced or counted in MRR.
 - **Fin'ELLE pilot proposal** (`docs/business/PROPOSITION-PILOTE-FINELLE.fr.md`,
   French): MFI as a partner and acquisition channel before a payer.
 - **Investor readiness** (`docs/business/INVESTOR-READINESS.md`, French in

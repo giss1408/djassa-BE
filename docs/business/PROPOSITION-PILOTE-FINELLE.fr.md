@@ -2,7 +2,7 @@
 
 *Projet de proposition · octobre 2026 · confidentiel* · Les éléments entre crochets `[…]` sont à compléter avant l'envoi.
 
-> **Note interne (à retirer avant l'envoi).** Seuls des faits confirmés figurent ici : Fin'ELLE est une institution de microfinance dédiée aux femmes entrepreneures, partenaire prioritaire de Fidelia ([PARTNERS.md](PARTNERS.md)). Aucun chiffre sur Fin'ELLE (clientes, agences, encours) n'est avancé : à demander lors du premier rendez-vous. Avant le pilote, deux points techniques sont à régler : le relevé de revenus signé est aujourd'hui réservé aux formules payantes (`app/api/statements.py`) et doit être ouvert aux commerçantes du pilote ; le suivi par genre suppose le champ facultatif prévu dans [KPI.md](KPI.md), pas encore construit.
+> **Note interne (à retirer avant l'envoi).** Seuls des faits confirmés figurent ici : Fin'ELLE est une institution de microfinance dédiée aux femmes entrepreneures, partenaire prioritaire de Fidelia ([PARTNERS.md](PARTNERS.md)). Aucun chiffre sur Fin'ELLE (clientes, agences, encours) n'est avancé : à demander lors du premier rendez-vous. Le relevé de revenus signé est disponible pour les commerçantes du pilote : les placer sur la formule gratuite `pilot` ([TECHNICAL-GUIDE.md § Merchant onboarding](../technical/TECHNICAL-GUIDE.md#merchant-onboarding)). Reste à régler avant le pilote : le suivi par genre suppose le champ facultatif prévu dans [KPI.md](KPI.md), pas encore construit.
 
 **À l'attention de :** [Nom, fonction], Fin'ELLE · [adresse]
 **De :** Bienvenue Kouadio, Fidelia · contact.fidelia@regisse.com

@@ -527,7 +527,7 @@ class MerchantSubscription(Base):
     __table_args__ = (Index("ix_merchant_subscriptions_venue_status", "venue_id", "status"),)
     id = Column(Integer, primary_key=True, index=True)
     venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
-    plan = Column(String(16), nullable=False, default="starter")  # starter | growth | network
+    plan = Column(String(16), nullable=False, default="starter")  # starter | pilot | growth | network
     # trialing -> active <-> past_due -> cancelled. A venue with no row at all is
     # treated as starter: the pilot signs merchants up before it bills them.
     status = Column(String(16), nullable=False, default="trialing", index=True)

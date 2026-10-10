@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from .. import models
-from ..core.entitlements import PAYING_STATUSES, PLAN_NAMES, effective_plan, max_stats_days
+from ..core.entitlements import PAYING_STATUSES, PILOT_PLAN, PLAN_NAMES, effective_plan, max_stats_days
 from ..core.security import require_role
 from ..db import get_db
 from ..schemas.billing import (
@@ -118,6 +118,10 @@ async def set_subscription(
         raise HTTPException(status_code=422, detail=f"plan must be one of {PLAN_NAMES}")
     if payload.status is not None and payload.status not in _STATUSES:
         raise HTTPException(status_code=422, detail=f"status must be one of {_STATUSES}")
+    if payload.plan == PILOT_PLAN and payload.amount != 0:
+        # The pilot is free for every merchant; a price here would raise an
+        # invoice and, once active, count as revenue the pilot never earned.
+        raise HTTPException(status_code=422, detail="Le pilote est gratuit : le montant doit etre 0")
 
     venue = await _venue_by_id(db, venue_id)
     now = utcnow()

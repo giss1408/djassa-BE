@@ -50,7 +50,7 @@ async def _demo_venue_id() -> int:
 
 
 async def _on_network_plan(venue_id: int, ac, admin):
-    """The statement is a paid feature; only `network` includes it."""
+    """The statement is a paid feature: `network` includes it (and the free `pilot`)."""
     r = await ac.put(
         f"/api/admin/venues/{venue_id}/subscription",
         json={"plan": "network", "amount": 25000, "status": "active"},
@@ -350,3 +350,54 @@ async def test_the_bound_is_not_hit_by_a_realistic_pilot_venue(client):
             db, venue.id, datetime(2026, 1, 1), datetime(2026, 12, 31), limit=0
         )
     assert events == [], "an empty stream is not a limit breach"
+
+
+async def _on_pilot_plan(venue_id: int, ac, admin):
+    r = await ac.put(
+        f"/api/admin/venues/{venue_id}/subscription",
+        json={"plan": "pilot", "amount": 0, "status": "trialing"},
+        headers=admin,
+    )
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+@pytest.mark.asyncio
+async def test_a_pilot_merchant_can_issue_a_statement_for_free(client):
+    """The Fin'ELLE pilot: the merchant shares the signed statement with the MFI."""
+    admin = await _auth(client, "admin", "admin123")
+    merchant = await _auth(client, "demo", "demo123")
+    sub = await _on_pilot_plan(await _demo_venue_id(), client, admin)
+    assert sub["plan"] == "pilot" and "revenue_statement" in sub["features"]
+
+    r = await client.get("/api/merchant/statement", params=PERIOD, headers=merchant)
+    assert r.status_code == 200, r.text
+    statement = r.json()
+    verified = await client.post(
+        "/api/statements/verify",
+        json={"payload": statement["payload"], "signature": statement["signature"]["value"]},
+        headers=merchant,
+    )
+    assert verified.status_code == 200 and verified.json()["valid"] is True
+
+
+@pytest.mark.asyncio
+async def test_the_pilot_plan_is_never_billed(client):
+    """A price on the pilot would raise an invoice and count as revenue."""
+    admin = await _auth(client, "admin", "admin123")
+    venue_id = await _demo_venue_id()
+    priced = await client.put(
+        f"/api/admin/venues/{venue_id}/subscription",
+        json={"plan": "pilot", "amount": 5000, "status": "active"},
+        headers=admin,
+    )
+    assert priced.status_code == 422
+
+    await _on_pilot_plan(venue_id, client, admin)
+    async with AsyncSessionLocal() as db:
+        invoices = (
+            await db.execute(select(models.BillingEvent).where(models.BillingEvent.kind == "invoice_due"))
+        ).scalars().all()
+    assert invoices == []
+    revenue = (await client.get("/api/admin/revenue", headers=admin)).json()
+    assert revenue["mrr"] == 0

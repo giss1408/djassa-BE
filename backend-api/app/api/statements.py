@@ -10,7 +10,8 @@ that the CSV dump did not (docs/optimization_claude_fidelia.md, optimization C):
 
 Gated to a paid plan, because the reporting a merchant shows a lender is exactly
 the kind of value a plan may charge for -- unlike recording a sale, which is never
-gated (app/core/entitlements.py).
+gated (app/core/entitlements.py). The free `pilot` plan includes it too: a
+pilot merchant shares it with a partner MFI (docs/business/PROPOSITION-PILOTE-FINELLE.fr.md).
 """
 
 from datetime import datetime, timedelta
@@ -84,7 +85,7 @@ async def issue_statement(
         raise HTTPException(
             status_code=402,
             detail=(
-                "L'attestation de revenus est incluse dans la formule Reseau. "
+                "L'attestation de revenus est incluse dans la formule Reseau et dans le pilote. "
                 "Vos donnees restent exportables en CSV sur votre formule actuelle."
             ),
         )
