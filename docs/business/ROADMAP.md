@@ -42,7 +42,9 @@ A phase is complete when **real users have validated it**, not when the code shi
 
 **Goal:** confirm that the problem, users, partners and legal perimeter are real.
 
-- 5 to 10 merchant interviews in one Abidjan corridor; one segment (pharmacies and maquis are the current candidates, matching the customer app) and one acquisition channel.
+- 5 to 10 merchant interviews in one Abidjan commune; **maquis and grocery shops** (pharmacies are out of the pilot, see [CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries)) and one acquisition channel. Test the daily cash book as the first reason to sign up.
+- **MFI test:** ask one or two MFIs (Fin'ELLE, Advans) whether they would pay for a consented tool to follow the sales of merchants they already lend to, and ask merchants whether they would accept it.
+- **Plan B if Wave refuses:** confirm that merchants would still record cash sales; apply the stop-or-change rule in [CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries).
 - A narrow pilot agreement.
 - **Operator capabilities**: whether Orange Money and MTN MoMo can notify payments to a merchant's static QR (not only payments Fidelia starts), their merchant rates, and activation times.
 - **PI-SPI status in Côte d'Ivoire** (the BCEAO's instant-payment interoperability platform, see [MARKET.md](MARKET.md#what-pi-spi-is)): how far interoperable merchant QR has rolled out, and which licensed payment institution could connect Fidelia to it.
@@ -67,9 +69,8 @@ A phase is complete when **real users have validated it**, not when the code shi
 - **Automatic capture of the merchant's existing Wave payments** (signed webhook → event → points for the paying phone number). This is the priority entry point.
 - **One merchant identity and one event stream** covering captured wallet payments, recorded cash sales and Fidelia-route payments.
 - Loyalty rules, points and rewards for all entry points. New customers start with progress already made, and the first reward is reachable in 3–5 visits.
-- Customer points confirmed by app push, or by a batched SMS or WhatsApp summary (never one paid message per visit).
-- Customer app: discovery, on-duty pharmacies, deals, points; QR payment through a licensed aggregator as a fallback.
-- Merchant reporting: daily total and a **weekly "customers who came back" report**, plus consent-controlled export.
+- Customer points confirmed by a batched SMS or WhatsApp summary (never one paid message per visit). **The customer app is frozen for the pilot** ([CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries)): customers identify by phone number at the counter.
+- Merchant reporting: **daily cash book** (one total across every wallet and cash, the day-1 hook), a **weekly "customers who came back" report**, and a signed, consented revenue statement for MFI demos.
 - Free-tier cap and paid plans enforced; payment of the subscription in mobile money.
 - Offline queue and sync (built).
 - Per-resource authorisation and ownership checks; production secrets.
@@ -85,7 +86,7 @@ A phase is complete when **real users have validated it**, not when the code shi
 
 **Goal:** make the merchant product repeatable in the first corridor before adding financial complexity.
 
-- Deals, featured placement (paid), campaigns and customer reactivation by SMS/WhatsApp.
+- **Customer app returns** once one area has enough active merchants for discovery to be useful; deals, featured placement (paid), campaigns and customer reactivation by SMS/WhatsApp.
 - Association and merchant-referral onboarding; multi-outlet accounts.
 - A second operator adapter for merchants mainly on other networks: MTN MoMo request-to-pay or the Orange Money merchant API, at the operator's own rate rather than an aggregator's.
 - PI-SPI interoperable QR through a licensed partner, if it is live for merchants in Côte d'Ivoire: one QR for every wallet and bank, and the end of per-operator work.

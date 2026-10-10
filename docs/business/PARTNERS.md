@@ -130,9 +130,9 @@ These funders rarely give money to a startup directly. Approach them with a lice
 
 Trusted channels cost less than consumer advertising. Test in this order:
 
-1. Merchant associations and cooperatives (including pharmacy groups).
+1. Merchant associations and cooperatives (maquis and grocery owners for the pilot).
 2. Payment aggregators and mobile-money merchant networks.
-3. Distributors serving pharmacies, groceries, salons and restaurants.
+3. Distributors serving grocery shops and maquis (drinks, food staples).
 4. MFIs already serving the target merchants.
 5. Telecom or messaging partnerships once the workflow is proven.
 
@@ -143,7 +143,7 @@ Per channel, measure merchants activated, merchants active after 30/90 days, sup
 Bring to every meeting:
 
 - The problem in one paragraph, and the audience pitch ([CONCEPT.md § 9](CONCEPT.md#9-explaining-fidelia-to-each-audience)).
-- Target users and geography: one Abidjan corridor, one segment, pilot volume.
+- Target users and geography: maquis and grocery shops in one Abidjan commune, pilot volume ([CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries)).
 - What is **actually** built ([ROADMAP.md § Where we stand](ROADMAP.md#where-we-stand)) and a working demo of both apps.
 - A simple data-flow and funds-flow diagram showing money going from wallet to merchant wallet, never through Fidelia.
 - The proposed role of the partner, the revenue model and fee transparency.

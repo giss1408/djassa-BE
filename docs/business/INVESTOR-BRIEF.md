@@ -13,18 +13,19 @@
 ## The problem
 
 - Côte d'Ivoire has **25M+ active mobile-money accounts** but a **31.2% strict banking rate** (BCEAO; national indicators 2023). Payment access is largely solved; **proof of business activity is not**.
-- A maquis, pharmacy or grocery has frequent customers but **no usable sales history**, so no working-capital or stock credit. SMEs are ~20% of GDP and face collateral they cannot provide.
+- A maquis or grocery shop has frequent customers but **no usable sales history**, so no working-capital or stock credit. SMEs are ~20% of GDP and face collateral they cannot provide.
 - Customer loyalty lives on paper cards and memory. Nothing brings a regular back on purpose.
 
 ## The product
 
 One habit, recording the sale, produces five uses: loyalty, revenue history, tontine regularity, a reliability indicator and a financing case for a licensed partner.
 
+- **One daily cash book from day 1.** Every wallet payment and every cash sale in one daily total, so the merchant no longer reconciles Wave, Orange and MTN by hand. This is what the merchant sees in the first week; loyalty is why they stay.
 - **Zero extra effort on mobile money.** Fidelia builds on the wallet the merchant already uses. The merchant's existing QR payments are captured automatically, Wave first, then other operators and the interoperable QR of **PI-SPI**, the central bank's platform that links every bank and mobile wallet in the UEMOA zone ([details](MARKET.md#what-pi-spi-is)). **No extra fee, no new habit.**
 - **Cash sales count too.** They take one tap in the merchant app, even offline. With the customer's phone number, the customer earns points.
 - **Loyalty the merchant can see.** Points, rewards handed over at the counter, deals, and a weekly "customers who came back" figure.
 - **Proof for credit, with consent.** Each sale is labelled *confirmed by the provider* or *declared by the merchant*, and exported only with consent to a licensed MFI or guarantee scheme.
-- **Four pieces:** a merchant app (offline-first, cheap Android), a customer app (maquis, on-duty pharmacies, deals, payment, points), the platform, and a public site.
+- **The pilot product:** a merchant app (offline-first, cheap Android) and the platform. Customers are recognised by phone number at the counter and receive their points by WhatsApp or SMS. The customer app exists as a prototype and returns once one area has enough merchants.
 
 **Fidelia never holds funds and never lends.** Licensed institutions keep custody and credit. Fidelia is the technology and distribution partner.
 
@@ -42,7 +43,7 @@ Merchant software first, financial infrastructure second.
 | Stream | When |
 |---|---|
 | Merchant subscription: capped free plan, then ~5,000 F and ~10,000–15,000 F / month / outlet *(hypotheses to test)* | Pilot |
-| Sponsored deals and campaigns: one-off, time-limited placement for a merchant product, service or special offer in the customer app; pilot booking is admin-assisted and pricing is to be tested | Pilot |
+| Sponsored deals and campaigns: one-off, time-limited placement for a merchant product, service or special offer in the customer app; pricing is to be tested | After the pilot, when the customer app returns |
 | Multi-outlet and network contracts | After proof |
 | Consented partner commissions (credit, savings, tontine): Fidelia earns distribution fees, never carries credit risk | After partnership |
 
@@ -57,7 +58,7 @@ Fidelia avoids consumer personal finance (Djamo) and B2B payments (Julaya, Hub2)
 **Pre-pilot. No users, merchants or revenue yet.** What exists is working prototypes (on the `integration` branch):
 
 - A merchant app recording sales offline, tested on a real device, with no duplicates after a dropped connection.
-- A customer app for discovery, on-duty pharmacies, deals, sandbox QR payment and points.
+- A customer app for discovery, deals, sandbox QR payment and points, frozen during the pilot.
 - **Points on cash sales by phone**, with balance and rewards handed over at the counter.
 - **One sale history** labelled by evidence, sold featured slots, a billing ledger, and an audited consented export.
 - A public site built for low bandwidth (~120 KB on first visit, works offline).
@@ -66,7 +67,7 @@ Fidelia avoids consumer personal finance (Djamo) and B2B payments (Julaya, Hub2)
 
 | Gate | Evidence required |
 |---|---|
-| **Phase 0: discovery and compliance** | 5–10 merchant interviews in one Abidjan corridor; Wave API access confirmed; regulatory perimeter and ARTCI review; one payment partner |
+| **Phase 0: discovery and compliance** | 5–10 interviews with maquis and grocery owners in one Abidjan commune; Wave API access confirmed; regulatory perimeter and ARTCI review; one payment partner; one or two MFIs asked whether they would pay for a consented tool to follow their merchant borrowers' sales |
 | **Phase 1: pilot, 5–10 merchants** | Phone login (OTP), automatic Wave capture, one live payment partner. **Exit:** merchants record most real sales for 60+ days and pay or renew |
 | **Unit-economics gate** | Acquisition cost below 12 months of gross profit; 3 months of retention; known support and messaging cost per outlet |
 

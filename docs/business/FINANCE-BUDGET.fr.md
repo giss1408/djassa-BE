@@ -24,7 +24,7 @@ Les XOF 30,82 M (environ €46 985) financent les six premiers mois, y compris l
 ## Périmètre et hypothèses
 
 - Phase 0 : découverte et conformité ; puis phase 1 : MVP marchand et pilote uniquement, sans expansion au-delà d'un corridor.
-- Cinq à dix pharmacies, maquis ou commerces comparables à achats fréquents ; seuls les appareils de test de l'entreprise sont inclus, pas l'équipement des commerçants.
+- Cinq à dix maquis et épiceries (les pharmacies sont hors du pilote, voir [CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries)) ; seuls les appareils de test de l'entreprise sont inclus, pas l'équipement des commerçants.
 - Le parc de test comprend deux téléphones Android, deux iPhone, deux tablettes Android, deux iPad et deux ordinateurs portables de milieu de gamme ou reconditionnés. Les prix sont des provisions et non des devis ; réduire le budget si des appareils adaptés sont déjà disponibles.
 - La préparation à la production comprend la connexion de niveau 0 par téléphone/OTP, les contrôles d'accès, les secrets et sauvegardes de production, une intégration avec un partenaire de paiement en production et la capture Wave si l'accès est approuvé.
 - Fidelia ne détient pas de fonds, n'accorde pas de prêts, ne souscrit pas de crédit et ne finance pas les récompenses des commerçants. Les paiements des clients continuent d'arriver sur le portefeuille existant du commerçant ; le recours à un agrégateur n'est pas l'hypothèse par défaut.

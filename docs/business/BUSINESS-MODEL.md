@@ -12,8 +12,8 @@ The go-to-market unit is not a country but a **merchant cluster**: one dense cor
 
 | Party | Who | What they get | What they give |
 |---|---|---|---|
-| **Merchants** (paying customer) | Repeat-purchase outlets: pharmacies, maquis and restaurants, neighbourhood groceries, salons, service shops | Loyalty and deals without building software; daily totals and repeat-customer visibility; a revenue history they own; optional access to partner finance; paid visibility for a product, service or special offer | Monthly subscription; one-off sponsored placement; optional campaigns |
-| **Customers** (free) | Residents of the pilot corridor | A daily-use app (food, on-duty pharmacies, deals, payment); points and rewards; a view of their own activity; access to tontines and savings through partners later | Usage, and payment-confirmed events that strengthen merchant histories |
+| **Merchants** (paying customer) | Repeat-purchase outlets. **Pilot: maquis and neighbourhood grocery shops only** ([CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries)); restaurants, salons and service shops later | A daily cash book across every wallet and cash (the day-1 benefit); loyalty and deals without building software; repeat-customer visibility; a revenue history they own; optional access to partner finance; paid visibility for a product, service or special offer | Monthly subscription; one-off sponsored placement; optional campaigns |
+| **Customers** (free) | Residents of the pilot commune | During the pilot: points and rewards, recognised by phone number, with a batched WhatsApp or SMS summary. Later: a daily-use app (food, deals, payment); a view of their own activity; access to tontines and savings through partners later | Usage, and payment-confirmed events that strengthen merchant histories |
 | **Financial partners** | MFIs, banks, guarantee schemes | Distribution into small merchants and communities; consented, structured histories; lower onboarding friction | Referral and distribution commissions |
 | **Payment partners** | Aggregators, mobile-money operators | Repeat merchant QR-payment volume on their rails | Integration, settlement; possibly revenue share where licensing permits |
 | **Institutions** | APIF, guarantee programmes, funders | A private execution channel for inclusion goals, with measurable, gender-disaggregated outcomes | Introductions, programme access, co-funded pilots |
@@ -25,8 +25,9 @@ Avoid starting with businesses whose purchase frequency is too low to prove rete
 | # | Stream | Detail | When |
 |---|---|---|---|
 | 01 | **Merchant subscription** | Monthly per outlet, tiered by activity, paid in mobile money. Primary MVP revenue. | MVP |
-| 02 | **Sponsored deals and campaigns** | Basic deals remain free. A merchant can buy a one-off, fixed-price, time-limited placement to promote a product, dish, service or special price in the customer app, shown to people browsing the relevant commune/category. Placements are visibly labelled sponsored, capped per commune/category, and admin-assisted during the pilot. The fee buys placement, not guaranteed sales; price and demand must be tested. SMS/WhatsApp campaigns are optional and their messaging costs are passed through transparently. | MVP |
-| 03 | **Multi-outlet and network contracts** | Merchant networks, pharmacy groups, associations; priced separately from single outlets. | After proof |
+| 01b | **MFI tool** *(to test)* | A licensed MFI pays for a consented tool to follow the sales of merchants it already lends to; its loan officers bring Fidelia to those merchants. Asked in Phase 0 interviews, not built. If MFIs and merchants both say yes, it can become the first B2B revenue and the main acquisition channel. | Phase 0 test |
+| 02 | **Sponsored deals and campaigns** | Basic deals remain free. A merchant can buy a one-off, fixed-price, time-limited placement to promote a product, dish, service or special price in the customer app, shown to people browsing the relevant commune/category. Placements are visibly labelled sponsored, capped per commune/category, and admin-assisted. The fee buys placement, not guaranteed sales; price and demand must be tested. SMS/WhatsApp campaigns are optional and their messaging costs are passed through transparently. | After the pilot (needs the customer app, frozen until then) |
+| 03 | **Multi-outlet and network contracts** | Merchant networks, grocery chains, associations; priced separately from single outlets. | After proof |
 | 04 | **Payment orchestration** *(minor)* | An aggregator revenue share on payments made through the Fidelia route only, where the licensed provider permits it. **Never priced above what the merchant pays on their existing wallet today (~1% on Wave).** This is not a core stream, because Fidelia builds on the merchant's existing wallet (see [CONCEPT.md § 3](CONCEPT.md#3-the-idea-one-habit-five-uses)). | After proof |
 | 05 | **Consented partner commissions** | Paid by a licensed partner for a qualified, consented referral: credit (working capital, stock, revenue advance), savings accounts opened and funded, tontine processing fees. Fidelia never touches the funds, only the distribution commission. Moniepoint (36% transaction lift after loans) and Kopo Kopo (42%) show this is where merchant platforms create the most value, as long as responsible-lending safeguards are in place (see below). | After partnership |
 | 06 | **Institutional services** | Reporting, reconciliation and aggregated, anonymised, consented insight for institutions. Never casual sale of personal data. | After partnership |
@@ -38,8 +39,8 @@ These are options to test after the core merchant pilot; none is committed reven
 | Option | Who pays and what they buy | Timing and conditions |
 |---|---|---|
 | **Done-for-you offer creation** | A merchant pays a one-off service fee for Fidelia to prepare the photo, copy, local-language version, and schedule for a sponsored offer. Ordinary deal publishing remains free. | Can be tested manually during the pilot. Price from actual staff time and merchant willingness to pay; do not add a fee that costs more than the promotion itself without clear value. |
-| **Brand- or distributor-funded local campaigns** | A consumer-goods brand or distributor pays a flat campaign fee to promote a product or funded offer at participating merchants. The merchant approves the offer; any discount/reward funding is explicit. | After a corridor has enough active merchants and customer attention to offer reliable placement. Label advertising clearly; share no customer-level data and do not let sponsors influence pharmacy-duty or safety information. |
-| **Association or chain setup contracts** | A merchant association, pharmacy group, or small chain pays a one-time setup/training fee plus an agreed per-outlet service fee for onboarding, configuration, and group reporting. | After one corridor proves onboarding and support costs. Keep terms transparent and do not imply access to credit is included. |
+| **Brand- or distributor-funded local campaigns** | A consumer-goods brand or distributor pays a flat campaign fee to promote a product or funded offer at participating merchants. The merchant approves the offer; any discount/reward funding is explicit. | After a corridor has enough active merchants and customer attention to offer reliable placement. Label advertising clearly; share no customer-level data and do not let sponsors influence safety information. |
+| **Association or chain setup contracts** | A merchant association or small chain pays a one-time setup/training fee plus an agreed per-outlet service fee for onboarding, configuration, and group reporting. | After one corridor proves onboarding and support costs. Keep terms transparent and do not imply access to credit is included. |
 | **Opt-in supplier introductions** | A distributor or business-service provider pays a disclosed fee for a merchant-requested introduction or qualified inquiry (for example, a wholesaler quote request). Fidelia does not take orders or handle the purchase payment. | Later, after merchants trust the service and a written partner agreement exists. The merchant chooses whether to share contact details; no sales history is passed to suppliers. |
 | **Layaway ("payer en plusieurs fois")** | Nobody pays Fidelia directly at first: the merchant gets cash up front and a sale they are sure of, the customer gets a disciplined way to buy an expensive good. It can later be a Growth-plan feature. See [Layaway test](#layaway-test). | Pilot test after the Phase 1 gate, with 2–3 merchants whose goods suit it (electronics, appliances, furniture, school supplies). Switched on per shop by an admin. |
 
@@ -57,7 +58,7 @@ Guardrails, enforced by the API (`app/api/layaway.py`):
 - The merchant reads the terms to the customer and ticks their agreement before anything is recorded; the plan stores the terms version.
 - The money goes to the merchant, in cash or to their own wallet, **never through Fidelia**. No interest, no fee, no penalty.
 - The good becomes one sale, for its full price, only on handover. A cancelled plan leaves no sale behind, and records what the merchant says they refunded.
-- The customer sees the plan and each installment in the customer app.
+- The customer sees the plan and each installment in the customer app (once it returns after the pilot).
 
 Risk to watch: the customer carries the risk of the merchant failing to deliver, and Fidelia's name is on the record. Choose pilot merchants carefully, review disputes weekly, and get legal advice on Loi 2016-412 (consumer law: down payments and earnest money) before going beyond the pilot. The safer long-term form is the same feature with the money held by a licensed partner, i.e. the goal-based savings of Phase 5.
 
@@ -73,23 +74,25 @@ Customers pay nothing for basic use. Who bears the aggregator fee on a Fidelia-r
 
 The subscription must be small compared with what loyalty brings in. It also has to cover Fidelia's own biggest variable cost, which is customer notifications. The figures below are **illustrative assumptions to test in the pilot**, built from the averages in [MARKET.md § 9](MARKET.md#9-evidence-for-the-fidelia-model).
 
-| | Small maquis | Neighbourhood pharmacy |
+| | Small maquis | Neighbourhood grocery shop |
 |---|---|---|
-| Tickets per day × average basket | 40 × 4,000 F | 60 × 8,000 F |
-| Monthly takings (26 days) | ~4.2M F | ~12.5M F |
-| Of which via mobile money (maquis ~60%, pharmacy ~55%) | ~2.5M F | ~6.9M F |
-| Loyalty target: extra takings from repeat visits | +5% → ~210,000 F | +3% → ~375,000 F |
-| Extra gross profit (assumed margin 35% / 22%) | **~73,000 F** | **~83,000 F** |
-| Subscription hypothesis | 5,000 F | 10,000 F |
-| Merchant return on subscription | ~14× | ~8× |
-| **Cost if payments were rerouted through an aggregator (+2 pts on wallet takings)** | **−50,000 F** | **−140,000 F** |
+| Tickets per day × average basket | 40 × 4,000 F | *To measure in Phase 0* |
+| Monthly takings (26 days) | ~4.2M F | *To measure* |
+| Of which via mobile money (maquis ~60%) | ~2.5M F | *To measure* |
+| Loyalty target: extra takings from repeat visits | +5% → ~210,000 F | *To set from interviews* |
+| Extra gross profit (assumed margin 35%) | **~73,000 F** | *Grocery margins are thin; measure before pricing* |
+| Subscription hypothesis | 5,000 F | 5,000 F |
+| Merchant return on subscription | ~14× | *To compute* |
+| **Cost if payments were rerouted through an aggregator (+2 pts on wallet takings)** | **−50,000 F** | *To compute* |
+
+The grocery column is left open on purpose: no sourced basket or margin figures exist yet for Abidjan grocery shops (see [MARKET.md](MARKET.md)). Fill it from the Phase 0 interviews before quoting a grocery price. The pharmacy example used in earlier drafts was removed when pharmacies left the pilot.
 
 Two conclusions:
 
 1. A small subscription is easy to justify **if** loyalty measurably brings customers back. The merchant must see that number every week.
 2. Rerouting payments through a more expensive rail would wipe out most or all of the gain. That is why Fidelia builds on the merchant's existing wallet QR (Wave first, other operators and the interoperable PI-SPI QR next) rather than replacing it.
 
-**Notification cost is the hidden risk.** If every visit triggered a paid SMS, a busy maquis with ~600 identified visits a month could cost more in messages than it pays in subscription. Rules: confirm points in the customer app (free push) when the customer has it; otherwise send a batched weekly SMS or WhatsApp summary, not one message per visit; sell campaign messages as a pass-through; and measure the real cost per active outlet in the pilot.
+**Notification cost is the hidden risk.** If every visit triggered a paid SMS, a busy maquis with ~600 identified visits a month could cost more in messages than it pays in subscription. Rules: during the pilot, send a batched weekly SMS or WhatsApp summary, not one message per visit (free app push only returns with the customer app); sell campaign messages as a pass-through; and measure the real cost per active outlet in the pilot.
 
 ## Pricing experiment
 
@@ -100,11 +103,11 @@ Pricing is tested with merchants, not fixed. The first experiment, informed by B
 | **Free** | 0 F, capped (e.g. 50 loyalty customers) | Sales recording, basic loyalty, daily totals. Builds the habit and the history. |
 | **Starter** | ~5,000 F / month / outlet | Unlimited loyalty customers, automatic capture of wallet payments, weekly "customers who came back" report. |
 | **Growth** | ~10,000–15,000 F / month / outlet | Lapsed-customer win-back, deals, campaign tools, revenue-history export. |
-| **Network** | Negotiated | Multiple outlets, association or pharmacy-group dashboards, partner-finance workflows. |
+| **Network** | Negotiated | Multiple outlets, association or chain dashboards, partner-finance workflows. |
 
 Rules: local currency (XOF), paid in mobile money; state whether messaging, payment and partner fees are included; **a paid pilot, not a permanently free product** (the free tier is a funnel with a cap, not the business); a short trial only once the merchant has onboarded and recorded real activity; network contracts priced separately; financial referral revenue kept outside the subscription; never sell credit access as part of a plan.
 
-**Sponsored-deal pilot offer.** Keep ordinary deal listings free, then offer a fixed-fee placement for a defined time window in the customer app. The merchant supplies the offer and commune/category; Fidelia checks it, records the fee and dates, and labels it sponsored. Pilot requests and sales are handled by the team, not self-service checkout. Test 7-day placement prices of **XOF 1,000, 2,000, and 3,000** with comparable merchants; these are starting hypotheses, not researched market rates or a published tariff. Track paid bookings and direct delivery costs before forecasting this revenue. Do not promise a number of views, visits or sales, and never let payment affect official pharmacy-duty or other safety-critical information.
+**Sponsored-deal pilot offer.** Keep ordinary deal listings free, then offer a fixed-fee placement for a defined time window in the customer app. The merchant supplies the offer and commune/category; Fidelia checks it, records the fee and dates, and labels it sponsored. Pilot requests and sales are handled by the team, not self-service checkout. Test 7-day placement prices of **XOF 1,000, 2,000, and 3,000** with comparable merchants; these are starting hypotheses, not researched market rates or a published tariff. Track paid bookings and direct delivery costs before forecasting this revenue. Do not promise a number of views, visits or sales, and never let payment affect safety-critical information. Not offered during the pilot: it needs the customer app.
 
 **Acquisition through resellers.** Commission associations, distributors and field agents on the subscriptions they bring in (Bumpa pays partners 20%). This is cheaper than direct sales and fits the cluster strategy.
 
@@ -128,7 +131,7 @@ Per partner-finance experiment, tracked separately: qualified referrals · appli
 
 ## Long-term platform option
 
-The event stream and progressive verification could found a federated identity trust service (see [CONCEPT.md § 7](CONCEPT.md#7-identity-inherit-trust-do-not-rebuild-it)). The business would be consent orchestration, verification workflows, assurance-level normalisation and audit for licensed institutions, not selling identity data. Possible pricing: integration fees, per-verification fees, enterprise subscriptions. It stays downstream of the merchant product and needs governance, liability allocation and regulatory legitimacy first.
+The event stream and progressive verification could found a federated identity trust service (see [CONCEPT.md § 7](CONCEPT.md#7-identity-inherit-trust-do-not-rebuild-it)). The business would be consent orchestration, verification workflows, assurance-level normalisation and audit for licensed institutions, not selling identity data. Possible pricing: integration fees, per-verification fees, enterprise subscriptions. It stays downstream of the merchant product and needs governance, liability allocation and regulatory legitimacy first. **Internal option only: not mentioned in pitches during the pilot** ([CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries)).
 
 ## Financial and regulatory boundaries
 

@@ -13,18 +13,19 @@
 ## Le problème
 
 - La Côte d'Ivoire compte **plus de 25 millions de comptes mobile money actifs**, mais un **taux de bancarisation strict de 31,2 %** (BCEAO ; indicateurs nationaux 2023). L'accès au paiement est largement acquis ; **la preuve d'activité ne l'est pas**.
-- Un maquis, une pharmacie ou une épicerie a des clients fidèles mais **aucun historique de ventes exploitable**, donc pas de crédit de trésorerie ou de stock. Les PME pèsent ~20 % du PIB et se heurtent à des garanties qu'elles ne peuvent pas fournir.
+- Un maquis ou une épicerie a des clients fidèles mais **aucun historique de ventes exploitable**, donc pas de crédit de trésorerie ou de stock. Les PME pèsent ~20 % du PIB et se heurtent à des garanties qu'elles ne peuvent pas fournir.
 - La fidélité tient sur des cartes papier et la mémoire. Rien ne fait revenir un habitué volontairement.
 
 ## Le produit
 
 Une seule habitude, enregistrer la vente, produit cinq usages : fidélité, historique de revenus, régularité de tontine, indicateur de fiabilité et dossier de financement pour un partenaire agréé.
 
+- **Un seul livre de caisse dès le premier jour.** Chaque paiement mobile money et chaque vente en espèces dans un total du jour : le commerçant n'a plus à rapprocher Wave, Orange et MTN à la main. C'est ce qu'il voit la première semaine ; la fidélité est ce qui le fait rester.
 - **Zéro effort en mobile money.** Fidelia s'appuie sur le portefeuille que le commerçant utilise déjà. Les paiements sur son QR existant sont capturés automatiquement, Wave d'abord, puis les autres opérateurs et le QR interopérable de **PI-SPI**, la plateforme de la banque centrale (BCEAO) qui relie toutes les banques et tous les portefeuilles mobiles de la zone UEMOA ([détails](MARKET.md#what-pi-spi-is)). **Aucun frais en plus, aucune nouvelle habitude.**
 - **Les espèces comptent aussi.** Un geste dans l'application commerçant, même hors ligne. Avec le numéro du client, celui-ci gagne des points.
 - **Une fidélité visible pour le commerçant.** Points, récompenses remises au comptoir, bons plans, et chaque semaine le nombre de « clients revenus ».
 - **Une preuve pour le crédit, avec consentement.** Chaque vente est étiquetée *confirmée par le prestataire* ou *déclarée par le commerçant*, et n'est exportée qu'avec consentement vers une IMF ou un fonds de garantie agréés.
-- **Quatre briques :** une application commerçant (hors ligne d'abord, Android d'entrée de gamme), une application client (maquis, pharmacies de garde, bons plans, paiement, points), la plateforme, et un site public.
+- **Le produit du pilote :** une application commerçant (hors ligne d'abord, Android d'entrée de gamme) et la plateforme. Le client est reconnu par son numéro de téléphone au comptoir et reçoit ses points par WhatsApp ou SMS. L'application client existe en prototype et reviendra quand une zone comptera assez de commerçants.
 
 **Fidelia ne détient jamais de fonds et ne prête jamais.** Les institutions agréées gardent la conservation des fonds et le crédit. Fidelia est le partenaire technologique et de distribution.
 
@@ -42,7 +43,7 @@ Logiciel marchand d'abord, infrastructure financière ensuite.
 | Source de revenu | Quand |
 |---|---|
 | Abonnement commerçant : formule gratuite plafonnée, puis ~5 000 F et ~10 000–15 000 F / mois / point de vente *(hypothèses à tester)* | Pilote |
-| Bons plans sponsorisés et campagnes : emplacement ponctuel et limité dans le temps pour promouvoir un produit, un service ou une offre dans l'application client ; réservation assistée par l'équipe pendant le pilote, prix à tester | Pilote |
+| Bons plans sponsorisés et campagnes : emplacement ponctuel et limité dans le temps pour promouvoir un produit, un service ou une offre dans l'application client ; prix à tester | Après le pilote, au retour de l'application client |
 | Contrats multi-points de vente et réseaux | Après preuve |
 | Commissions d'apport consenties (crédit, épargne, tontine) : Fidelia perçoit une commission de distribution, sans jamais porter le risque de crédit | Après partenariat |
 
@@ -57,7 +58,7 @@ Fidelia évite les finances personnelles grand public (Djamo) et le paiement B2B
 **Pré-pilote. Pas encore d'utilisateurs, de commerçants ni de revenus.** Ce qui existe, ce sont des prototypes fonctionnels (branche `integration`) :
 
 - Une application commerçant qui enregistre les ventes hors ligne, testée sur un vrai téléphone, sans doublon après une coupure réseau.
-- Une application client : découverte, pharmacies de garde, bons plans, paiement QR en mode sandbox et points.
+- Une application client : découverte, bons plans, paiement QR en mode sandbox et points, gelée pendant le pilote.
 - **Des points sur les ventes en espèces par numéro de téléphone**, avec solde consulté et récompense remise au comptoir.
 - **Un seul historique de ventes** étiqueté selon la preuve, des emplacements à la une vendus, un registre de facturation, et un export consenti et audité.
 - Un site public conçu pour le bas débit (~120 Ko à la première visite, fonctionne hors ligne).
@@ -66,7 +67,7 @@ Fidelia évite les finances personnelles grand public (Djamo) et le paiement B2B
 
 | Étape | Preuve attendue |
 |---|---|
-| **Phase 0 : découverte et conformité** | 5 à 10 entretiens commerçants sur un corridor d'Abidjan ; accès à l'API Wave confirmé ; périmètre réglementaire et revue ARTCI ; un partenaire de paiement |
+| **Phase 0 : découverte et conformité** | 5 à 10 entretiens avec des maquis et des épiceries dans une commune d'Abidjan ; accès à l'API Wave confirmé ; périmètre réglementaire et revue ARTCI ; un partenaire de paiement ; une ou deux IMF interrogées sur un outil, avec consentement, de suivi des ventes de leurs commerçants emprunteurs |
 | **Phase 1 : pilote avec 5 à 10 commerçants** | Connexion par numéro (OTP), capture Wave automatique, un partenaire de paiement en production. **Sortie :** les commerçants enregistrent la plupart de leurs ventes réelles pendant 60 jours ou plus, et paient ou renouvellent |
 | **Seuil d'économie unitaire** | Coût d'acquisition inférieur à 12 mois de marge brute ; 3 mois de rétention ; coûts de support et de messagerie connus par point de vente |
 

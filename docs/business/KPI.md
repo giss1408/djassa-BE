@@ -54,7 +54,10 @@ Track only what the current phase needs. A KPI from a later phase stays off the 
 
 | KPI | Definition | Target |
 |---|---|---|
-| Merchant interviews completed | Interviews in the chosen corridor and segment | 5–10 (**Gate**) |
+| Merchant interviews completed | Interviews with maquis and grocery owners in the chosen commune | 5–10 (**Gate**) |
+| Cash-book interest | Share of interviewed merchants who say a daily total across all wallets and cash would be useful from day 1 | ≥ 50% (**Proposed**) |
+| Cash recording intent | Share of interviewed merchants who say they would record their cash sales | ≥ 50% (**Gate** if Wave refuses access: below it, apply the stop-or-change rule in [CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries)) |
+| MFI tool test | MFIs asked whether they would pay for a consented tool to follow their merchant borrowers' sales, and merchants asked whether they would accept it | 1–2 MFIs asked; answer recorded (**Gate**) |
 | Willingness to pay | Share of interviewed merchants who accept a price within the [pricing experiment](BUSINESS-MODEL.md#pricing-experiment) range | ≥ 50% (**Proposed**) |
 | Baseline repeat-visit rate | Merchant's own estimate of how many customers return within 30 days, recorded **before** Fidelia | Recorded for every pilot merchant (**Gate**: needed for the before/after comparison) |
 | Baseline daily sales and wallet share | Tickets per day, average basket, % paid by mobile money | Recorded for every pilot merchant |
@@ -70,7 +73,8 @@ The core dashboard. Definitions are in §§ 4–8.
 | North Star | Recorded share, per merchant | High and growing for 60+ days (**Gate**). Proposed: ≥ 70% at day 30, ≥ 85% at day 60 |
 | Adoption | Active outlets (30-day) / enrolled outlets | ≥ 80% in the pilot (**Proposed**) |
 | Adoption | Merchant retention at 30 / 60 / 90 days | ≥ 90% / 80% / 75% (**Proposed**) |
-| Loyalty | Repeat-visit rate of identified customers vs baseline | Positive lift the merchant can state (**Gate**). Proposed: +5 pts at a maquis, +3 pts at a pharmacy, matching the [value equation](BUSINESS-MODEL.md#why-a-merchant-pays-the-value-equation) |
+| Day-1 hook | Days per week the merchant opens the daily cash book, per active outlet | ≥ 4 days a week from week 1 (**Proposed**; needs a usage event for the cash-book screen) |
+| Loyalty | Repeat-visit rate of identified customers vs baseline | Positive lift the merchant can state (**Gate**). Proposed: +5 pts at a maquis; grocery target set from Phase 0 interviews, matching the [value equation](BUSINESS-MODEL.md#why-a-merchant-pays-the-value-equation) |
 | Revenue | Free-to-paid conversion | ≥ 40% of active pilot outlets (**Proposed**) |
 | Revenue | Renewal | 3 consecutive months (**Gate**) |
 | Cost | Notification cost per active outlet | < 30% of the outlet's subscription (**Proposed**) |
@@ -144,12 +148,13 @@ Runs only at shops where an admin switched it on. Read from `GET /api/admin/laya
 | Consent withdrawal rate | Withdrawn ÷ granted, monthly | `loyalty_consents.withdrawn_at` | Computable. Rising rate = trust alarm |
 | Points issued and redeemed | Sum of positive and negative `LoyaltyEntry.points`, per outlet | `loyalty_entries` | Computable |
 | Redemption rate | Points redeemed ÷ points issued, trailing 90 days | `loyalty_entries` | Computable. Benchmark: ~60% across loyalty platforms |
-| Time to first reward | First visit → first `redeem` entry | `loyalty_entries` | Computable. Target from concept: 3–5 visits (maquis), 2–3 (pharmacy) |
+| Time to first reward | First visit → first `redeem` entry | `loyalty_entries` | Computable. Target from concept: 3–5 visits (maquis); grocery to set from Phase 0 |
 | **Outstanding points liability** (counter-metric) | Unredeemed points × reward value per point, per outlet | `loyalty_entries`, `loyalty_rewards` | Computable. Points have no expiry yet ([W4-5](../planning/action_plan_claude_fidelia.md)) |
 | Reward cost as a share of member sales | Value of rewards redeemed ÷ sales by identified customers | as above | Computable |
+| *Customer app rows below: off the dashboard while the app is frozen for the pilot* | | | |
 | Customer app installs and active installs (1 / 7 / 30-day) | First launches, installs with activity in the window | `GET /api/admin/usage?app=user` | Live |
 | Customer app retention D1 / D7 / D30 | Installs active on day *n* after install, by install cohort | `usage_events` | Computable. Benchmark (global finance apps): D1 ≈ 22%, D30 ≈ 4% |
-| Discovery use | Venue views, deal opens, pharmacy-duty views per active install | `usage_events` | Live |
+| Discovery use | Venue views and deal opens per active install | `usage_events` | Live |
 | Scan → payment conversion | `payment_completed` ÷ `scan_opened` | `usage_events` | Live |
 
 ---

@@ -24,7 +24,7 @@ The XOF 30.82M (about €46,985) funds the first six months, including reusable 
 ## Scope and budget assumptions
 
 - Phase 0 discovery and compliance, then Phase 1 merchant MVP and pilot only; no expansion beyond one corridor.
-- Five to ten pharmacies, maquis or similar repeat-purchase merchants; company-owned testing devices only, with no merchant hardware purchases.
+- Five to ten maquis and grocery shops (pharmacies are out of the pilot, see [CONCEPT.md § 12](CONCEPT.md#12-pilot-boundaries)); company-owned testing devices only, with no merchant hardware purchases.
 - Test fleet assumes two Android phones, two iPhones, two Android tablets, two iPads, and two mid-range/refurbished laptops. Device prices are allowances, not quotes; reduce the budget if suitable devices are already available.
 - Production readiness includes Tier 0 phone/OTP login, access controls, production secrets/backups, one live payment-partner integration, and Wave capture if access is approved.
 - Fidelia does not hold funds, lend, underwrite, or fund merchant rewards. Customer payments continue on the merchant's existing wallet; aggregator routing is not assumed as the default.
