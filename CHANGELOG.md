@@ -17,6 +17,11 @@ until 6 October 2026, then **Hossouko**, and is **Fidelia** since 9 October.
   deals of the caller's own shop only, owner or cashier); no customer data is
   stored. `GET /api/merchant/deals/uses/summary` gives the week's count.
 - Migration `0027_deal_alerts_and_uses`.
+- **Investor brief behind a password**: the brief, the NDA and the letters of
+  interest (PDF) moved from the public site to the API at `/brief/`, opened
+  with one shared password (`INVESTOR_BRIEF_PASSWORD`, 12+ characters; unset =
+  closed). Signed 7-day cookie, rate-limited attempts, `no-store`/`noindex`.
+  Letter PDFs are rebuilt with `scripts/build-letters.sh`.
 - **Pilot boundaries** in the business docs: maquis and grocery shops, the
   customer app with a focused scope, everything free during the pilot.
 

@@ -77,6 +77,15 @@ services:
       # Firebase service account key file's content) to send real pushes.
       - key: PUSH_PROVIDER
         value: console
+      # The investor brief at /brief/ (app/api/investor_brief.py): one shared
+      # password, at least 12 characters, given to investors by the team.
+      # Unset or shorter, the brief is closed. Changing it signs everyone out.
+      - key: INVESTOR_BRIEF_PASSWORD
+        sync: false
+      # The public site's address, for the brief's "Website" link (e.g.
+      # https://fidelia.onrender.com). Unset, the link is left out.
+      - key: FIDELIA_SITE_URL
+        sync: false
       # Shared test accounts: these numbers sign in with their fixed code, no
       # SMS, no log line. 07 00 00 00 01 is a customer; 07 00 00 00 02 is the
       # seeded merchant of the second sample maquis, 07 00 00 00 03 its

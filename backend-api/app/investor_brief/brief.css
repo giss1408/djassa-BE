@@ -1,0 +1,350 @@
+/* Investor brief: a plain page, no framework, ~4 KB of CSS. Reads on a phone
+   over 3G and prints to about two A4 pages ("Print / PDF"). Palette and type
+   match the site; the serif is the site's self-hosted font. */
+
+@font-face {
+  font-family: 'Instrument Serif';
+  font-display: swap;
+  src: url('/brief/instrument-serif-latin.woff2') format('woff2');
+}
+
+:root {
+  --ink: #18221f;
+  --muted: #5a615a;
+  --paper: #f5f1e8;
+  --line: #e2dccd;
+  --orange: #c94a22;
+  --green: #234b39;
+  --serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 15px/1.55 var(--sans);
+}
+
+.brief {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--ink);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--orange);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0.1rem 0 0;
+  font: 400 3rem/1 var(--serif);
+}
+
+.where {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+}
+
+.tools {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.tools a,
+.tools button {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font: 600 0.8rem var(--sans);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tools button {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: #fff;
+}
+
+.notice {
+  margin: 1rem 0 0;
+  padding: 0.6rem 0.8rem;
+  background: #fff3d6;
+  border-left: 3px solid #d9a21b;
+  font-size: 0.85rem;
+}
+
+/* Placeholders stay unmistakable, on screen and on paper. */
+.ph {
+  padding: 0 0.25rem;
+  background: #fff3d6;
+  outline: 1px dashed #d9a21b;
+}
+
+.lead {
+  margin: 1.25rem 0 0;
+  font: 400 1.35rem/1.35 var(--serif);
+}
+
+.lead strong {
+  font-weight: 400;
+  color: var(--orange);
+}
+
+section {
+  margin-top: 1.25rem;
+}
+
+h2 {
+  margin: 0 0 0.4rem;
+  font: 400 1.35rem/1.2 var(--serif);
+  color: var(--green);
+}
+
+ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+li + li {
+  margin-top: 0.25rem;
+}
+
+p {
+  margin: 0.3rem 0 0;
+}
+
+.note {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.cols {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 44rem) {
+  .cols {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  padding: 0.4rem 0.5rem 0.4rem 0;
+  border-top: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  width: 8.5rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.team dt {
+  margin-top: 0.4rem;
+  font-weight: 700;
+}
+
+.team dt span {
+  margin-left: 0.3rem;
+  color: var(--orange);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.team dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+footer {
+  margin-top: 1.5rem;
+  padding-top: 0.8rem;
+  border-top: 2px solid var(--ink);
+}
+
+a {
+  color: var(--orange);
+}
+
+.legal {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff;
+    font-size: 9pt;
+    line-height: 1.4;
+  }
+
+  h1 {
+    font-size: 26pt;
+  }
+
+  h2 {
+    margin-bottom: 0.2rem;
+    font-size: 13pt;
+  }
+
+  .lead {
+    margin-top: 0.6rem;
+    font-size: 12.5pt;
+  }
+
+  section {
+    margin-top: 0.7rem;
+  }
+
+  .notice {
+    margin-top: 0.5rem;
+    padding: 0.3rem 0.6rem;
+  }
+
+  li + li {
+    margin-top: 0.1rem;
+  }
+
+  th,
+  td {
+    padding: 0.2rem 0.4rem 0.2rem 0;
+  }
+
+  footer {
+    margin-top: 0.8rem;
+  }
+
+  .brief {
+    max-width: none;
+    padding: 0;
+  }
+
+  .tools {
+    display: none;
+  }
+
+  section,
+  table,
+  .cols > div {
+    break-inside: avoid;
+  }
+
+  .cols {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Confidentiality notice on the brief, and the NDA pages (legal-doc). */
+.notice.confidential {
+  background: #e3ede5;
+  border-left-color: var(--green);
+}
+
+.legal-doc h1 {
+  font-size: 2.2rem;
+}
+
+.legal-doc h2 {
+  font-size: 1.1rem;
+}
+
+.opt {
+  color: var(--muted);
+  font: italic 400 0.85rem var(--sans);
+}
+
+.sign-table th {
+  width: 50%;
+  color: var(--ink);
+}
+
+.sign-table td {
+  width: 50%;
+}
+
+/* Room for a handwritten signature on paper. */
+.sign-space td {
+  height: 4.5rem;
+}
+
+@media print {
+  .legal-doc h1 {
+    font-size: 20pt;
+  }
+
+  .legal-doc h2 {
+    font-size: 11pt;
+  }
+
+  .sign {
+    break-inside: avoid;
+  }
+}
+
+/* Password page (app/api/investor_brief.py). */
+.login {
+  display: grid;
+  gap: 0.6rem;
+  max-width: 22rem;
+  margin-top: 1.5rem;
+}
+
+.login input {
+  font: inherit;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.login button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--green);
+  color: #fff;
+  cursor: pointer;
+}

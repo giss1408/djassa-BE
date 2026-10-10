@@ -54,6 +54,25 @@ SMS delivery is `app/services/otp_sender.py`, chosen by `OTP_SENDER`:
 Sending SMS is the only part with a cost: a few cents per message, set by the
 provider. The `OtpSentButNotVerified` alert watches for SMS pumping.
 
+## Investor brief behind a password
+
+The investor brief, the NDA and the letters of interest are served by the API
+at `/brief/` (`app/api/investor_brief.py`), not by the public site, which is
+static and cannot ask for a password. The files live in
+`backend-api/app/investor_brief/`; the letters' PDFs are rebuilt from
+`scripts/letters/` with `scripts/build-letters.sh` (needs Chrome).
+
+| Variable | Meaning |
+|---|---|
+| `INVESTOR_BRIEF_PASSWORD` | The one shared password, at least 12 characters. Unset or shorter: the brief is closed (503). Changing it signs every reader out. |
+| `FIDELIA_SITE_URL` | The public site's address, for the brief's "Website" link. Unset: the link is left out. |
+| `INVESTOR_BRIEF_LOGIN_LIMIT` | Password attempts per address. Default `5/minute`. |
+
+A reader who enters the password gets a signed, HttpOnly cookie valid for 7
+days on `/brief` only. Pages are sent `no-store` and `noindex`. The site's
+"Investor brief" button opens `<API>/brief/` when the site is built with
+`VITE_FIDELIA_API_BASE`.
+
 ## Offer alerts and offer use at the counter
 
 When a merchant publishes a deal, `app/services/push.py` sends one push to
@@ -373,6 +392,7 @@ Required production-like variables:
 | `MEDIA_STORAGE=r2` + `R2_*`, `MEDIA_PUBLIC_BASE_URL` | Shop photos and videos (see Shop photos and videos) |
 | `OTP_SENDER` + provider keys | Sign-in codes by SMS (see Sign-in) |
 | `PUSH_PROVIDER=fcm` + `FCM_PROJECT_ID`, `FCM_SERVICE_ACCOUNT_JSON` | Offer alerts to the customer app (see Offer alerts) |
+| `INVESTOR_BRIEF_PASSWORD`, `FIDELIA_SITE_URL` | The investor brief at `/brief/` (see Investor brief) |
 | `CELERY_BROKER_URL` | Redis broker URL |
 
 Do not use the demo credentials or placeholder secrets on an Internet-accessible server.

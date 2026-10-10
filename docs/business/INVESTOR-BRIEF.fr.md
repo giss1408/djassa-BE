@@ -4,7 +4,7 @@
 
 > **Éléments à compléter.** Tout ce qui est marqué `[À COMPLÉTER]` (immatriculation, actionnariat) est une donnée fictive à remplacer avant tout envoi. Les chiffres de marché sont sourcés dans [MARKET.md](MARKET.md) et doivent être revérifiés avant tout usage contractuel.
 >
-> Ce document est la traduction de [INVESTOR-BRIEF.md](INVESTOR-BRIEF.md). Toute modification doit être reportée dans les deux versions, ainsi que dans la page web (`fidelia-Web/public/brief/`).
+> Ce document est la traduction de [INVESTOR-BRIEF.md](INVESTOR-BRIEF.md). Toute modification doit être reportée dans les deux versions, ainsi que dans les pages web (`backend-api/app/investor_brief/`, servies derrière le mot de passe investisseur à `<API>/brief/`).
 
 ## En une phrase
 
