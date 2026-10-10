@@ -74,6 +74,58 @@ Phase references point to [ROADMAP.md](ROADMAP.md). The one-sentence pitch per a
 | **African Development Bank** | APIF partner on rural inclusion | Rural expansion |
 | **World Bank** (CI office) | Finances inclusion studies and programmes | Opportunistic |
 
+## Funders for Fidelia
+
+*Section 5 lists funders of our partners. This section lists institutions that could fund **Fidelia itself**: the six-month pilot envelope of XOF 30.82M ([FINANCE-BUDGET.md](FINANCE-BUDGET.md)) and the later pre-seed round ([INVESTOR-BRIEF.md](INVESTOR-BRIEF.md)).*
+
+> **Status checked by web search on 10 October 2026.** Calls open and close and programmes change. Check each one on its official website before applying. Most require a registered company, so register the company and fill the investor-brief placeholders first ([FINANCE-VALIDATION.md § 5](FINANCE-VALIDATION.md)). For every application, decide whether you are asking for a grant, equity or a loan.
+
+### Grants and public programmes
+
+| Institution | What it offers | Why it fits Fidelia | Status / when |
+|---|---|---|---|
+| **APIF-CI: fintech sector support project** (with PACACI) | Support for fintech development and competitiveness; launched 6 October 2026 in Abidjan | Same mission as Fidelia. APIF-CI is already our priority institutional contact | **Now.** No call for applications published yet; ask APIF-CI directly |
+| **African Development Bank: Africa Digital Financial Inclusion Facility (ADFI)** | Grants up to USD 1M per country; up to USD 1.5M blended grant and loan (Lot 1) | Pillar 1 covers digital registries and alternative credit scoring, which is Fidelia's proof layer. Women, youth and small businesses are the targets | Call published June 2026; deadline not confirmed. Probably needs an MFI or institutional co-applicant |
+| **develoPPP Ventures** (German development cooperation) | Matched growth funding for startups; Côte d'Ivoire is eligible | Funds a pilot-stage startup, if Fidelia can provide matching funds | Calls about twice a year, near the end of Q2 and Q4; check for a Q4 2026 window |
+| **Label Startup Numérique** (Loi n° 2023-901) | Three years of tax exemptions (finance law 2026, art. 35); access to public contracts and funding | Not cash, but required for state startup programmes | Apply through the startup portal once the company is registered |
+| **Ivoire Tech Next 15** (Ministry of Digital Transition) | 24-month accelerator for 15 digital startups: financier network, state-funded AI agents, UEMOA expansion | Later target | 2026 call closed 13 September. Requires a startup active for 1+ year, 20%+ growth, 5+ employees and at least XOF 65.6M raised, so it fits after the pre-seed round |
+| **Interledger Local Impact Mini-Grant** | USD 500–3,000 | Small top-up for merchant field sessions | Closing date not confirmed |
+
+### Pre-seed investors
+
+*Approach them once the pilot shows that merchants record most of their sales and keep using Fidelia ([ROADMAP.md](ROADMAP.md) Phase 1 exit). Present the funds-flow diagram early: deal flow in UEMOA is thin in 2026, and BCEAO licensing uncertainty makes investors cautious. "Fidelia never holds funds" answers that concern.*
+
+| Investor | Profile | Why contact |
+|---|---|---|
+| **Saviu Ventures** | Among the most active early-stage investors in Francophone Africa | Stage and region fit |
+| **Launch Africa Ventures** | Pan-African seed fund with a fintech-heavy portfolio; active in 2026 | Fintech focus; sees regional interoperability (PI-SPI) as a driver |
+| **Breega** | Paris-based VC; tickets USD 100k–2M; Côte d'Ivoire among its markets | Pre-seed ticket size |
+| **Daba Finance** (angel network) | Tickets USD 5k–200k | Ticket size matches the pilot envelope |
+| **Janngo Capital**, **Comoé Capital** (I&P), **Digital Africa**, **Orange Ventures** | Francophone Africa early-stage funds | 2026 activity not confirmed; verify before contact |
+
+### Accelerators with funding or investor access
+
+| Programme | What it offers | Status / when |
+|---|---|---|
+| **Visa Africa Accelerator** | Fintech accelerator for startups with an MVP, from seed to Series A | 2026 cohort closed 17 May; target the 2027 cohort |
+| **Orange Corners Côte d'Ivoire** and **Orange Corners Innovation Fund** (Netherlands embassy) | Incubation and access to an innovation fund | No 2026 Côte d'Ivoire call found; monitor |
+| **Hub1040**, **Seedspace Abidjan** | Coworking, support programmes and investor introductions for digital and fintech startups | Ongoing |
+| **Village Capital**, **Founders Factory Africa**, **GrowthAfrica** | Investment-readiness programmes; listed as active in Abidjan | Check current cohorts |
+
+### Later phases: funders who work through MFIs
+
+These funders rarely give money to a startup directly. Approach them with a licensed MFI partner when tontine, savings or credit features are ready (Phases 3–5).
+
+| Institution | Note |
+|---|---|
+| **Mastercard Foundation** | No unsolicited proposals; watch its Expressions of Interest and RFPs |
+| **FSD Africa** | Tenders through its supplier portal (since 13 July 2026) |
+| **UNCDF** | 2026–2029 strategy focuses on MSME finance; calls are country-specific |
+| **Gates Foundation** (Inclusive Financial Systems) | Priority on inclusive instant payments in Africa; direct work in this area ends in 2030 |
+| **SGPME**, **BII**, **AfDB** | See sections 1 and 5 |
+
+**Application angle for all of them:** financial inclusion for informal merchants, consented data (never sold), funds always held by licensed institutions, and gender as a design constraint (usage tracked by gender, partnership with Fin'ELLE). Never present a loan or approval as an outcome for the merchant ([Outreach guardrails](#outreach-guardrails)).
+
 ## Acquisition channels
 
 Trusted channels cost less than consumer advertising. Test in this order:
