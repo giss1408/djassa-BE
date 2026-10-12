@@ -1025,3 +1025,44 @@ class LayawayInstallment(Base):
     paid_at = Column(DateTime, nullable=False)
 
     plan = relationship("LayawayPlan", back_populates="installments")
+
+
+class PilotMerchant(Base):
+    """What the team records by hand about a pilot merchant, for the gate review.
+
+    The platform measures what happens after a merchant joins; it cannot know
+    how the shop did before. The baseline is the merchant's own estimate, asked
+    in the Phase 0 interview and recorded before their first Fidelia sale,
+    because a repeat-visit "lift" with no before-figure is a number nobody can
+    defend (docs/business/KPI.md § 12). One row per venue; a venue with a row
+    is in the pilot scorecard.
+
+    `owner_gender` is self-declared and optional ("undisclosed" when the owner
+    prefers not to say, NULL when not asked). It is reported in aggregate only
+    and never feeds any score (docs/business/CONCEPT.md § 8).
+
+    The day-45 commitment is the merchant's answer to the paid-plan offer made
+    before the free pilot ends. It is a signed intention, not a payment: the
+    pilot stays free, and billing starts only when it ends (app/api/billing.py).
+    """
+
+    __tablename__ = "pilot_merchants"
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, unique=True, index=True)
+    baseline_recorded_at = Column(DateTime, nullable=True)
+    baseline_tickets_per_day = Column(Integer, nullable=True)
+    baseline_average_basket = Column(Integer, nullable=True)  # XOF
+    baseline_mobile_money_pct = Column(Integer, nullable=True)  # 0-100
+    # Of this month's customers, how many came back within 30 days, per the
+    # merchant. Compared with the measured rate of identified customers.
+    baseline_repeat_pct = Column(Integer, nullable=True)  # 0-100
+    owner_gender = Column(String(16), nullable=True)  # woman | man | undisclosed
+    commitment = Column(String(16), nullable=True)  # committed | declined | undecided
+    commitment_plan = Column(String(16), nullable=True)
+    commitment_price = Column(Integer, nullable=True)  # XOF per month
+    commitment_at = Column(DateTime, nullable=True)
+    notes = Column(Text, nullable=True)
+    updated_by = Column(String(128), nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+
+    venue = relationship("Venue")

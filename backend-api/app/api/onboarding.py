@@ -37,6 +37,7 @@ from ..rate_limiter import limiter
 from ..services.otp_sender import OtpDeliveryFailed, get_sender
 from .auth import check_code, dev_code, link_merchant, phone_or_422, send_code, utcnow
 from .customer import CATEGORIES, new_pay_code, qr_payload
+from .pilot import forget_owner
 from .customer import _venue_out as _public_venue_out
 from ..schemas.customer import VenueOut as PublicVenueOut
 
@@ -453,7 +454,10 @@ async def admin_update_venue(
     elif venue.pay_code is None:
         venue.pay_code = new_pay_code()
     if payload.merchant_phone:
+        previous = venue.owner_username
         await link_merchant(db, phone_or_422(payload.merchant_phone, payload.country_code), venue, utcnow())
+        if previous and previous != venue.owner_username:
+            await forget_owner(db, venue.id)
     await db.commit()
     await db.refresh(venue)
     return await _detail(db, venue)

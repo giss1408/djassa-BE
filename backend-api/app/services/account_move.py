@@ -54,6 +54,7 @@ AUDIT = [
     (models.LayawayPlan, "cancelled_by"),
     (models.LayawayInstallment, "recorded_by"),
     (models.AccountDeletionRequest, "decided_by"),
+    (models.PilotMerchant, "updated_by"),
 ]
 
 

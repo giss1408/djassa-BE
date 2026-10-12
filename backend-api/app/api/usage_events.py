@@ -308,6 +308,36 @@ async def summary(
     )
 
 
+def recorded_share(estimates: dict[date, int], recorded_on: dict[date, int]) -> float | None:
+    """The pilot's master metric for one merchant: sales the server holds on
+    the days the merchant gave an end-of-day estimate, divided by those
+    estimates. Capped at 1: a low estimate must not read as over-recording."""
+    estimated = sum(estimates.values())
+    if not estimated:
+        return None
+    recorded = sum(recorded_on.get(day, 0) for day in estimates)
+    return round(min(recorded / estimated, 1.0), 2)
+
+
+async def sales_per_day(db: AsyncSession, venue_ids: list[int], since: datetime) -> dict[int, dict[date, int]]:
+    """Sale events per venue and day since `since`, whatever their evidence."""
+    S = models.SaleEvent
+    out: dict[int, dict[date, int]] = defaultdict(lambda: defaultdict(int))
+    for venue_id, occurred in (
+        await db.execute(select(S.venue_id, S.occurred_at).where(S.venue_id.in_(venue_ids), S.occurred_at >= since))
+    ).all():
+        out[venue_id][occurred.date()] += 1
+    return out
+
+
+def daily_estimate(row: models.UsageEvent) -> int | None:
+    """The merchant's \"how many sales today?\" answer, if this row is one."""
+    if row.name != "daily_report":
+        return None
+    value = _props(row).get("sales_estimate")
+    return value if isinstance(value, int) else None
+
+
 async def _merchants(db: AsyncSession, rows, since: datetime) -> list[MerchantOut]:
     by_venue: dict[int, list] = defaultdict(list)
     for row in rows:
@@ -318,12 +348,7 @@ async def _merchants(db: AsyncSession, rows, since: datetime) -> list[MerchantOu
     venue_names = dict(
         (await db.execute(select(models.Venue.id, models.Venue.name).where(models.Venue.id.in_(list(by_venue))))).all()
     )
-    S = models.SaleEvent
-    sales_per_day: dict[tuple[int, date], int] = defaultdict(int)
-    for venue_id, occurred in (
-        await db.execute(select(S.venue_id, S.occurred_at).where(S.venue_id.in_(list(by_venue)), S.occurred_at >= since))
-    ).all():
-        sales_per_day[(venue_id, occurred.date())] += 1
+    sales = await sales_per_day(db, list(by_venue), since)
 
     out = []
     for venue_id, venue_rows in by_venue.items():
@@ -337,14 +362,12 @@ async def _merchants(db: AsyncSession, rows, since: datetime) -> list[MerchantOu
             if row.name == "sale_recorded" and isinstance(props.get("seconds"), (int, float)):
                 # The app sends 5-second buckets with a count: weight by it.
                 durations.extend([float(props["seconds"])] * row.count)
-            elif row.name == "daily_report" and isinstance(props.get("sales_estimate"), int):
-                estimates[row.occurred_at.date()] = props["sales_estimate"]
+            elif (estimate := daily_estimate(row)) is not None:
+                estimates[row.occurred_at.date()] = estimate
             elif row.name == "data_used":
                 sent, received = props.get("bytes_sent", 0), props.get("bytes_received", 0)
                 if isinstance(sent, int) and isinstance(received, int):
                     data_bytes[row.occurred_at.date()] += sent + received
-        estimated = sum(estimates.values())
-        recorded = sum(sales_per_day[(venue_id, day)] for day in estimates)
         latest = max(venue_rows, key=lambda r: r.occurred_at)
         out.append(
             MerchantOut(
@@ -354,7 +377,7 @@ async def _merchants(db: AsyncSession, rows, since: datetime) -> list[MerchantOu
                 sales_abandoned=count["sale_abandoned"],
                 median_sale_seconds=round(statistics.median(durations), 1) if durations else None,
                 daily_reports=len(estimates),
-                recorded_share=round(min(recorded / estimated, 1.0), 2) if estimated else None,
+                recorded_share=recorded_share(estimates, sales[venue_id]),
                 data_kb_per_active_day=round(sum(data_bytes.values()) / len(data_bytes) / 1024, 1) if data_bytes else None,
             )
         )

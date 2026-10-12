@@ -5,6 +5,22 @@ test environment deploys `integration`, production deploys `trunk`. Entries
 are grouped by the day the work landed. The product was called **Djassa**
 until 6 October 2026, then **Hossouko**, and is **Fidelia** since 9 October.
 
+## 2026-10-12
+
+- **Pilot record and scorecard** (`app/api/pilot.py`): `GET/PUT
+  /api/admin/venues/{id}/pilot` holds what the team records by hand on a
+  pilot merchant: the pre-Fidelia baseline (tickets, basket, mobile-money
+  share, repeat-customer estimate), dated by the server so a baseline taken
+  after the first sale is flagged; the owner's self-declared gender (optional,
+  cleared when the shop changes owner); and the day-45 answer to the paid-plan
+  offer (a commitment names its plan and price; nothing is billed during the
+  pilot). `GET /api/admin/pilot/scorecard` lists every pilot merchant with
+  recorded share, repeat visits against the baseline, new customers from
+  offers and commitment, each rate with its counts (docs: KPI.md § 3.5).
+- The recorded-share formula is shared by the usage summary and the
+  scorecard (`usage_events.recorded_share`).
+- Migration `0028_pilot_merchants`.
+
 ## 2026-10-10
 
 - **Offer alerts**: publishing a deal sends one push to the Firebase topics of
