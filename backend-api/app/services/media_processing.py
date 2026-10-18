@@ -14,15 +14,13 @@ a minute), `faststart` so playback begins before the download ends, plus a
 video only on tap.
 
 ffmpeg comes from, in order: `FFMPEG_BINARY`, the system's `ffmpeg` (the
-Docker image installs it), or the static build shipped inside the
-`imageio-ffmpeg` wheel, which is what runs on Render's native Python runtime,
-where nothing can be apt-installed. That build has no ffprobe, so video facts
-(duration, size) are read from ffmpeg's own report instead.
+Docker image installs it), or the static build inside the `imageio-ffmpeg`
+wheel when that is installed (a laptop without ffmpeg). Video facts
+(duration, size) are read from ffmpeg's own report, so ffprobe is not needed.
 
-One video converts at a time (`MEDIA_VIDEO_JOBS`, default 1): Render's free
-instance has 512 MB and a fraction of a CPU, and two 1080p decodes at once
-would starve the API. A 60 s clip there takes a few minutes; the upload
-answers at once and the row turns `ready` when done.
+One video converts at a time per process (`MEDIA_VIDEO_JOBS`, default 1):
+Render's small instances have 512 MB and a fraction of a CPU. Where the
+conversion runs, the API or the worker, is app/services/media_jobs.py.
 """
 
 import os

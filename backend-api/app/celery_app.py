@@ -16,6 +16,12 @@ celery_app.conf.update(
     result_serializer='json',
     timezone='UTC',
     enable_utc=True,
+    # With Redis, a job whose worker died before acknowledging it (a video
+    # conversion cut by a deploy or a crash) goes back to the queue after this
+    # many seconds. Longer than the longest conversion (ffmpeg's own 15 min
+    # cap, plus transfers), shorter than the 30 min after which the API calls
+    # the video interrupted (app/api/media.py STALE_AFTER).
+    broker_transport_options={'visibility_timeout': int(os.getenv('CELERY_VISIBILITY_TIMEOUT', '1200'))},
 )
 
 # Instrument Celery task events
