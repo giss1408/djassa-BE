@@ -1,3 +1,7 @@
+# Direct dependencies. Exact versions of everything, including what these pull
+# in, are in requirements.lock: the image installs with it as a constraint, so
+# a new release never reaches production by surprise. To upgrade: change or
+# add a line here, run `make lock`, run the tests, commit both files.
 fastapi
 uvicorn[standard]
 pydantic
@@ -30,6 +34,3 @@ strawberry-graphql[fastapi]
 pillow
 # Shop media storage on Cloudflare R2 through its S3 API (app/services/media_storage.py).
 boto3
-# A static ffmpeg (with H.264) inside the wheel, for shop videos where ffmpeg
-# cannot be installed, such as Render's native Python runtime.
-imageio-ffmpeg

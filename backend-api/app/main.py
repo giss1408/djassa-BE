@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from .api import payments, auth, transactions, export, tontine, webhooks, config, support, identity
+from .api import orange_sms
 from .api import customer, payment_requests, deals, billing, sales, statements, counter_loyalty, venue_location, wave, client_events, account, onboarding, media, usage_events, staff, layaway, investor_brief, pilot
 from .graphql_api import router as graphql_router
 from .db import engine, Base
@@ -8,7 +9,9 @@ from starlette.middleware import Middleware
 from slowapi.middleware import SlowAPIMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+from .edge import OriginGate, check_settings as check_edge_settings
 from .rate_limiter import limiter
+from .services import otp_sender
 from .observability import metrics_authorized, observe_request, setup_logging
 import os
 
@@ -31,8 +34,10 @@ if os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT"):
     provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
 trace.set_tracer_provider(provider)
 
-# Middleware stack
+# Middleware stack. The origin gate comes first: a request that skipped
+# Cloudflare is refused before it costs a rate-limit slot (app/edge.py).
 middleware = [
+    Middleware(OriginGate),
     Middleware(SlowAPIMiddleware),
     Middleware(
         CORSMiddleware,
@@ -52,6 +57,13 @@ async def startup():
     # A bad TEST_OTP_NUMBERS (or one set in production) stops the start here
     # rather than failing every sign-in.
     auth.test_numbers()
+    # Production without the Cloudflare origin secret or shared rate-limit
+    # counters does not start (app/edge.py).
+    check_edge_settings()
+    # A missing or invalid SMS provider setting stops the start, rather than
+    # failing every sign-in (app/services/otp_sender.py).
+    otp_sender.get_sender()
+    orange_sms.check_settings()
     # Production schemas come from Alembic migrations. The local SQLite dev
     # database is created and seeded here so the apps work out of the box;
     # seeding_enabled() is off for any non-SQLite database unless asked for.
@@ -127,6 +139,7 @@ app.include_router(wave.public_router)
 app.include_router(investor_brief.router)
 app.include_router(statements.router, prefix="/api")
 app.include_router(webhooks.router)
+app.include_router(orange_sms.router)
 app.include_router(config.router, prefix="/api")
 app.include_router(support.router, prefix="/api")
 app.include_router(identity.router, prefix="/api")

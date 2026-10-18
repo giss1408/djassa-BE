@@ -6,8 +6,12 @@
 #   * The service sleeps after ~15 minutes without traffic; the first request
 #     after that takes up to about a minute. The merchant app queues sales
 #     offline and retries, so nothing is lost; the customer app shows "Retry".
-#   * No background worker: Celery tasks do not run. The API does not need
-#     them to serve the apps.
+#   * No background worker (none on the free plan): Celery tasks do not run,
+#     and shop videos are converted by the API itself (MEDIA_PROCESSING
+#     unset). The API does not need a worker to serve the apps.
+#
+# Runs the same Docker image as production (backend-api/Dockerfile), so what
+# is tested here is what ships.
 #
 # This is a TEST environment: payments are simulated (no real money moves),
 # EXCEPT at a venue whose merchant connected their own Wave Business account
@@ -21,27 +25,35 @@
 
 services:
   - type: web
-    runtime: python
+    runtime: docker
     name: fidelia-api
     plan: free
     # Frankfurt: the lowest-latency Render region from Abidjan.
     region: frankfurt
-    rootDir: backend-api
+    # Paths from the repository root. Only changes to the API trigger a deploy.
+    dockerfilePath: ./backend-api/Dockerfile
+    dockerContext: ./backend-api
+    buildFilter:
+      paths:
+        - backend-api/**
     # The test environment follows `integration`: every push there deploys.
     # Production follows `trunk` (render.production.yaml).
     branch: integration
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     # Migrations run on every start (a free instance has no pre-deploy step).
     # `upgrade head` is a no-op when the schema is current, so a wake-up from
-    # sleep costs nothing extra.
-    # --no-access-log: uvicorn's own access log prints query strings, which
-    # carry phone numbers; the API writes its own line (app/observability.py).
-    startCommand: alembic -c alembic.ini upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*' --no-access-log
+    # sleep costs nothing extra. Then the same uvicorn command as the image's
+    # (flags explained in backend-api/Dockerfile).
+    dockerCommand: sh -c "alembic -c alembic.ini upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*' --no-access-log"
     healthCheckPath: /health
     autoDeploy: true
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.11.9"
+      # Rate-limit counters (app/rate_limiter.py), shared and kept across
+      # restarts. Free Key Value: no persistence, which is fine for counters.
+      - key: RATE_LIMIT_STORAGE_URI
+        fromService:
+          type: keyvalue
+          name: fidelia-kv
+          property: connectionString
       # Paste Neon's connection string exactly as Neon shows it
       # (postgresql://...?sslmode=require). app/db.py adapts it for asyncpg.
       # Prefer the direct endpoint; the pooled "-pooler" one also works.
@@ -66,8 +78,9 @@ services:
       - key: FIDELIA_SEED_SAMPLE
         value: "1"
       # Phone sign-in codes (app/services/otp_sender.py). "console" writes the
-      # code to the service log; set "africastalking" plus AT_USERNAME and
-      # AT_API_KEY to send real SMS. OTP_DEV_ECHO=1 would return the code in
+      # code to the service log; set "orange" plus ORANGE_CLIENT_ID and
+      # ORANGE_CLIENT_SECRET (or "africastalking" plus AT_USERNAME and
+      # AT_API_KEY, or both: "orange,africastalking") to send real SMS. OTP_DEV_ECHO=1 would return the code in
       # the API response so testers need no SIM, but then anyone can sign in
       # as any number: never on a deployment holding real data.
       - key: OTP_SENDER
@@ -95,9 +108,9 @@ services:
       - key: TEST_OTP_NUMBERS
         value: "+2250700000001:000000,+2250700000002:000000,+2250700000003:000000,+2250700000004:000000"
       # Shop photos and videos (app/services/media_storage.py). Videos are
-      # converted by the ffmpeg bundled in the imageio-ffmpeg wheel (no system
-      # ffmpeg on this runtime), one at a time, in the API process: a 60 s
-      # clip takes a few minutes on the free instance. Render's free
+      # converted by the image's ffmpeg, one at a time, in the API process
+      # (no worker here): a 60 s clip takes a few minutes on the free
+      # instance. Render's free
       # disk is wiped on deploy, so media goes to Cloudflare R2 (free 10 GB,
       # no bandwidth fees). Until these are set, uploads use the local disk
       # and vanish on the next deploy.
@@ -125,3 +138,12 @@ services:
       # taken), and correct it in the dashboard if it differs.
       - key: CORS_ORIGINS
         sync: false
+
+  # Rate-limit counters. Reachable only from this account's services
+  # (empty ipAllowList).
+  - type: keyvalue
+    name: fidelia-kv
+    plan: free
+    region: frankfurt
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []

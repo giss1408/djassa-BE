@@ -1,0 +1,37 @@
+// Production metrics with more than one API instance (render.production.yaml,
+// fidelia-metrics-prod). Counters live in each API process; Render's public
+// address reaches one instance at random, so Grafana Cloud's own scrape job
+// would see a different instance each time. This scraper runs on Render's
+// private network, finds every instance through the discovery name, scrapes
+// each one and remote-writes to Grafana Cloud. Dashboards and alerts already
+// sum across instances.
+
+discovery.dns "api" {
+  // Render: <service name>-discovery resolves to every running instance.
+  names = [sys.env("API_DISCOVERY_HOST")]
+  type  = "A"
+  // Render's default PORT for a web service.
+  port  = 10000
+}
+
+prometheus.scrape "api" {
+  targets         = discovery.dns.api.targets
+  job_name        = "fidelia-api"
+  metrics_path    = "/metrics"
+  scrape_interval = "60s"
+  authorization {
+    type        = "Bearer"
+    credentials = sys.env("METRICS_TOKEN")
+  }
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_REMOTE_WRITE_URL")
+    basic_auth {
+      username = sys.env("GRAFANA_REMOTE_WRITE_USERNAME")
+      password = sys.env("GRAFANA_REMOTE_WRITE_TOKEN")
+    }
+  }
+}

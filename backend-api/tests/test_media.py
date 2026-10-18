@@ -1,8 +1,7 @@
 """Shop photos and videos: limits, shrinking for 2G, privacy, who may touch them.
 
 Runs the real Pillow and ffmpeg against local storage in a temp directory.
-ffmpeg is the system's or, failing that, the one bundled in imageio-ffmpeg,
-which is what runs on Render's native Python runtime.
+ffmpeg is the system's (the Docker image has it).
 """
 
 import io
@@ -234,28 +233,6 @@ def test_production_refuses_local_storage(monkeypatch):
         get_storage()
 
 
-def test_the_bundled_ffmpeg_converts_a_video(tmp_path, monkeypatch):
-    """Render's native Python runtime has no system ffmpeg: only the static
-    build inside the imageio-ffmpeg wheel. It must do the whole job alone."""
-    imageio_ffmpeg = pytest.importorskip("imageio_ffmpeg")
-    bundled = imageio_ffmpeg.get_ffmpeg_exe()
-    monkeypatch.setenv("FFMPEG_BINARY", bundled)
-    src = tmp_path / "in.mp4"
-    subprocess.run(
-        [bundled, "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=duration=2:size=1280x720:rate=30",
-         "-f", "lavfi", "-i", "sine=duration=2", "-c:v", "libx264", "-c:a", "aac", "-shortest", str(src)],
-        check=True,
-    )
-    work = tmp_path / "work"
-    work.mkdir()
-    result = media_processing.process_video(str(src), str(work))
-    assert result.duration_s == 2
-    path, info = result.files["video"]
-    assert (info["width"], info["height"]) == (854, 480)
-    assert info["bytes"] < src.stat().st_size
-    assert result.files["poster"][1]["width"] == 720
-
-
 def test_probe_reads_ffmpeg_report_without_ffprobe():
     report = (
         "Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'x.mp4':\n"
@@ -300,3 +277,91 @@ async def test_lists_carry_the_first_photo_as_a_small_cover(client):
     await client.put("/api/merchant/media/order", json={"ids": [second["id"], first["id"]]}, headers=merchant)
     detail = (await client.get(f"/api/venues/{venue_id}", headers=customer)).json()
     assert detail["cover_url"] == second["thumb_url"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(not has_ffmpeg, reason="ffmpeg not installed")
+async def test_with_a_worker_the_api_stages_the_video_and_the_worker_converts_it(client, tmp_path, _local_media, monkeypatch):
+    from app.services import media_jobs
+
+    monkeypatch.setenv("MEDIA_PROCESSING", "worker")
+    queued = []
+    monkeypatch.setattr(media_jobs, "enqueue", lambda *args: queued.append(args))
+    merchant = await _auth(client, "demo", "demo123")
+    r = await _upload(client, merchant, _video(tmp_path), "clip.mp4", "video/mp4")
+    assert r.status_code == 201, r.text
+
+    # The API only staged the original and queued the job.
+    assert len(queued) == 1
+    media_id, _venue_id, kind, key = queued[0]
+    assert kind == "video" and key.startswith("incoming/")
+    assert (_local_media / key).is_file()
+    assert (await client.get("/api/merchant/media", headers=merchant)).json()[0]["status"] == "processing"
+
+    # The worker (its own process in production) converts it and drops the original.
+    await media_jobs.process_staged(*queued[0])
+    media = (await client.get("/api/merchant/media", headers=merchant)).json()[0]
+    assert media["id"] == media_id and media["status"] == "ready", media
+    assert media["height"] == 480
+    assert not (_local_media / key).exists()
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(not has_ffmpeg, reason="ffmpeg not installed")
+async def test_with_the_queue_down_the_video_is_converted_by_the_api(client, tmp_path, _local_media, monkeypatch):
+    from app.services import media_jobs
+
+    def down(*_args):
+        raise ConnectionError("broker unreachable")
+
+    monkeypatch.setenv("MEDIA_PROCESSING", "worker")
+    monkeypatch.setattr(media_jobs, "enqueue", down)
+    merchant = await _auth(client, "demo", "demo123")
+    r = await _upload(client, merchant, _video(tmp_path), "clip.mp4", "video/mp4")
+    assert r.status_code == 201, r.text
+    assert (await client.get("/api/merchant/media", headers=merchant)).json()[0]["status"] == "ready"
+    assert not [p for p in (_local_media / "incoming").rglob("*") if p.is_file()]
+
+
+@pytest.mark.asyncio
+async def test_a_staged_upload_deleted_before_the_worker_ran_is_dropped(client, _local_media, tmp_path):
+    from app.services import media_jobs
+    from app.services.media_storage import get_storage
+
+    staged = tmp_path / "orphan.mp4"
+    staged.write_bytes(b"not used")
+    get_storage().put("incoming/orphan/original", str(staged))
+    await media_jobs.process_staged(999999, 1, "video", "incoming/orphan/original")
+    assert not (_local_media / "incoming/orphan/original").exists()
+
+
+def test_the_worker_task_is_registered_under_its_queue_name():
+    from app.celery_tasks import process_media_upload_task
+
+    assert process_media_upload_task.name == "media.process_upload"
+
+
+def test_an_eu_jurisdiction_bucket_uses_the_eu_endpoint(monkeypatch):
+    from app.services.media_storage import get_storage
+
+    for name, value in {
+        "MEDIA_STORAGE": "r2", "R2_ACCOUNT_ID": "acc123", "R2_ACCESS_KEY_ID": "k", "R2_SECRET_ACCESS_KEY": "s",
+        "R2_BUCKET": "fidelia-media-prod", "MEDIA_PUBLIC_BASE_URL": "https://media.example",
+    }.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.delenv("R2_JURISDICTION", raising=False)
+    assert get_storage().client.meta.endpoint_url == "https://acc123.r2.cloudflarestorage.com"
+    monkeypatch.setenv("R2_JURISDICTION", "eu")
+    assert get_storage().client.meta.endpoint_url == "https://acc123.eu.r2.cloudflarestorage.com"
+
+
+def test_a_job_lost_with_its_worker_comes_back_before_the_merchant_sees_it_failed():
+    """Redis gives an unacknowledged job (worker killed mid-conversion) to
+    another worker after the visibility timeout. It must outlast the longest
+    conversion, or a running job would be handed out twice, and come back
+    before the API reports the video as interrupted."""
+    from app.api.media import STALE_AFTER
+    from app.celery_app import celery_app
+
+    timeout = celery_app.conf.broker_transport_options["visibility_timeout"]
+    assert media_processing.FFMPEG_TIMEOUT_S < timeout < STALE_AFTER.total_seconds()
