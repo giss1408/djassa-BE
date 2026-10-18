@@ -9,34 +9,54 @@
 # settings up to date whenever one changes there.
 
 services:
+  # The API. Served to the world through Cloudflare (PRODUCTION.md § 3):
+  # requests that do not carry Cloudflare's origin secret are refused.
   - type: web
-    runtime: python
+    runtime: docker
     name: fidelia-api-prod
-    # Paid: always on (no sleep), a pre-deploy step, persistent metrics
-    # between requests. One instance: Prometheus counters live in the
-    # process, and Grafana Cloud scrapes the public URL, which reaches one
-    # instance at random. Before scaling out, see PRODUCTION.md § Scaling.
+    # Paid: always on (no sleep), a pre-deploy step. Two instances, so one
+    # crashing or a bad host does not take the API down. Everything they
+    # share lives outside them: the database, rate-limit counters (Key
+    # Value), media (R2). Metrics are scraped from each instance by
+    # fidelia-metrics-prod.
     plan: starter
-    numInstances: 1
+    numInstances: 2
     region: frankfurt
-    rootDir: backend-api
+    # The same image as the test environment and CI (backend-api/Dockerfile);
+    # its start command is the one that runs here.
+    dockerfilePath: ./backend-api/Dockerfile
+    dockerContext: ./backend-api
     # Production follows `trunk`; the test environment follows `integration`
     # (render.yaml). Promote by merging integration into trunk.
     branch: trunk
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     # Migrations run once per deploy, before traffic moves to the new build;
     # a failed migration stops the deploy and the old build keeps serving.
     preDeployCommand: alembic -c alembic.ini upgrade head
-    # --no-access-log: uvicorn's access log prints query strings, which carry
-    # phone numbers. The API writes its own access line (app/observability.py).
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*' --no-access-log
     # Liveness only: a database blip must not make Render restart a healthy
     # process. The uptime monitor checks /ready, which includes the database.
     healthCheckPath: /health
     autoDeploy: false
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.11.9"
+      # Proof a request came through Cloudflare (app/edge.py). Generated once;
+      # copy it into the Cloudflare Transform Rule that adds X-Origin-Auth.
+      # To rotate: set "new,old" here, change the rule, then drop the old one.
+      - key: CLOUDFLARE_ORIGIN_SECRET
+        generateValue: true
+      # Rate-limit counters shared by both instances and kept across deploys.
+      - key: RATE_LIMIT_STORAGE_URI
+        fromService:
+          type: keyvalue
+          name: fidelia-kv-prod
+          property: connectionString
+      # Videos are converted by fidelia-worker-prod, not in the API
+      # (app/services/media_jobs.py).
+      - key: MEDIA_PROCESSING
+        value: worker
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: keyvalue
+          name: fidelia-kv-prod
+          property: connectionString
       - key: FIDELIA_ENV
         value: production
       # The production database, never the test one. Neon: the direct
@@ -110,6 +130,9 @@ services:
         sync: false
       - key: R2_BUCKET
         value: fidelia-media-prod
+      # The bucket is created with the EU jurisdiction (ARTCI.md § 4).
+      - key: R2_JURISDICTION
+        value: eu
       - key: MEDIA_PUBLIC_BASE_URL
         sync: false
 
@@ -128,6 +151,97 @@ services:
       - key: LOG_LEVEL
         value: INFO
 
+  # Shop video conversion (app/services/media_jobs.py), one at a time. Same
+  # image as the API, another command. Needs the database, R2 and the queue.
+  - type: worker
+    runtime: docker
+    name: fidelia-worker-prod
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./backend-api/Dockerfile
+    dockerContext: ./backend-api
+    branch: trunk
+    autoDeploy: false
+    dockerCommand: celery -A app.celery_app.celery_app worker --concurrency 1 --prefetch-multiplier 1 --loglevel INFO
+    # On a deploy, Celery finishes the video in hand before exiting (up to 5
+    # minutes). A job cut off anyway is queued again after 20 minutes
+    # (app/celery_app.py, visibility_timeout).
+    maxShutdownDelaySeconds: 300
+    envVars:
+      - key: FIDELIA_ENV
+        value: production
+      # The same production database as the API (Neon, direct endpoint).
+      - key: DATABASE_URL
+        sync: false
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: keyvalue
+          name: fidelia-kv-prod
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: keyvalue
+          name: fidelia-kv-prod
+          property: connectionString
+      - key: MEDIA_STORAGE
+        value: r2
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        value: fidelia-media-prod
+      # The bucket is created with the EU jurisdiction (ARTCI.md § 4).
+      - key: R2_JURISDICTION
+        value: eu
+      - key: MEDIA_PUBLIC_BASE_URL
+        sync: false
+      - key: LOG_FORMAT
+        value: json
+
+  # Rate-limit counters and the worker's queue. noeviction: a queued video
+  # job must never be dropped to make room (rate-limit keys expire on their
+  # own). Reachable only from this account's services.
+  - type: keyvalue
+    name: fidelia-kv-prod
+    plan: starter
+    region: frankfurt
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
+  # Scrapes /metrics on every API instance over the private network and
+  # remote-writes to Grafana Cloud (monitoring/alloy/config.alloy). Replaces
+  # Grafana Cloud's own scrape of the public URL, which would reach one
+  # instance at random.
+  - type: pserv
+    runtime: docker
+    name: fidelia-metrics-prod
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./monitoring/alloy/Dockerfile
+    dockerContext: ./monitoring/alloy
+    branch: trunk
+    autoDeploy: false
+    envVars:
+      - key: API_DISCOVERY_HOST
+        value: fidelia-api-prod-discovery
+      - key: METRICS_TOKEN
+        fromService:
+          type: web
+          name: fidelia-api-prod
+          envVarKey: METRICS_TOKEN
+      # Grafana Cloud → your stack → Prometheus → "Send metrics": the remote
+      # write URL, the instance ID (username) and an access policy token with
+      # metrics:write.
+      - key: GRAFANA_REMOTE_WRITE_URL
+        sync: false
+      - key: GRAFANA_REMOTE_WRITE_USERNAME
+        sync: false
+      - key: GRAFANA_REMOTE_WRITE_TOKEN
+        sync: false
+
   # The admin and field-agent site, pointed at the production API. Built from
   # its own repository.
   - type: web
@@ -143,7 +257,9 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22.12.0"
-      # The production API's address as Render shows it (https://...onrender.com).
+      # The production API's public address, on the Cloudflare domain
+      # (https://api.<domain>). Never the onrender.com address: that one
+      # refuses requests that did not come through Cloudflare.
       - key: VITE_FIDELIA_API_BASE
         sync: false
     headers:
