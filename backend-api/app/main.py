@@ -8,6 +8,7 @@ from starlette.middleware import Middleware
 from slowapi.middleware import SlowAPIMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+from .edge import OriginGate, check_settings as check_edge_settings
 from .rate_limiter import limiter
 from .observability import metrics_authorized, observe_request, setup_logging
 import os
@@ -31,8 +32,10 @@ if os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT"):
     provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
 trace.set_tracer_provider(provider)
 
-# Middleware stack
+# Middleware stack. The origin gate comes first: a request that skipped
+# Cloudflare is refused before it costs a rate-limit slot (app/edge.py).
 middleware = [
+    Middleware(OriginGate),
     Middleware(SlowAPIMiddleware),
     Middleware(
         CORSMiddleware,
@@ -52,6 +55,9 @@ async def startup():
     # A bad TEST_OTP_NUMBERS (or one set in production) stops the start here
     # rather than failing every sign-in.
     auth.test_numbers()
+    # Production without the Cloudflare origin secret or shared rate-limit
+    # counters does not start (app/edge.py).
+    check_edge_settings()
     # Production schemas come from Alembic migrations. The local SQLite dev
     # database is created and seeded here so the apps work out of the box;
     # seeding_enabled() is off for any non-SQLite database unless asked for.

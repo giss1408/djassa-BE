@@ -31,6 +31,7 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Resp
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
 from ..core.security import SECRET_KEY
+from ..edge import client_ip
 from ..rate_limiter import limiter
 
 log = logging.getLogger("fidelia.investor_brief")
@@ -222,7 +223,7 @@ async def brief_login(
         return _login_page(english, target, closed=True, status=503)
     # Compare digests, so the comparison takes the same time whatever the length.
     if not hmac.compare_digest(hashlib.sha256(password.encode()).digest(), hashlib.sha256(expected.encode()).digest()):
-        log.warning("investor brief: wrong password from %s", request.client.host if request.client else "?")
+        log.warning("investor brief: wrong password from %s", client_ip(request))
         error = "Wrong password." if english else "Mot de passe incorrect."
         return _login_page(english, target, error=error, status=401)
 
