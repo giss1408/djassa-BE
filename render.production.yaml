@@ -37,11 +37,13 @@ services:
     healthCheckPath: /health
     autoDeploy: false
     envVars:
-      # Proof a request came through Cloudflare (app/edge.py). Generated once;
-      # copy it into the Cloudflare Transform Rule that adds X-Origin-Auth.
-      # To rotate: set "new,old" here, change the rule, then drop the old one.
+      # Proof a request came through Cloudflare (app/edge.py): `openssl rand
+      # -hex 32`, the same value given to terraform/cloudflare
+      # (TF_VAR_origin_secrets), which puts it in the X-Origin-Auth rule.
+      # Made by hand so Cloudflare can be set up before this service exists.
+      # To rotate: set "new,old" here, apply the new one, then drop the old.
       - key: CLOUDFLARE_ORIGIN_SECRET
-        generateValue: true
+        sync: false
       # Rate-limit counters shared by both instances and kept across deploys.
       - key: RATE_LIMIT_STORAGE_URI
         fromService:

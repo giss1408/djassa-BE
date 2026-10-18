@@ -21,8 +21,8 @@ phase per zone, so two states would overwrite each other's rules.
    * Account → Workers R2 Storage: Edit
 
    A 403 during `apply` names the missing permission.
-3. The API's `CLOUDFLARE_ORIGIN_SECRET` for each environment (Render → the API
-   service → Environment).
+3. The API's `CLOUDFLARE_ORIGIN_SECRET` for each environment: `openssl rand
+   -hex 32`, the same value entered in Render for the API.
 
 Terraform does not need to be installed; the commands below run it in Docker.
 

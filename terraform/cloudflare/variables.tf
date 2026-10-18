@@ -49,7 +49,7 @@ variable "zone_name" {
 variable "origin_secrets" {
   description = <<-EOT
     The API's CLOUDFLARE_ORIGIN_SECRET for each environment, by the same names
-    as `environments` (Render → the API service → Environment). Every
+    as `environments` (`openssl rand -hex 32`, also set on the API in Render). Every
     environment behind Cloudflare needs one, and the API must have it set:
     without it the API would count all callers as a handful of Cloudflare
     addresses and rate-limit them together.
