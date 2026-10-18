@@ -98,8 +98,26 @@ services:
         sync: false
 
       # --- Sign-in codes ---------------------------------------------------
+      # Orange's own SMS API first (cheapest, the operator's route); Africa's
+      # Talking sends the code when Orange fails: an empty bundle, an outage,
+      # or the delivery issues Orange notes towards MTN numbers.
       - key: OTP_SENDER
-        value: africastalking
+        value: orange,africastalking
+      # developer.orange.com → My Apps → the app with the SMS Côte d'Ivoire API.
+      - key: ORANGE_CLIENT_ID
+        sync: false
+      - key: ORANGE_CLIENT_SECRET
+        sync: false
+      # Empty until Orange confirms the name by email (5 working days, 15 for
+      # MTN). At most 11 letters or digits, e.g. FIDELIA.
+      - key: ORANGE_SENDER_NAME
+        sync: false
+      # The secret part of the delivery-receipt URL given to Orange:
+      # https://api.<domain>/webhooks/orange/sms-dr/<this> (app/api/orange_sms.py).
+      # 64 hex characters from `openssl rand -hex 32` (a Render-generated value
+      # can hold "/" and "+", which do not belong in a URL path).
+      - key: ORANGE_DR_TOKEN
+        sync: false
       - key: AT_USERNAME
         sync: false
       - key: AT_API_KEY

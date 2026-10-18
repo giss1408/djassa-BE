@@ -78,8 +78,9 @@ services:
       - key: FIDELIA_SEED_SAMPLE
         value: "1"
       # Phone sign-in codes (app/services/otp_sender.py). "console" writes the
-      # code to the service log; set "africastalking" plus AT_USERNAME and
-      # AT_API_KEY to send real SMS. OTP_DEV_ECHO=1 would return the code in
+      # code to the service log; set "orange" plus ORANGE_CLIENT_ID and
+      # ORANGE_CLIENT_SECRET (or "africastalking" plus AT_USERNAME and
+      # AT_API_KEY, or both: "orange,africastalking") to send real SMS. OTP_DEV_ECHO=1 would return the code in
       # the API response so testers need no SIM, but then anyone can sign in
       # as any number: never on a deployment holding real data.
       - key: OTP_SENDER
