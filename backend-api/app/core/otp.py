@@ -12,6 +12,7 @@ import secrets
 from datetime import timedelta
 
 from .security import SECRET_KEY
+from .tokens import hash_refresh_token, new_family, new_refresh_token  # noqa: F401  (moved; re-exported until the OTP module goes)
 
 CODE_LENGTH = 6
 CODE_TTL = timedelta(minutes=5)
@@ -45,15 +46,3 @@ def hash_code(phone_e164: str, code: str) -> str:
 
 def code_matches(phone_e164: str, code: str, stored_hash: str) -> bool:
     return hmac.compare_digest(hash_code(phone_e164, code), stored_hash)
-
-
-def new_refresh_token() -> str:
-    return secrets.token_urlsafe(32)
-
-
-def hash_refresh_token(token: str) -> str:
-    return hashlib.sha256(token.encode()).hexdigest()
-
-
-def new_family() -> str:
-    return secrets.token_hex(16)

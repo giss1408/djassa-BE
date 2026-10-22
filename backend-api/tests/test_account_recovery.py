@@ -80,6 +80,7 @@ def test_every_account_key_column_is_classified():
     not_accounts = {
         ("payments", "recipient_id"), ("payments", "idempotency_key"), ("payment_refunds", "idempotency_key"),
         ("transactions", "idempotency_key"), ("identity_profiles", "verification_provider"),
+        ("account_checks", "sent_by"),  # a team member's name, not a tel: key
     }
     unclassified = [
         (table.name, column.name)

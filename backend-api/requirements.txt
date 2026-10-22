@@ -14,6 +14,7 @@ sqlalchemy[asyncio]>=1.4  # [asyncio] pulls greenlet, which SQLAlchemy 2.1 no lo
 asyncpg
 python-jose[cryptography]
 passlib[bcrypt]
+argon2-cffi
 bcrypt<5
 aiosqlite
 celery[redis]
