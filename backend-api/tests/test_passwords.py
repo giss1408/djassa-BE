@@ -15,11 +15,10 @@ def test_verify_rejects_garbage_hash():
 
 
 def test_rules_reject_short_and_all_digits():
-    for bad in ("1234567", "12345678"):
-        with pytest.raises(ValueError):
+    for bad in ("1234567", "12345678", "a" * 129):
+        with pytest.raises(ValueError) as exc:
             passwords.check_rules(bad)
-    with pytest.raises(ValueError):
-        passwords.check_rules("a" * 129)
+        assert str(exc.value).isascii()
     assert passwords.check_rules("motdepasse1") is None
 
 

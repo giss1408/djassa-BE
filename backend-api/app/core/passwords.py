@@ -12,11 +12,11 @@ _hasher = PasswordHasher()
 def check_rules(plain: str) -> None:
     """Raise ValueError (French message, shown to the person) if not acceptable."""
     if len(plain) < MIN_LENGTH:
-        raise ValueError("Le mot de passe doit contenir au moins 8 caractères.")
+        raise ValueError("Le mot de passe doit contenir au moins 8 caracteres.")
     if len(plain) > MAX_LENGTH:
-        raise ValueError("Le mot de passe doit contenir au plus 128 caractères.")
+        raise ValueError("Le mot de passe doit contenir au plus 128 caracteres.")
     if plain.isdigit():
-        raise ValueError("Le mot de passe ne peut pas être composé uniquement de chiffres.")
+        raise ValueError("Le mot de passe ne peut pas etre compose uniquement de chiffres.")
 
 
 def hash_password(plain: str) -> str:
