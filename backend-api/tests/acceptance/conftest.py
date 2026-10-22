@@ -24,7 +24,7 @@ from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
 from app.rate_limiter import limiter
 from app.seed import seed_sample_data
-from tests.helpers import demo_login, phone_session, send_open_check, sign_in
+from tests.helpers import TEST_PASSWORD, demo_login, phone_session, send_open_check, sign_in
 
 # Statements need a period at least this long; every sale in a scenario lands today.
 STATEMENT_PERIOD = {"from": "2026-01-01T00:00:00"}
@@ -202,7 +202,7 @@ def can_sign_in(world, name):
     assert r.status_code == 200, r.text
     assert r.json()["must_change_password"]
     r = world.call(
-        "POST", "/api/auth/password", json={"new": "motdepasse1"},
+        "POST", "/api/auth/password", json={"new": TEST_PASSWORD},
         headers={"Authorization": f"Bearer {r.json()['access_token']}"},
     )
     assert r.status_code == 200, r.text

@@ -12,7 +12,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import String, select
 
-from tests.helpers import demo_login
+from tests.helpers import OTHER_PASSWORD, TEST_PASSWORD, WRONG_PASSWORD, demo_login
 from app import models
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
@@ -40,7 +40,7 @@ async def client():
     limiter.enabled = True
 
 
-async def _sign_in(ac, phone=OLD, app_name="customer", password="motdepasse1"):
+async def _sign_in(ac, phone=OLD, app_name="customer", password=TEST_PASSWORD):
     r = await sign_in(ac, phone, app_name, password)
     assert r.status_code == 200, r.text
     return r.json()
@@ -102,7 +102,7 @@ async def test_demo_accounts_have_nothing_to_recover(client):
     assert (await client.post("/api/auth/sessions/revoke-others", json={}, headers=h)).status_code == 403
 
 
-async def _request_change(ac, pair, password="motdepasse1", new_phone=NEW):
+async def _request_change(ac, pair, password=TEST_PASSWORD, new_phone=NEW):
     return await ac.post(
         "/api/auth/change-number/request",
         json={"password": password, "new_phone": new_phone, "country_code": "CI"}, headers=_h(pair),
@@ -117,7 +117,7 @@ async def test_change_number_needs_the_password_and_the_code_on_the_new_number(c
     pair = await _sign_in(client)
 
     # A session left unlocked is not enough: the password is asked again.
-    r = await _request_change(client, pair, password="mauvaismdp1")
+    r = await _request_change(client, pair, password=WRONG_PASSWORD)
     assert r.status_code == 401 and r.json()["detail"] == "Mot de passe incorrect."
     r = await _request_change(client, pair)
     assert r.status_code == 202, r.text
@@ -199,7 +199,7 @@ async def _file(ac, pair, old=MERCHANT, details="Mon maquis s'appelle Chez Tanti
 async def test_recovery_needs_a_verified_new_number(client):
     await arm(MERCHANT)
     # The new number is registered but the team has not checked it yet.
-    r = await client.post("/api/auth/register", json={"phone": NEW, "password": "motdepasse1", "app": "customer"})
+    r = await client.post("/api/auth/register", json={"phone": NEW, "password": TEST_PASSWORD, "app": "customer"})
     assert r.status_code == 201
     unverified = r.json()
     r = await _file(client, unverified)
@@ -219,8 +219,8 @@ async def test_merchant_recovers_shop_after_losing_number(client):
     await arm(MERCHANT)
     merchant = await _sign_in(client, MERCHANT, "merchant")
     await _give_points("+2250700000002", 5)
-    await make_user(NEW, password="nouveaumdp9")
-    new = await _sign_in(client, NEW, password="nouveaumdp9")
+    await make_user(NEW, password=OTHER_PASSWORD)
+    new = await _sign_in(client, NEW, password=OTHER_PASSWORD)
     assert (await _file(client, new)).status_code == 202
 
     admin = await _admin(client)
@@ -240,7 +240,7 @@ async def test_merchant_recovers_shop_after_losing_number(client):
     # password and proven number the person registered it with.
     assert (await client.post("/api/auth/refresh", json={"refresh_token": merchant["refresh_token"]})).status_code == 401
     assert (await sign_in(client, MERCHANT, "merchant")).status_code == 401
-    recovered = await sign_in(client, NEW, "merchant", password="nouveaumdp9")
+    recovered = await sign_in(client, NEW, "merchant", password=OTHER_PASSWORD)
     assert recovered.status_code == 200, recovered.text
     assert recovered.json()["verified"] is True
     assert (await client.get("/api/merchant/venue/location", headers=_h(recovered.json()))).status_code == 200
@@ -265,7 +265,7 @@ async def _filed_for_merchant(client, consent=None):
     """The merchant's account, a registered and verified placeholder on NEW, a filed request."""
     await arm(MERCHANT)
     r = await client.post("/api/auth/register", json={
-        "phone": NEW, "password": "nouveaumdp9", "app": "customer", **({"loyalty_consent_version": consent} if consent else {}),
+        "phone": NEW, "password": OTHER_PASSWORD, "app": "customer", **({"loyalty_consent_version": consent} if consent else {}),
     })
     unverified = r.json()
     code = await send_open_check(NEW, "verify_number")
@@ -284,7 +284,7 @@ async def test_approve_takes_a_verified_placeholder_and_keeps_its_consent(client
     async with AsyncSessionLocal() as db:
         consent = (await db.execute(select(models.LoyaltyConsent).where(models.LoyaltyConsent.customer_id == "tel:" + NEW_E164))).scalar_one()
         assert consent.consent_version == "v1" and consent.withdrawn_at is None
-    assert (await sign_in(client, NEW, "merchant", password="nouveaumdp9")).status_code == 200
+    assert (await sign_in(client, NEW, "merchant", password=OTHER_PASSWORD)).status_code == 200
 
 
 @pytest.mark.asyncio
@@ -295,7 +295,7 @@ async def test_approve_refuses_a_placeholder_that_is_not_the_filer(client):
         filer = (await db.execute(select(models.User).where(models.User.phone_e164 == NEW_E164))).scalar_one()
         filer.phone_e164 = "+2250500000000"
         await db.commit()
-    await make_user(NEW, password="autremdp123")
+    await make_user(NEW, password=OTHER_PASSWORD)
     r = await client.post(f"/api/admin/recovery-requests/{rid}/approve", json={}, headers=admin)
     assert r.status_code == 409
 

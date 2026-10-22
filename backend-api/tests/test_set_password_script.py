@@ -10,6 +10,7 @@ from app import models
 from app.core.passwords import verify_password
 from app.db import AsyncSessionLocal, Base, engine
 from app.scripts import set_password
+from tests.helpers import OTHER_PASSWORD, TEST_PASSWORD
 
 PHONE = "+2250700000099"
 
@@ -43,10 +44,10 @@ async def _make_admin():
 @pytest.mark.asyncio
 async def test_script_sets_a_verified_password():
     await _make_admin()
-    code = await set_password.run([PHONE], input=_answers("un-bon-mot-de-passe", "un-bon-mot-de-passe"))
+    code = await set_password.run([PHONE], input=_answers(TEST_PASSWORD, TEST_PASSWORD))
     assert code == 0
     user = await _user()
-    assert verify_password("un-bon-mot-de-passe", user.password_hash)
+    assert verify_password(TEST_PASSWORD, user.password_hash)
     assert user.phone_verified_at is not None
     assert user.must_change_password is False
     assert user.failed_logins == 0 and user.locked_until is None
@@ -64,9 +65,9 @@ async def test_script_refuses_a_weak_password(capsys):
 @pytest.mark.asyncio
 async def test_script_refuses_mismatch_and_unknown_number(capsys):
     await _make_admin()
-    assert await set_password.run([PHONE], input=_answers("un-bon-mot-de-passe", "autre-chose-123")) == 1
+    assert await set_password.run([PHONE], input=_answers(TEST_PASSWORD, OTHER_PASSWORD)) == 1
     assert (await _user()).password_hash is None
-    assert await set_password.run(["+2250700000098"], input=_answers("un-bon-mot-de-passe", "un-bon-mot-de-passe")) == 1
+    assert await set_password.run(["+2250700000098"], input=_answers(TEST_PASSWORD, TEST_PASSWORD)) == 1
     assert "Numero inconnu. Accordez d'abord le role admin." in capsys.readouterr().out
 
 
@@ -75,7 +76,7 @@ async def test_main_wrapper_runs_the_script():
     await _make_admin()
 
     def call():
-        return set_password.main([PHONE], input=_answers("un-bon-mot-de-passe", "un-bon-mot-de-passe"))
+        return set_password.main([PHONE], input=_answers(TEST_PASSWORD, TEST_PASSWORD))
 
     code = await asyncio.get_running_loop().run_in_executor(None, call)
     assert code == 0

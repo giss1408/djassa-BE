@@ -13,7 +13,7 @@ from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
 from app.rate_limiter import limiter
 from app.seed import seed_sample_data
-from tests.helpers import make_user, send_open_check, sign_in
+from tests.helpers import OTHER_PASSWORD, SQUATTER_PASSWORD, TEST_PASSWORD, WRONG_PASSWORD, make_user, send_open_check, sign_in
 
 PHONE = "0701020304"
 E164 = normalize_phone(PHONE, "CI")
@@ -50,11 +50,11 @@ async def _old_session(role="customer"):
     return pair.model_dump()
 
 
-def _register(ac, password="squatter99"):
+def _register(ac, password=SQUATTER_PASSWORD):
     return ac.post("/api/auth/register", json={"phone": PHONE, "country_code": "CI", "password": password})
 
 
-def _claim(ac, code, password="proprio2026", **extra):
+def _claim(ac, code, password=OTHER_PASSWORD, **extra):
     return ac.post(
         "/api/auth/claim", json={"phone": PHONE, "country_code": "CI", "code": code, "password": password, **extra}
     )
@@ -75,7 +75,7 @@ async def test_register_over_an_existing_account_changes_nothing(client):
     assert user.password_hash is None and user.phone_verified_at is not None
     assert await _refresh_status(client, victim) == 200
     # The squatter's password opens nothing.
-    assert (await sign_in(client, PHONE, password="squatter99")).status_code == 409
+    assert (await sign_in(client, PHONE, password=SQUATTER_PASSWORD)).status_code == 409
 
 
 @pytest.mark.asyncio
@@ -95,8 +95,8 @@ async def test_suspended_account_gets_the_same_answer(client):
 async def test_only_the_code_recipient_can_claim(client):
     await make_user(PHONE, password=None, verified=True)
     victim = await _old_session()
-    assert (await _register(client, password="squatter99")).status_code == 202
-    assert (await _claim(client, "000000", password="squatter99")).status_code == 401
+    assert (await _register(client, password=SQUATTER_PASSWORD)).status_code == 202
+    assert (await _claim(client, "000000", password=SQUATTER_PASSWORD)).status_code == 401
     code = await send_open_check(PHONE, "verify_number")
     weak = await _claim(client, code, password="12345678")
     assert weak.status_code == 422
@@ -107,9 +107,9 @@ async def test_only_the_code_recipient_can_claim(client):
     assert (await client.get("/api/customer/loyalty", headers=_auth(pair))).status_code == 200
     assert await _refresh_status(client, victim) == 401
     # The code is single use and the squatter's password never worked.
-    assert (await _claim(client, code, password="squatter99")).status_code == 401
-    assert (await sign_in(client, PHONE, password="squatter99")).status_code == 401
-    assert (await sign_in(client, PHONE, password="proprio2026")).status_code == 200
+    assert (await _claim(client, code, password=SQUATTER_PASSWORD)).status_code == 401
+    assert (await sign_in(client, PHONE, password=SQUATTER_PASSWORD)).status_code == 401
+    assert (await sign_in(client, PHONE, password=OTHER_PASSWORD)).status_code == 200
     async with AsyncSessionLocal() as db:
         consent = (await db.execute(select(models.LoyaltyConsent))).scalars().one()
         assert consent.customer_id == phone_key(E164)
@@ -122,7 +122,7 @@ async def test_claim_for_an_app_the_user_has_no_role_in(client):
     code = await send_open_check(PHONE, "verify_number")
     r = await _claim(client, code, app="merchant")
     assert r.status_code == 403
-    assert (await sign_in(client, PHONE, password="proprio2026")).status_code == 200
+    assert (await sign_in(client, PHONE, password=OTHER_PASSWORD)).status_code == 200
 
 
 @pytest.mark.asyncio
@@ -140,11 +140,11 @@ async def test_must_change_needs_the_pc_session(client):
     temp = await send_open_check(PHONE, "reset_password")
     held = (await sign_in(client, PHONE, password=temp)).json()
     assert held["must_change_password"] is True
-    r = await client.post("/api/auth/password", headers=_auth(plain), json={"new": "volemoi2026"})
+    r = await client.post("/api/auth/password", headers=_auth(plain), json={"new": SQUATTER_PASSWORD})
     assert r.status_code == 401
-    r = await client.post("/api/auth/password", headers=_auth(plain), json={"current": "faux", "new": "volemoi2026"})
+    r = await client.post("/api/auth/password", headers=_auth(plain), json={"current": WRONG_PASSWORD, "new": SQUATTER_PASSWORD})
     assert r.status_code == 401
-    r = await client.post("/api/auth/password", headers=_auth(held), json={"new": "nouveaumdp9"})
+    r = await client.post("/api/auth/password", headers=_auth(held), json={"new": OTHER_PASSWORD})
     assert r.status_code == 200, r.text
 
 
@@ -155,7 +155,7 @@ async def test_password_change_kills_a_sent_temporary_password(client):
     await client.post("/api/auth/password-reset", json={"phone": PHONE, "country_code": "CI"})
     temp = await send_open_check(PHONE, "reset_password")
     r = await client.post(
-        "/api/auth/password", headers=_auth(pair), json={"current": "motdepasse1", "new": "nouveaumdp9"}
+        "/api/auth/password", headers=_auth(pair), json={"current": TEST_PASSWORD, "new": OTHER_PASSWORD}
     )
     assert r.status_code == 200, r.text
     assert (await sign_in(client, PHONE, password=temp)).status_code == 401
@@ -175,7 +175,7 @@ async def test_temporary_password_login_signs_out_earlier_sessions(client):
 @pytest.mark.asyncio
 async def test_verify_number_signs_out_earlier_sessions(client):
     r = await client.post(
-        "/api/auth/register", json={"phone": PHONE, "country_code": "CI", "password": "motdepasse1"}
+        "/api/auth/register", json={"phone": PHONE, "country_code": "CI", "password": TEST_PASSWORD}
     )
     first = r.json()
     second = (await sign_in(client, PHONE)).json()
@@ -213,5 +213,5 @@ async def test_wrong_temporary_password_on_a_team_login_counts(client):
     await client.post("/api/auth/password-reset", json={"phone": PHONE, "country_code": "CI"})
     temp = await send_open_check(PHONE, "reset_password")
     for _ in range(5):
-        assert (await sign_in(client, PHONE, password="Mauvais12345")).status_code == 401
+        assert (await sign_in(client, PHONE, password=WRONG_PASSWORD)).status_code == 401
     assert (await sign_in(client, PHONE, password=temp)).status_code == 423

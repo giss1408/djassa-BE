@@ -215,7 +215,12 @@ async def _seed_shops_and_deals(db) -> None:
     await db.commit()
 
 
-DEV_PASSWORD = "fidelia2026"
+def dev_password() -> str | None:
+    """The shared test logins' password, from FIDELIA_SEED_PASSWORD (a Render
+    secret on the test API). Never written in the repository: it would be
+    public. Unset means the sample logins get no password."""
+    return os.getenv("FIDELIA_SEED_PASSWORD") or None
+
 _DEV_ACCOUNTS = (
     (DEV_CUSTOMER_PHONE, "customer"),
     (DEV_MERCHANT_PHONE, "merchant"),
@@ -227,10 +232,12 @@ _DEV_ACCOUNTS = (
 
 async def _seed_dev_accounts(db) -> None:
     """Gives the development logins a known password and a proven number, so
-    the apps can be driven without WhatsApp. Never runs in production: these
-    passwords are public in this repository."""
+    the apps can be driven without WhatsApp. Never runs in production."""
     if os.getenv("FIDELIA_ENV") == "production":
         raise RuntimeError("Sample logins with a known password are refused when FIDELIA_ENV=production")
+    password = dev_password()
+    if password is None:
+        return
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     for phone, role in _DEV_ACCOUNTS:
         user = (await db.execute(select(models.User).where(models.User.phone_e164 == phone))).scalar_one_or_none()
@@ -238,7 +245,7 @@ async def _seed_dev_accounts(db) -> None:
             user = models.User(phone_e164=phone, roles=role, disabled=False, created_at=now)
             db.add(user)
         if not user.password_hash:
-            user.password_hash = hash_password(DEV_PASSWORD)
+            user.password_hash = hash_password(password)
             user.phone_verified_at = user.phone_verified_at or now
             user.must_change_password = False
     await db.commit()

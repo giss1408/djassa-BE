@@ -17,7 +17,7 @@ from app.main import app
 from app.rate_limiter import limiter
 from app.seed import seed_sample_data
 from app.services import account_checks
-from tests.helpers import make_user, sign_in
+from tests.helpers import OTHER_PASSWORD, TEST_PASSWORD, WRONG_PASSWORD, make_user, sign_in
 
 PHONE = "0701020304"
 E164 = normalize_phone(PHONE, "CI")
@@ -107,12 +107,12 @@ async def test_temporary_password_forces_a_change(client):
     # The password is single use.
     assert (await sign_in(client, PHONE, password=temp)).status_code == 401
     # A pc session may change the password without knowing an old one.
-    r = await client.post("/api/auth/password", headers=_auth(pair), json={"new": "nouveaumdp9"})
+    r = await client.post("/api/auth/password", headers=_auth(pair), json={"new": OTHER_PASSWORD})
     assert r.status_code == 200, r.text
     new = r.json()
     assert new["must_change_password"] is False
     assert (await client.get("/api/customer/loyalty", headers=_auth(new))).status_code == 200
-    assert (await sign_in(client, PHONE, password="nouveaumdp9")).status_code == 200
+    assert (await sign_in(client, PHONE, password=OTHER_PASSWORD)).status_code == 200
 
 
 @pytest.mark.asyncio
@@ -121,13 +121,13 @@ async def test_password_change_signs_out_other_sessions(client):
     first = (await sign_in(client, PHONE)).json()
     second = (await sign_in(client, PHONE)).json()
     bad = await client.post(
-        "/api/auth/password", headers=_auth(second), json={"current": "pasbon12345", "new": "nouveaumdp9"}
+        "/api/auth/password", headers=_auth(second), json={"current": "pasbon12345", "new": OTHER_PASSWORD}
     )
     assert bad.status_code == 401 and bad.json()["detail"] == "Mot de passe actuel incorrect."
-    weak = await client.post("/api/auth/password", headers=_auth(second), json={"current": "motdepasse1", "new": "a"})
+    weak = await client.post("/api/auth/password", headers=_auth(second), json={"current": TEST_PASSWORD, "new": "a"})
     assert weak.status_code == 422
     r = await client.post(
-        "/api/auth/password", headers=_auth(second), json={"current": "motdepasse1", "new": "nouveaumdp9"}
+        "/api/auth/password", headers=_auth(second), json={"current": TEST_PASSWORD, "new": OTHER_PASSWORD}
     )
     assert r.status_code == 200, r.text
     new = r.json()
@@ -163,7 +163,7 @@ async def test_wrong_temporary_password_counts_towards_the_lockout(client):
     await _ask(client)
     temp = await _send_temporary()
     for _ in range(5):
-        assert (await sign_in(client, PHONE, password="Mauvais12345")).status_code in (401,)
+        assert (await sign_in(client, PHONE, password=WRONG_PASSWORD)).status_code in (401,)
     assert (await sign_in(client, PHONE, password=temp)).status_code == 423
 
 

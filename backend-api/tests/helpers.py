@@ -1,6 +1,7 @@
 """Shared test helpers for password sign-in."""
 
 import re
+import secrets
 from datetime import datetime, timezone
 from urllib.parse import unquote
 
@@ -12,8 +13,15 @@ from app.core.phone import normalize_phone
 from app.db import AsyncSessionLocal
 from app.services import account_checks
 
+# Generated per run, so no password literal sits in the repository (secret
+# scanners flag them) and no test depends on a particular value.
+TEST_PASSWORD = "pw-" + secrets.token_urlsafe(9)
+OTHER_PASSWORD = "pw-" + secrets.token_urlsafe(9)
+WRONG_PASSWORD = "pw-" + secrets.token_urlsafe(9)
+SQUATTER_PASSWORD = "pw-" + secrets.token_urlsafe(9)
 
-async def make_user(phone, roles="customer", password="motdepasse1", verified=True) -> None:
+
+async def make_user(phone, roles="customer", password=TEST_PASSWORD, verified=True) -> None:
     """Writes a user straight to the database. `phone` is in national form."""
     e164 = normalize_phone(phone, "CI")
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -28,7 +36,7 @@ async def make_user(phone, roles="customer", password="motdepasse1", verified=Tr
         await db.commit()
 
 
-async def sign_in(ac, phone, app="customer", password="motdepasse1"):
+async def sign_in(ac, phone, app="customer", password=TEST_PASSWORD):
     return await ac.post("/api/auth/login", json={"phone": phone, "country_code": "CI", "password": password, "app": app})
 
 
@@ -41,15 +49,15 @@ async def phone_session(ac, phone, app="customer"):
         known = (await db.execute(select(models.User.id).where(models.User.phone_e164 == e164))).first()
     if known is None:
         await make_user(phone)
-    from app.seed import _DEV_ACCOUNTS, DEV_PASSWORD
+    from app.seed import _DEV_ACCOUNTS, dev_password
 
     if e164 in {seeded for seeded, _ in _DEV_ACCOUNTS}:
-        return await sign_in(ac, phone, app=app, password=DEV_PASSWORD)
+        return await sign_in(ac, phone, app=app, password=dev_password())
     return await sign_in(ac, phone, app=app)
     return r
 
 
-async def arm(phone, password="motdepasse1") -> None:
+async def arm(phone, password=TEST_PASSWORD) -> None:
     """Gives an existing user (a seeded one, or one a team action created) a
     password and a proven number, so it can sign in."""
     e164 = normalize_phone(phone, "CI")

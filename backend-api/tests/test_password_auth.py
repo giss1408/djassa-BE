@@ -14,7 +14,8 @@ from app.core.phone import normalize_phone
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
 from app.rate_limiter import limiter
-from tests.helpers import demo_login, make_user, sign_in
+from tests.helpers import TEST_PASSWORD, WRONG_PASSWORD, demo_login, make_user, sign_in
+from app.seed import dev_password
 
 PHONE = "0701020304"
 E164 = normalize_phone(PHONE, "CI")
@@ -40,7 +41,7 @@ def _claims(token):
     return jwt.get_unverified_claims(token)
 
 
-def _register(ac, password="motdepasse1", **extra):
+def _register(ac, password=TEST_PASSWORD, **extra):
     return ac.post(
         "/api/auth/register",
         json={"phone": PHONE, "country_code": "CI", "password": password, "app": "customer", **extra},
@@ -96,7 +97,7 @@ async def test_login_with_right_password(client):
 @pytest.mark.asyncio
 async def test_unknown_number_and_wrong_password_look_the_same(client):
     await make_user(PHONE)
-    wrong = await sign_in(client, PHONE, password="mauvaispass1")
+    wrong = await sign_in(client, PHONE, password=WRONG_PASSWORD)
     unknown = await sign_in(client, "0709999999")
     assert wrong.status_code == unknown.status_code == 401
     assert wrong.json() == unknown.json() == {"detail": "Numero ou mot de passe incorrect."}
@@ -106,7 +107,7 @@ async def test_unknown_number_and_wrong_password_look_the_same(client):
 async def test_five_wrong_passwords_lock_for_15_minutes(client):
     await make_user(PHONE)
     for _ in range(5):
-        assert (await sign_in(client, PHONE, password="mauvaispass1")).status_code == 401
+        assert (await sign_in(client, PHONE, password=WRONG_PASSWORD)).status_code == 401
     r = await sign_in(client, PHONE)
     assert r.status_code == 423 and r.json()["detail"] == "Trop d'essais. Reessayez dans 15 minutes."
     user = await _user()
@@ -124,7 +125,7 @@ async def test_merchant_app_needs_the_merchant_role(client):
     r = await sign_in(client, PHONE, app="merchant")
     assert r.status_code == 403
     # A wrong password never reveals the missing role.
-    assert (await sign_in(client, PHONE, app="merchant", password="mauvaispass1")).status_code == 401
+    assert (await sign_in(client, PHONE, app="merchant", password=WRONG_PASSWORD)).status_code == 401
     async with AsyncSessionLocal() as db:
         u = (await db.execute(select(models.User))).scalar_one()
         u.roles = "customer,merchant"
@@ -166,10 +167,10 @@ async def test_weak_password_is_refused(client):
 async def test_correct_password_resets_the_miss_counter(client):
     await make_user(PHONE)
     for _ in range(4):
-        assert (await sign_in(client, PHONE, password="mauvaispass1")).status_code == 401
+        assert (await sign_in(client, PHONE, password=WRONG_PASSWORD)).status_code == 401
     assert (await sign_in(client, PHONE)).status_code == 200
     for _ in range(4):
-        assert (await sign_in(client, PHONE, password="mauvaispass1")).status_code == 401
+        assert (await sign_in(client, PHONE, password=WRONG_PASSWORD)).status_code == 401
 
 
 @pytest.mark.asyncio
@@ -197,18 +198,18 @@ async def test_seed_accounts_sign_in_with_their_password(client):
         ("0700000004", "admin", "agent"),
         ("0700000009", "admin", "admin"),
     ):
-        r = await sign_in(client, phone, app=app_name, password="fidelia2026")
+        r = await sign_in(client, phone, app=app_name, password=dev_password())
         assert r.status_code == 200, (phone, r.text)
         body = r.json()
         assert body["role"] == role
         assert body["verified"] is True and body["must_change_password"] is False
     # The seeded merchant runs the second sample maquis.
-    merchant = (await sign_in(client, "0700000002", app="merchant", password="fidelia2026")).json()
+    merchant = (await sign_in(client, "0700000002", app="merchant", password=dev_password())).json()
     h = {"Authorization": f"Bearer {merchant['access_token']}"}
     assert (await client.get("/api/merchant/venue/location", headers=h)).status_code == 200
     # Seeding again keeps the same accounts and passwords.
     await seed_sample_data()
-    assert (await sign_in(client, "0700000001", password="fidelia2026")).status_code == 200
+    assert (await sign_in(client, "0700000001", password=dev_password())).status_code == 200
 
 
 @pytest.mark.asyncio

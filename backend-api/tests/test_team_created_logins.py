@@ -6,7 +6,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
-from tests.helpers import demo_login
+from tests.helpers import TEST_PASSWORD, demo_login
 from app import models
 from app.core.passwords import verify_password
 from app.core.phone import normalize_phone
@@ -94,11 +94,11 @@ async def test_new_cashier_login_waits_in_the_team_queue(client):
 
 @pytest.mark.asyncio
 async def test_existing_customer_made_merchant_keeps_their_password(client):
-    await make_user(PERSON, password="motdepasse1")
+    await make_user(PERSON, password=TEST_PASSWORD)
     r = await client.post("/api/admin/users/roles", json={"phone": PERSON, "role": "merchant"}, headers=await _admin(client))
     assert r.status_code == 200, r.text
     user, checks = await _state(PERSON)
-    assert verify_password("motdepasse1", user.password_hash)
+    assert verify_password(TEST_PASSWORD, user.password_hash)
     assert user.must_change_password is False and checks == []
     r = await sign_in(client, PERSON, "merchant")
     assert r.status_code == 200 and r.json()["must_change_password"] is False

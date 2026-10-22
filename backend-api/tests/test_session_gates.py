@@ -17,6 +17,7 @@ from app.main import app
 from app.rate_limiter import limiter
 from app.seed import seed_sample_data
 from app.services import account_checks
+from tests.helpers import TEST_PASSWORD
 
 PHONE = "0701020304"
 E164 = normalize_phone(PHONE, "CI")
@@ -43,7 +44,7 @@ def _auth(pair):
 async def _register(ac, **extra):
     r = await ac.post(
         "/api/auth/register",
-        json={"phone": PHONE, "country_code": "CI", "password": "motdepasse1", "app": "customer", **extra},
+        json={"phone": PHONE, "country_code": "CI", "password": TEST_PASSWORD, "app": "customer", **extra},
     )
     assert r.status_code == 201, r.text
     return r.json()

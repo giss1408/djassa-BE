@@ -77,6 +77,11 @@ services:
       # later starts detect them and add nothing.
       - key: FIDELIA_SEED_SAMPLE
         value: "1"
+      # Password of the shared test logins (07 00 00 00 01/02/03/04/09),
+      # app/seed.py. A secret: set it in the dashboard, never in this file.
+      # Unset = the sample logins get no password.
+      - key: FIDELIA_SEED_PASSWORD
+        sync: false
       # Offer alerts to the customer app (app/services/push.py). "console" logs
       # them; set "fcm" plus FCM_PROJECT_ID and FCM_SERVICE_ACCOUNT_JSON (the
       # Firebase service account key file's content) to send real pushes.

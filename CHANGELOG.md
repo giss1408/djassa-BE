@@ -23,7 +23,7 @@ until 6 October 2026, then **Hossouko**, and is **Fidelia** since 9 October.
 - **SMS removed**: `/api/auth/otp/*` answer 410 ("Mettez a jour
   l'application"); the Orange SMS integration, `OTP_SENDER`, `OTP_DEV_ECHO`
   and `TEST_OTP_NUMBERS` are gone.
-- **Seed passwords**: the shared test numbers sign in with `fidelia2026`
+- **Seed passwords**: the shared test numbers sign in with the password in `FIDELIA_SEED_PASSWORD` (a Render secret; unset = no password)
   (refused when `FIDELIA_ENV=production`).
 - **First admin**: `python -m app.scripts.set_password +225...` sets a
   verified password on an existing number.

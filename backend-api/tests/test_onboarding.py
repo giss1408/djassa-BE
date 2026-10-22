@@ -6,7 +6,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
-from tests.helpers import demo_login
+from tests.helpers import TEST_PASSWORD, demo_login
 from app import models
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
@@ -42,7 +42,7 @@ async def _merchant_sign_in(ac, phone=PHONE):
     assert r.status_code == 200, r.text
     assert r.json()["must_change_password"] is True
     h = {"Authorization": f"Bearer {r.json()['access_token']}"}
-    return await ac.post("/api/auth/password", json={"new": "motdepasse1"}, headers=h)
+    return await ac.post("/api/auth/password", json={"new": TEST_PASSWORD}, headers=h)
 
 
 SHOP = {
