@@ -154,10 +154,8 @@ def customer_signs_in(world, phone):
 
 @given(parsers.parse('{name} asks to join Fidelia for her {category} "{shop}" with the number "{phone}"'))
 def asks_to_join(world, name, category, shop, phone):
-    code = world.call("POST", "/api/partner-requests/code", json={"phone": phone})
-    assert code.status_code == 202, code.text
     body = {
-        "phone": phone, "code": code.json()["dev_code"], "contact_name": name, "shop_name": shop,
+        "phone": phone, "contact_name": name, "shop_name": shop,
         "category": category, "commune": "Abobo", "wallet_provider": "wave",
     }
     r = world.call("POST", "/api/partner-requests", json=body)
@@ -207,6 +205,13 @@ def cannot_sign_in(world, name):
 def can_sign_in(world, name):
     r = world.phone_sign_in(world.applicant["phone"], "merchant")
     assert r.status_code == 200, r.text
+    if r.json()["must_change_password"]:
+        # A login the team created starts on a temporary password.
+        r = world.call(
+            "POST", "/api/auth/password", json={"new": "motdepasse1"},
+            headers={"Authorization": f"Bearer {r.json()['access_token']}"},
+        )
+        assert r.status_code == 200, r.text
     world.shop = {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 

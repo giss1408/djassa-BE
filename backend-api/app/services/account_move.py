@@ -103,6 +103,16 @@ async def move_account(
     )
 
 
+async def owns_nothing(db: AsyncSession, key: str) -> bool:
+    """True when no row of any OWNED column is keyed to `key`: an account that
+    holds nothing yet and can be replaced by the one moving in."""
+    for model, column in OWNED:
+        found = (await db.execute(select(model).where(getattr(model, column) == key).limit(1))).first()
+        if found is not None:
+            return False
+    return True
+
+
 async def revoke_all_sessions(db: AsyncSession, user_id: int, now: datetime, keep_token_hash: str | None = None) -> int:
     """Revokes every refresh token of the user, except one family if asked."""
     query = update(models.RefreshToken).where(

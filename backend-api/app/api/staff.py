@@ -25,7 +25,6 @@ from ..core.security import require_role
 from ..db import get_db
 from ..services.account_move import revoke_role_sessions
 from .auth import ensure_role, phone_or_422, utcnow
-from .onboarding import _notify
 from .payment_requests import _my_venue
 
 router = APIRouter()
@@ -111,7 +110,6 @@ async def add_staff(payload: StaffIn, db: AsyncSession = Depends(get_db), user=D
     db.add(row)
     await db.commit()
     await db.refresh(row)
-    await _notify(e164, f"Fidelia Pro : {venue.name} vous a ajoute a son equipe. Installez Fidelia Pro et connectez-vous avec ce numero.")
     return await _out(db, row)
 
 

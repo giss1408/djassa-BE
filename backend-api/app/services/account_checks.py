@@ -67,6 +67,11 @@ async def open_check(
         )
         db.add(check)
     if new_phone_e164 is not None:
+        if check.new_phone_e164 not in (None, new_phone_e164):
+            # A code already sent went to the earlier number: it must not
+            # confirm a move to this one.
+            check.status = "pending"
+            check.secret_hash = None
         check.new_phone_e164 = new_phone_e164
     await db.flush()
     return check

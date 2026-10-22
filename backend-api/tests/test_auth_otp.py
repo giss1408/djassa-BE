@@ -165,6 +165,9 @@ async def test_logout_revokes_refresh(client):
 async def test_merchant_session_needs_the_merchant_role(client):
     r = await _sign_in(client, app_name="merchant")
     assert r.status_code == 403
+    # A login without a password would now wait for a team-sent one.
+    from tests.helpers import make_user
+    await make_user(PHONE)
 
     admin = (await client.post("/api/token", data={"username": "admin", "password": "admin123"})).json()["access_token"]
     async with AsyncSessionLocal() as db:
@@ -176,7 +179,7 @@ async def test_merchant_session_needs_the_merchant_role(client):
         headers={"Authorization": f"Bearer {admin}"},
     )
     assert r.status_code == 200, r.text
-    assert r.json()["roles"] == ["merchant"]
+    assert r.json()["roles"] == ["customer", "merchant"]
 
     await _age_codes(61)
     r = await _sign_in(client, app_name="merchant")

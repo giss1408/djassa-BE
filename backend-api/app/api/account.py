@@ -3,16 +3,15 @@
 Three situations, three paths:
 
 * **Phone lost or stolen, number kept** (a replacement SIM): sign in again
-  with a code, then end every other session.
+  with the password, then end every other session.
       POST /api/auth/sessions/revoke-others
-* **New number, old SIM still at hand**: prove both numbers, and the account
-  moves at once.
-      POST /api/auth/change-number/request   (signed in) codes to both numbers
-      POST /api/auth/change-number/confirm   (signed in) both codes
-* **Old number gone**: prove the new number, describe the account, and a
-  person decides. The old number is warned by SMS in case it is not lost.
-      POST /api/auth/recovery/code           code to the new number
-      POST /api/auth/recovery                the request
+* **New number, old SIM still at hand**: the password again, then a code the
+  team sends on WhatsApp to the new number, and the account moves at once.
+      POST /api/auth/change-number/request   (signed in) password + new number
+      POST /api/auth/change-number/confirm   (signed in) the code
+* **Old number gone**: register the new number (the team checks it on
+  WhatsApp), describe the account, and a person decides.
+      POST /api/auth/recovery                (signed in on the new number)
       GET  /api/admin/recovery-requests      what an admin needs to check it
       POST /api/admin/recovery-requests/{id}/approve | /reject
 
@@ -25,20 +24,19 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
-from ..core import otp, security
+from ..core import otp, passwords, security
 from ..core.phone import mask_phone, phone_key
 from ..db import get_db
 from ..rate_limiter import limiter
-from ..services import account_delete
-from ..services.account_move import NumberTaken, move_account, revoke_all_sessions, revoke_role_sessions
-from ..services.otp_sender import OtpDeliveryFailed, get_sender
-from .auth import (
-    TokenPairOut, check_code, dev_code, issue_tokens, phone_or_422, send_code, utcnow,
+from ..services import account_checks, account_delete
+from ..services.account_move import (
+    NumberTaken, move_account, owns_nothing, revoke_all_sessions, revoke_role_sessions,
 )
+from .auth import TokenPairOut, issue_tokens, phone_or_422, utcnow
 
 router = APIRouter()
 
@@ -54,14 +52,6 @@ async def _phone_account(db: AsyncSession, user) -> models.User:
     if account is None or account.disabled:
         raise HTTPException(status_code=403, detail="Disponible uniquement pour un compte connecte par telephone")
     return account
-
-
-async def _notify(e164: str, message: str) -> None:
-    """Best effort: a failed courtesy SMS must not undo the action."""
-    try:
-        await get_sender().send(e164, message)
-    except (OtpDeliveryFailed, RuntimeError):
-        pass
 
 
 # --- Sign out everywhere else ------------------------------------------------
@@ -87,22 +77,17 @@ async def revoke_other_sessions(payload: RevokeOthersIn, db: AsyncSession = Depe
 
 
 class ChangeNumberRequestIn(BaseModel):
+    password: str = Field(min_length=1, max_length=256)
     new_phone: str = Field(min_length=6, max_length=32)
     country_code: str = Field(default="CI", min_length=2, max_length=2)
 
 
 class ChangeNumberRequestOut(BaseModel):
-    old_phone_masked: str
     new_phone_masked: str
-    expires_in: int
-    resend_in: int
-    dev_old_code: str | None = None
-    dev_new_code: str | None = None
 
 
-class ChangeNumberConfirmIn(ChangeNumberRequestIn):
-    old_code: str = Field(pattern=r"^\d{6}$")
-    new_code: str = Field(pattern=r"^\d{6}$")
+class ChangeNumberConfirmIn(BaseModel):
+    code: str = Field(min_length=1, max_length=16)
 
 
 async def _new_number(db: AsyncSession, account: models.User, raw: str, country_code: str) -> str:
@@ -119,18 +104,16 @@ async def _new_number(db: AsyncSession, account: models.User, raw: str, country_
 async def request_number_change(
     request: Request, payload: ChangeNumberRequestIn, db: AsyncSession = Depends(get_db), user=Depends(security.get_current_user)
 ):
-    """A code to each number. The old one proves the SIM, not just a session:
-    a phone left unlocked must not be enough to take the account away."""
+    """Asks the team for a code on the new number. The password proves the
+    person, not just a session: a phone left unlocked must not be enough to
+    take the account away."""
     account = await _phone_account(db, user)
+    if not account.password_hash or not passwords.verify_password(payload.password, account.password_hash):
+        raise HTTPException(status_code=401, detail="Mot de passe incorrect.")
     new_e164 = await _new_number(db, account, payload.new_phone, payload.country_code)
-    now = utcnow()
-    old_code = await send_code(db, account.phone_e164, "change_number", now)
-    new_code = await send_code(db, new_e164, "change_number", now)
-    return ChangeNumberRequestOut(
-        old_phone_masked=mask_phone(account.phone_e164), new_phone_masked=mask_phone(new_e164),
-        expires_in=int(otp.CODE_TTL.total_seconds()), resend_in=int(otp.RESEND_AFTER.total_seconds()),
-        dev_old_code=dev_code(old_code), dev_new_code=dev_code(new_code),
-    )
+    await account_checks.open_check(db, account, "change_number", utcnow(), new_phone_e164=new_e164)
+    await db.commit()
+    return ChangeNumberRequestOut(new_phone_masked=mask_phone(new_e164))
 
 
 @router.post("/auth/change-number/confirm", response_model=TokenPairOut)
@@ -141,12 +124,15 @@ async def confirm_number_change(
     """Moves the account and returns a fresh session on the new number. Every
     other session, on any device, ends."""
     account = await _phone_account(db, user)
-    new_e164 = await _new_number(db, account, payload.new_phone, payload.country_code)
     now = utcnow()
-    await check_code(db, account.phone_e164, payload.old_code, "change_number", now)
-    await check_code(db, new_e164, payload.new_code, "change_number", now)
     try:
-        await move_account(db, account, new_e164, method="self_service", now=now)
+        check = await account_checks.verify_code(db, account, "change_number", payload.code.replace(" ", ""), now)
+    except account_checks.BadCode:
+        raise HTTPException(status_code=401, detail="Code incorrect ou expire.")
+    if not check.new_phone_e164:
+        raise HTTPException(status_code=401, detail="Code incorrect ou expire.")
+    try:
+        await move_account(db, account, check.new_phone_e164, method="self_service", now=now)
     except NumberTaken:
         raise HTTPException(status_code=409, detail=_NUMBER_TAKEN)
     pair = await issue_tokens(db, account, user["role"], otp.new_family(), now)
@@ -157,46 +143,27 @@ async def confirm_number_change(
 # --- Lost number: reviewed by a person ---------------------------------------
 
 
-class RecoveryCodeIn(BaseModel):
-    new_phone: str = Field(min_length=6, max_length=32)
-    country_code: str = Field(default="CI", min_length=2, max_length=2)
-
-
-class RecoveryIn(RecoveryCodeIn):
-    code: str = Field(pattern=r"^\d{6}$")
+class RecoveryIn(BaseModel):
     old_phone: str = Field(min_length=6, max_length=32)
+    country_code: str = Field(default="CI", min_length=2, max_length=2)
     details: str = Field(min_length=10, max_length=1000)
-
-
-@router.post("/auth/recovery/code", status_code=202)
-@limiter.limit("5/minute;20/hour")
-async def recovery_code(request: Request, payload: RecoveryCodeIn, db: AsyncSession = Depends(get_db)):
-    e164 = phone_or_422(payload.new_phone, payload.country_code)
-    code = await send_code(db, e164, "recovery", utcnow())
-    return {
-        "phone_masked": mask_phone(e164),
-        "expires_in": int(otp.CODE_TTL.total_seconds()),
-        "resend_in": int(otp.RESEND_AFTER.total_seconds()),
-        "dev_code": dev_code(code),
-    }
 
 
 @router.post("/auth/recovery", status_code=202)
 @limiter.limit("5/minute;20/hour")
-async def file_recovery(request: Request, payload: RecoveryIn, db: AsyncSession = Depends(get_db)):
-    """Files the request. The answer is the same whether or not the old number
-    has an account, so this cannot be used to find out who uses Fidelia."""
-    new_e164 = phone_or_422(payload.new_phone, payload.country_code)
+async def file_recovery(
+    request: Request, payload: RecoveryIn, db: AsyncSession = Depends(get_db), user=Depends(security.get_current_user)
+):
+    """Files the request from a session on the new number, which the team has
+    already checked on WhatsApp. The answer is the same whether or not the old
+    number has an account, so this cannot be used to find out who uses
+    Fidelia."""
+    account = await _phone_account(db, user)
+    new_e164 = account.phone_e164
     old_e164 = phone_or_422(payload.old_phone, payload.country_code)
     if old_e164 == new_e164:
         raise HTTPException(status_code=422, detail="Le nouveau numero doit etre different de l'ancien")
     now = utcnow()
-    await check_code(db, new_e164, payload.code, "recovery", now)
-
-    # The person proved the new number, so saying it is taken leaks nothing.
-    if (await db.execute(select(models.User.id).where(models.User.phone_e164 == new_e164))).scalar_one_or_none():
-        await db.commit()
-        raise HTTPException(status_code=409, detail=_NUMBER_TAKEN)
     pending = (
         await db.execute(
             select(models.RecoveryRequest.id).where(
@@ -205,7 +172,6 @@ async def file_recovery(request: Request, payload: RecoveryIn, db: AsyncSession 
         )
     ).scalar_one_or_none()
     if pending is not None:
-        await db.commit()
         raise HTTPException(status_code=409, detail="Une demande est deja en cours pour ce numero. Nous vous contacterons.")
 
     db.add(
@@ -215,15 +181,9 @@ async def file_recovery(request: Request, payload: RecoveryIn, db: AsyncSession 
         )
     )
     await db.commit()
-    # If the old number is not actually lost, its holder hears about it now.
-    await _notify(
-        old_e164,
-        "Fidelia : une demande de transfert de votre compte vers un autre numero a ete faite. "
-        "Si ce n'est pas vous, contactez Fidelia avant qu'elle soit traitee.",
-    )
     return {
         "status": "pending",
-        "message": "Demande recue. Fidelia vous contactera au nouveau numero pour verifier. "
+        "message": "Demande recue. Fidelia vous contactera pour verifier. "
         "Une fois validee, connectez-vous avec ce numero.",
     }
 
@@ -317,6 +277,17 @@ async def _pending(db: AsyncSession, request_id: int) -> models.RecoveryRequest:
     return r
 
 
+async def _drop_placeholder(db: AsyncSession, placeholder: models.User, keeper: models.User) -> None:
+    """Deletes the bare account on the new number. Its history rows (admin
+    actions, number changes) now belong to the account that takes the number."""
+    await db.execute(update(models.AdminAction).where(models.AdminAction.user_id == placeholder.id).values(user_id=keeper.id))
+    await db.execute(update(models.AccountNumberChange).where(models.AccountNumberChange.user_id == placeholder.id).values(user_id=keeper.id))
+    await db.execute(delete(models.RefreshToken).where(models.RefreshToken.user_id == placeholder.id))
+    await db.execute(delete(models.AccountCheck).where(models.AccountCheck.user_id == placeholder.id))
+    await db.delete(placeholder)
+    await db.flush()
+
+
 @router.post("/admin/recovery-requests/{request_id}/approve", response_model=RecoveryRequestOut)
 async def approve_recovery(
     request_id: int, payload: DecisionIn, db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))
@@ -326,13 +297,22 @@ async def approve_recovery(
     if account is None:
         raise HTTPException(status_code=409, detail="The old number has no account; reject the request")
     now = utcnow()
+    # The person registered the new number first, so it holds a bare customer
+    # account. That placeholder gives way (its password and proven number come
+    # along); anything more is two accounts to regroup by hand.
+    placeholder = (await db.execute(select(models.User).where(models.User.phone_e164 == r.new_phone_e164))).scalar_one_or_none()
+    if placeholder is not None:
+        if placeholder.role_set() != {"customer"} or not await owns_nothing(db, phone_key(r.new_phone_e164)):
+            raise HTTPException(status_code=409, detail="The new number already has an account")
+        account.password_hash = placeholder.password_hash
+        account.phone_verified_at = placeholder.phone_verified_at
+        await _drop_placeholder(db, placeholder, account)
     try:
         await move_account(db, account, r.new_phone_e164, method="recovery", now=now, recovery_request_id=r.id)
     except NumberTaken:
         raise HTTPException(status_code=409, detail="The new number already has an account")
     r.status, r.decided_at, r.decided_by, r.decision_note = "approved", now, admin["username"], payload.note
     await db.commit()
-    await _notify(r.new_phone_e164, "Fidelia : votre compte est maintenant sur ce numero. Connectez-vous avec lui.")
     return await _out(db, r)
 
 
@@ -343,7 +323,6 @@ async def reject_recovery(
     r = await _pending(db, request_id)
     r.status, r.decided_at, r.decided_by, r.decision_note = "rejected", utcnow(), admin["username"], payload.note
     await db.commit()
-    await _notify(r.new_phone_e164, "Fidelia : votre demande de recuperation de compte n'a pas pu etre validee. Contactez Fidelia.")
     return await _out(db, r)
 
 

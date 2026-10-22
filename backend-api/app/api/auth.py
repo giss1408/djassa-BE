@@ -37,7 +37,7 @@ from ..core.phone import InvalidPhone, mask_phone, normalize_phone, phone_key
 from ..db import get_db
 from ..metrics import AUTH_EVENTS
 from ..rate_limiter import limiter
-from ..services import loyalty_consent
+from ..services import account_checks, loyalty_consent
 from ..services.otp_sender import OtpDeliveryFailed, dev_echo_enabled, get_sender
 
 router = APIRouter()
@@ -483,13 +483,23 @@ async def grant_role(payload: GrantRoleIn, db: AsyncSession = Depends(get_db), a
 
 
 async def ensure_role(db: AsyncSession, e164: str, role: str, now: datetime) -> models.User:
-    """The account for `e164`, created if needed, holding `role`."""
+    """The account for `e164`, created if needed, holding `role`.
+
+    A login the team creates, or one that never had a password, waits in the
+    team's queue for a temporary password sent on WhatsApp (the hash stays
+    empty; that password signs in, and must be replaced). Someone who already
+    has a password keeps it and gets no check.
+    """
     user = (await db.execute(select(models.User).where(models.User.phone_e164 == e164))).scalar_one_or_none()
     if user is None:
         user = models.User(phone_e164=e164, roles=role, disabled=False, created_at=now)
         db.add(user)
+        await db.flush()
     else:
         user.roles = ",".join(sorted(user.role_set() | {role}))
+    if not user.password_hash:
+        user.must_change_password = True
+        await account_checks.open_check(db, user, "reset_password", now, team_created=True)
     return user
 
 
