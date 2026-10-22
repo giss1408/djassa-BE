@@ -878,6 +878,9 @@ class RecoveryRequest(Base):
     decided_by = Column(String(128), nullable=True)
     decided_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, nullable=False)
+    # The account that was signed in on the new number when this was filed.
+    # Approval only takes over that very account, never a later one.
+    filer_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
 
 class AccountDeletionRequest(Base):

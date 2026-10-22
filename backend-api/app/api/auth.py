@@ -499,7 +499,8 @@ async def ensure_role(db: AsyncSession, e164: str, role: str, now: datetime) -> 
         user.roles = ",".join(sorted(user.role_set() | {role}))
     if not user.password_hash:
         user.must_change_password = True
-        await account_checks.open_check(db, user, "reset_password", now, team_created=True)
+        check = await account_checks.open_check(db, user, "reset_password", now, team_created=True)
+        check.team_created = True
     return user
 
 

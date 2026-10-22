@@ -130,6 +130,8 @@ async def confirm_number_change(
     except account_checks.BadCode:
         raise HTTPException(status_code=401, detail="Code incorrect ou expire.")
     if not check.new_phone_e164:
+        # Nothing to move to: leave the check as it was.
+        check.status, check.done_at = "sent", None
         raise HTTPException(status_code=401, detail="Code incorrect ou expire.")
     try:
         await move_account(db, account, check.new_phone_e164, method="self_service", now=now)
@@ -177,7 +179,7 @@ async def file_recovery(
     db.add(
         models.RecoveryRequest(
             old_phone_e164=old_e164, new_phone_e164=new_e164, details=payload.details.strip(),
-            status="pending", created_at=now,
+            status="pending", created_at=now, filer_user_id=account.id,
         )
     )
     await db.commit()
@@ -282,6 +284,8 @@ async def _drop_placeholder(db: AsyncSession, placeholder: models.User, keeper: 
     actions, number changes) now belong to the account that takes the number."""
     await db.execute(update(models.AdminAction).where(models.AdminAction.user_id == placeholder.id).values(user_id=keeper.id))
     await db.execute(update(models.AccountNumberChange).where(models.AccountNumberChange.user_id == placeholder.id).values(user_id=keeper.id))
+    doomed = select(models.AccountCheck.id).where(models.AccountCheck.user_id == placeholder.id)
+    await db.execute(update(models.AdminAction).where(models.AdminAction.check_id.in_(doomed)).values(check_id=None))
     await db.execute(delete(models.RefreshToken).where(models.RefreshToken.user_id == placeholder.id))
     await db.execute(delete(models.AccountCheck).where(models.AccountCheck.user_id == placeholder.id))
     await db.delete(placeholder)
@@ -302,10 +306,18 @@ async def approve_recovery(
     # along); anything more is two accounts to regroup by hand.
     placeholder = (await db.execute(select(models.User).where(models.User.phone_e164 == r.new_phone_e164))).scalar_one_or_none()
     if placeholder is not None:
-        if placeholder.role_set() != {"customer"} or not await owns_nothing(db, phone_key(r.new_phone_e164)):
+        # Only the account that filed the request, and only once the team
+        # verified its number: someone else may have taken the number since.
+        if (
+            placeholder.id != r.filer_user_id
+            or placeholder.phone_verified_at is None
+            or placeholder.role_set() != {"customer"}
+            or not await owns_nothing(db, phone_key(r.new_phone_e164))
+        ):
             raise HTTPException(status_code=409, detail="The new number already has an account")
         account.password_hash = placeholder.password_hash
         account.phone_verified_at = placeholder.phone_verified_at
+        account.must_change_password, account.failed_logins, account.locked_until = False, 0, None
         await _drop_placeholder(db, placeholder, account)
     try:
         await move_account(db, account, r.new_phone_e164, method="recovery", now=now, recovery_request_id=r.id)

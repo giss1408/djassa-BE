@@ -260,6 +260,56 @@ async def test_recovery_is_refused_when_the_new_number_already_owns_something(cl
     assert r.status_code == 409
 
 
+async def _filed_for_merchant(client, consent=None):
+    """The merchant's account, a registered and verified placeholder on NEW, a filed request."""
+    await arm(MERCHANT)
+    r = await client.post("/api/auth/register", json={
+        "phone": NEW, "password": "nouveaumdp9", "app": "customer", **({"loyalty_consent_version": consent} if consent else {}),
+    })
+    unverified = r.json()
+    code = await send_open_check(NEW, "verify_number")
+    verified = (await client.post("/api/auth/verify-number", json={"code": code}, headers=_h(unverified))).json()
+    assert (await _file(client, verified)).status_code == 202
+    admin = await _admin(client)
+    request = (await client.get("/api/admin/recovery-requests", headers=admin)).json()[0]
+    return admin, request["id"]
+
+
+@pytest.mark.asyncio
+async def test_approve_takes_a_verified_placeholder_and_keeps_its_consent(client):
+    admin, rid = await _filed_for_merchant(client, consent="v1")
+    r = await client.post(f"/api/admin/recovery-requests/{rid}/approve", json={}, headers=admin)
+    assert r.status_code == 200, r.text
+    async with AsyncSessionLocal() as db:
+        consent = (await db.execute(select(models.LoyaltyConsent).where(models.LoyaltyConsent.customer_id == "tel:" + NEW_E164))).scalar_one()
+        assert consent.consent_version == "v1" and consent.withdrawn_at is None
+    assert (await sign_in(client, NEW, "merchant", password="nouveaumdp9")).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_approve_refuses_a_placeholder_that_is_not_the_filer(client):
+    admin, rid = await _filed_for_merchant(client)
+    # The filer's account goes away and someone else registers the number.
+    async with AsyncSessionLocal() as db:
+        filer = (await db.execute(select(models.User).where(models.User.phone_e164 == NEW_E164))).scalar_one()
+        filer.phone_e164 = "+2250500000000"
+        await db.commit()
+    await make_user(NEW, password="autremdp123")
+    r = await client.post(f"/api/admin/recovery-requests/{rid}/approve", json={}, headers=admin)
+    assert r.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_approve_refuses_an_unverified_placeholder(client):
+    admin, rid = await _filed_for_merchant(client)
+    async with AsyncSessionLocal() as db:
+        filer = (await db.execute(select(models.User).where(models.User.phone_e164 == NEW_E164))).scalar_one()
+        filer.phone_verified_at = None
+        await db.commit()
+    r = await client.post(f"/api/admin/recovery-requests/{rid}/approve", json={}, headers=admin)
+    assert r.status_code == 409
+
+
 @pytest.mark.asyncio
 async def test_recovery_does_not_reveal_who_has_an_account(client):
     await make_user(NEW)

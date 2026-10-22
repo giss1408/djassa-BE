@@ -107,6 +107,9 @@ async def owns_nothing(db: AsyncSession, key: str) -> bool:
     """True when no row of any OWNED column is keyed to `key`: an account that
     holds nothing yet and can be replaced by the one moving in."""
     for model, column in OWNED:
+        # The consent given when the number was verified moves with the account.
+        if model is models.LoyaltyConsent:
+            continue
         found = (await db.execute(select(model).where(getattr(model, column) == key).limit(1))).first()
         if found is not None:
             return False

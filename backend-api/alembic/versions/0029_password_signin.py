@@ -54,11 +54,16 @@ def upgrade():
     )
     op.create_index('ix_admin_actions_id', 'admin_actions', ['id'])
 
+    with op.batch_alter_table('recovery_requests') as batch:
+        batch.add_column(sa.Column('filer_user_id', sa.Integer(), sa.ForeignKey('users.id', name='fk_recovery_requests_filer_user_id'), nullable=True))
+
     # Existing users proved their number by SMS: their sessions keep working.
     op.execute("UPDATE users SET phone_verified_at = COALESCE(last_login_at, created_at)")
 
 
 def downgrade():
+    with op.batch_alter_table('recovery_requests') as batch:
+        batch.drop_column('filer_user_id')
     op.drop_index('ix_admin_actions_id', table_name='admin_actions')
     op.drop_table('admin_actions')
     op.drop_index('ix_account_checks_user_kind_status', table_name='account_checks')
