@@ -1,5 +1,7 @@
 """The script that gives the first admin a password."""
 
+import asyncio
+
 import pytest
 import pytest_asyncio
 from sqlalchemy import select
@@ -66,3 +68,14 @@ async def test_script_refuses_mismatch_and_unknown_number(capsys):
     assert (await _user()).password_hash is None
     assert await set_password.run(["+2250700000098"], input=_answers("un-bon-mot-de-passe", "un-bon-mot-de-passe")) == 1
     assert "Numero inconnu. Accordez d'abord le role admin." in capsys.readouterr().out
+
+
+@pytest.mark.asyncio
+async def test_main_wrapper_runs_the_script():
+    await _make_admin()
+
+    def call():
+        return set_password.main([PHONE], input=_answers("un-bon-mot-de-passe", "un-bon-mot-de-passe"))
+
+    code = await asyncio.get_running_loop().run_in_executor(None, call)
+    assert code == 0
