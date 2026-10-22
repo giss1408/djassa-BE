@@ -179,6 +179,8 @@ class MeOut(BaseModel):
     sub: str
     role: str
     phone_masked: str | None
+    verified: bool = True
+    must_change_password: bool = False
 
 
 def phone_or_422(raw: str, country_code: str) -> str:
@@ -368,6 +370,9 @@ async def verify_code(request: Request, payload: OtpVerifyIn, db: AsyncSession =
         )
 
     user.last_login_at = now
+    if user.phone_verified_at is None:
+        # The SMS code reached the number: that proves it.
+        user.phone_verified_at = now
     pair = await issue_tokens(db, user, role, otp.new_family(), now)
     await db.commit()
     AUTH_EVENTS.labels(event="otp_verify", result="ok").inc()
@@ -431,10 +436,13 @@ async def logout(payload: RefreshIn, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/auth/me", response_model=MeOut)
-async def me(user=Depends(security.get_current_user)):
+async def me(user=Depends(security.get_session_user)):
     sub = user["username"]
     masked = mask_phone(sub[4:]) if sub.startswith("tel:") else None
-    return MeOut(sub=sub, role=user["role"], phone_masked=masked)
+    return MeOut(
+        sub=sub, role=user["role"], phone_masked=masked,
+        verified=user["verified"], must_change_password=user["must_change_password"],
+    )
 
 
 # --- Admin: who may run a shop, enroll shops, administer --------------------

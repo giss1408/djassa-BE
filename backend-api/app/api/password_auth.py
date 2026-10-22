@@ -17,11 +17,12 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
-from ..core import otp, passwords
+from ..core import otp, passwords, security
+from ..core.phone import phone_key
 from ..db import get_db
 from ..metrics import AUTH_EVENTS
 from ..rate_limiter import limiter
-from ..services import account_checks
+from ..services import account_checks, account_move, loyalty_consent
 from .auth import _GRANTED_ONLY, AppName, TokenPairOut, issue_tokens, phone_or_422, session_role, utcnow
 
 router = APIRouter()
@@ -135,4 +136,94 @@ async def login(request: Request, payload: LoginIn, db: AsyncSession = Depends(g
     pair = await issue_tokens(db, user, role, otp.new_family(), now)
     await db.commit()
     AUTH_EVENTS.labels(event="login", result="ok").inc()
+    return pair
+
+
+class VerifyNumberIn(BaseModel):
+    code: str = Field(min_length=1, max_length=16)
+
+
+class ChangeNumberIn(BaseModel):
+    phone: str = Field(min_length=6, max_length=32)
+    country_code: str = Field(default="CI", min_length=2, max_length=2)
+
+
+async def _session_account(db: AsyncSession, session: dict) -> models.User:
+    """The User behind a phone session; demo accounts have none."""
+    sub = session["username"]
+    user = None
+    if sub.startswith("tel:"):
+        user = (await db.execute(select(models.User).where(models.User.phone_e164 == sub[4:]))).scalar_one_or_none()
+    if user is None or user.disabled:
+        raise HTTPException(status_code=403, detail="Disponible uniquement pour un compte connecte par telephone")
+    return user
+
+
+@router.post("/auth/verify-number", response_model=TokenPairOut)
+@limiter.limit("10/minute")
+async def verify_number(
+    request: Request,
+    payload: VerifyNumberIn,
+    db: AsyncSession = Depends(get_db),
+    session=Depends(security.get_session_user),
+):
+    user = await _session_account(db, session)
+    now = utcnow()
+    try:
+        check = await account_checks.verify_code(db, user, "verify_number", payload.code.replace(" ", ""), now)
+    except account_checks.BadCode:
+        AUTH_EVENTS.labels(event="verify_number", result="bad_code").inc()
+        raise HTTPException(status_code=401, detail="Code incorrect ou expire.")
+    user.phone_verified_at = now
+    role = session["role"]
+    if check.consent_version and role == "customer":
+        await loyalty_consent.grant(
+            db, phone_key(user.phone_e164), source=loyalty_consent.APP, version=check.consent_version, now=now
+        )
+    pair = await issue_tokens(db, user, role, otp.new_family(), now)
+    await db.commit()
+    AUTH_EVENTS.labels(event="verify_number", result="ok").inc()
+    return pair
+
+
+@router.post("/auth/number", response_model=TokenPairOut)
+@limiter.limit("5/minute;20/hour")
+async def correct_number(
+    request: Request,
+    payload: ChangeNumberIn,
+    db: AsyncSession = Depends(get_db),
+    session=Depends(security.get_session_user),
+):
+    """Fixes a mistyped number before it was ever verified."""
+    if session["verified"]:
+        raise HTTPException(status_code=403, detail="Ce numero est deja verifie.")
+    user = await _session_account(db, session)
+    if user.phone_verified_at is not None:
+        raise HTTPException(status_code=403, detail="Ce numero est deja verifie.")
+    e164 = phone_or_422(payload.phone, payload.country_code)
+    now = utcnow()
+    if e164 != user.phone_e164:
+        taken = (await db.execute(select(models.User.id).where(models.User.phone_e164 == e164))).first()
+        if taken is not None:
+            raise HTTPException(status_code=409, detail="Ce numero est deja utilise.")
+        # A code sent to the old number must stop working.
+        old = (
+            await db.execute(
+                select(models.AccountCheck).where(
+                    models.AccountCheck.user_id == user.id,
+                    models.AccountCheck.kind == "verify_number",
+                    models.AccountCheck.status.in_(account_checks.OPEN_STATUSES),
+                )
+            )
+        ).scalars().all()
+        consent_version = None
+        for check in old:
+            consent_version = consent_version or check.consent_version
+            await account_checks.refuse(db, check, now)
+        user.phone_e164 = e164
+        await account_move.revoke_all_sessions(db, user.id, now)
+        fresh = await account_checks.open_check(db, user, "verify_number", now)
+        fresh.consent_version = consent_version
+    pair = await issue_tokens(db, user, session["role"], otp.new_family(), now)
+    await db.commit()
     return pair

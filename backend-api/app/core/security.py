@@ -46,13 +46,32 @@ def decode_access_token(token: str):
         return None
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_session_user(token: str = Depends(oauth2_scheme)):
+    """Any valid session, including one still held back: a number not yet
+    proven (`vf` false) or a temporary password to replace (`pc` true).
+    Only the few routes that finish those steps use this."""
     payload = decode_access_token(token)
     subject = payload.get("sub") if payload else None
     if not subject or not isinstance(subject, str):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
     # Tokens issued before roles existed carry none; they were merchant tokens.
-    return {"username": subject, "role": payload.get("role", "merchant")}
+    # Tokens issued before password sign-in carry no `vf`: they came from SMS,
+    # which proved the number.
+    return {
+        "username": subject,
+        "role": payload.get("role", "merchant"),
+        "verified": bool(payload.get("vf", True)),
+        "must_change_password": bool(payload.get("pc", False)),
+    }
+
+
+async def get_current_user(user=Depends(get_session_user)):
+    """A fully signed-in caller: number proven and no password change owed."""
+    if not user["verified"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="number_not_verified")
+    if user["must_change_password"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="password_change_required")
+    return user
 
 
 async def get_optional_user(token: str | None = Depends(oauth2_optional)):
@@ -61,10 +80,14 @@ async def get_optional_user(token: str | None = Depends(oauth2_optional)):
     The customer app shows offers, shops and on-duty pharmacies before any
     sign-in; only paying and points need one. A token that is present but
     invalid is still a 401, so the app renews it instead of silently
-    showing the anonymous view to a signed-in customer."""
+    showing the anonymous view to a signed-in customer. A session still held
+    back (number unproven, password to change) browses as anonymous."""
     if not token:
         return None
-    return await get_current_user(token)
+    user = await get_session_user(token)
+    if not user["verified"] or user["must_change_password"]:
+        return None
+    return user
 
 
 # Fidelia Pro sessions: the shop owner, and the cashiers the owner added.
