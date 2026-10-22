@@ -46,14 +46,13 @@ def decode_access_token(token: str):
         return None
 
 
-async def get_session_user(token: str = Depends(oauth2_scheme)):
-    """Any valid session, including one still held back: a number not yet
-    proven (`vf` false) or a temporary password to replace (`pc` true).
-    Only the few routes that finish those steps use this."""
-    payload = decode_access_token(token)
+def session_from_payload(payload: dict | None) -> dict | None:
+    """The session a decoded token describes, or None without a usable subject.
+    The one place that reads `vf` and `pc`; code that decodes a token itself
+    must go through here and check `is_held`."""
     subject = payload.get("sub") if payload else None
     if not subject or not isinstance(subject, str):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
+        return None
     # Tokens issued before roles existed carry none; they were merchant tokens.
     # Tokens issued before password sign-in carry no `vf`: they came from SMS,
     # which proved the number.
@@ -63,6 +62,20 @@ async def get_session_user(token: str = Depends(oauth2_scheme)):
         "verified": bool(payload.get("vf", True)),
         "must_change_password": bool(payload.get("pc", False)),
     }
+
+
+def is_held(session: dict) -> bool:
+    return not session["verified"] or session["must_change_password"]
+
+
+async def get_session_user(token: str = Depends(oauth2_scheme)):
+    """Any valid session, including one still held back: a number not yet
+    proven (`vf` false) or a temporary password to replace (`pc` true).
+    Only the few routes that finish those steps use this."""
+    session = session_from_payload(decode_access_token(token))
+    if session is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
+    return session
 
 
 async def get_current_user(user=Depends(get_session_user)):
@@ -85,9 +98,7 @@ async def get_optional_user(token: str | None = Depends(oauth2_optional)):
     if not token:
         return None
     user = await get_session_user(token)
-    if not user["verified"] or user["must_change_password"]:
-        return None
-    return user
+    return None if is_held(user) else user
 
 
 # Fidelia Pro sessions: the shop owner, and the cashiers the owner added.

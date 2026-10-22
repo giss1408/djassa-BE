@@ -202,28 +202,29 @@ async def correct_number(
         raise HTTPException(status_code=403, detail="Ce numero est deja verifie.")
     e164 = phone_or_422(payload.phone, payload.country_code)
     now = utcnow()
-    if e164 != user.phone_e164:
-        taken = (await db.execute(select(models.User.id).where(models.User.phone_e164 == e164))).first()
-        if taken is not None:
-            raise HTTPException(status_code=409, detail="Ce numero est deja utilise.")
-        # A code sent to the old number must stop working.
-        old = (
-            await db.execute(
-                select(models.AccountCheck).where(
-                    models.AccountCheck.user_id == user.id,
-                    models.AccountCheck.kind == "verify_number",
-                    models.AccountCheck.status.in_(account_checks.OPEN_STATUSES),
-                )
+    if e164 == user.phone_e164:
+        raise HTTPException(status_code=422, detail="C'est deja le numero de ce compte")
+    taken = (await db.execute(select(models.User.id).where(models.User.phone_e164 == e164))).first()
+    if taken is not None:
+        raise HTTPException(status_code=409, detail="Ce numero est deja utilise.")
+    # A code sent to the old number must stop working.
+    old = (
+        await db.execute(
+            select(models.AccountCheck).where(
+                models.AccountCheck.user_id == user.id,
+                models.AccountCheck.kind == "verify_number",
+                models.AccountCheck.status.in_(account_checks.OPEN_STATUSES),
             )
-        ).scalars().all()
-        consent_version = None
-        for check in old:
-            consent_version = consent_version or check.consent_version
-            await account_checks.refuse(db, check, now)
-        user.phone_e164 = e164
-        await account_move.revoke_all_sessions(db, user.id, now)
-        fresh = await account_checks.open_check(db, user, "verify_number", now)
-        fresh.consent_version = consent_version
+        )
+    ).scalars().all()
+    consent_version = None
+    for check in old:
+        consent_version = consent_version or check.consent_version
+        await account_checks.refuse(db, check, now)
+    user.phone_e164 = e164
+    await account_move.revoke_all_sessions(db, user.id, now)
+    fresh = await account_checks.open_check(db, user, "verify_number", now)
+    fresh.consent_version = consent_version
     pair = await issue_tokens(db, user, session["role"], otp.new_family(), now)
     await db.commit()
     return pair

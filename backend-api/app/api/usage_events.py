@@ -35,7 +35,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
-from ..core.security import decode_access_token, require_role
+from ..core.security import decode_access_token, is_held, require_role, session_from_payload
 from ..db import get_db
 from ..metrics import APP_INSTALLS, USAGE_EVENTS
 from ..rate_limiter import limiter
@@ -126,16 +126,16 @@ async def _merchant_venue_id(request: Request, db: AsyncSession) -> int | None:
     header = request.headers.get("authorization", "")
     if not header.lower().startswith("bearer "):
         return None
-    payload = decode_access_token(header[7:].strip())
-    if not payload or not isinstance(payload.get("sub"), str):
+    session = session_from_payload(decode_access_token(header[7:].strip()))
+    if session is None or is_held(session):
         return None
-    role = payload.get("role", "merchant")
+    sub, role = session["username"], session["role"]
     if role == "cashier":
         query = select(models.VenueStaff.venue_id).where(
-            models.VenueStaff.user_key == payload["sub"], models.VenueStaff.removed_at.is_(None)
+            models.VenueStaff.user_key == sub, models.VenueStaff.removed_at.is_(None)
         )
     elif role == "merchant":
-        query = select(models.Venue.id).where(models.Venue.owner_username == payload["sub"])
+        query = select(models.Venue.id).where(models.Venue.owner_username == sub)
     else:
         return None
     return (await db.execute(query)).scalars().first()

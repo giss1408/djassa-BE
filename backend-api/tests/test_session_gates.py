@@ -197,3 +197,32 @@ async def test_old_tokens_without_vf_still_work(client):
     assert r.status_code == 200
     r = await client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert r.json()["verified"] is True and r.json()["must_change_password"] is False
+
+
+@pytest.mark.asyncio
+async def test_held_merchant_token_reads_no_sales_over_graphql_or_usage(client):
+    from app.api.usage_events import _merchant_venue_id
+    from starlette.requests import Request
+
+    for claims in ({"vf": True, "pc": True}, {"vf": False, "pc": False}):
+        token = create_access_token({"sub": "demo", "role": "merchant", **claims})
+        r = await client.post(
+            "/graphql",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"query": "{ mySales(limit: 5) { source } }"},
+        )
+        assert "Authentication required" in r.text and not (r.json().get("data") or {}).get("mySales")
+        scope = {"type": "http", "headers": [(b"authorization", f"Bearer {token}".encode())]}
+        async with AsyncSessionLocal() as db:
+            assert await _merchant_venue_id(Request(scope), db) is None
+    ok = create_access_token({"sub": "demo", "role": "merchant"})
+    scope = {"type": "http", "headers": [(b"authorization", f"Bearer {ok}".encode())]}
+    async with AsyncSessionLocal() as db:
+        assert await _merchant_venue_id(Request(scope), db) is not None
+
+
+@pytest.mark.asyncio
+async def test_correcting_to_the_same_number_is_refused(client):
+    pair = await _register(client)
+    r = await client.post("/api/auth/number", headers=_auth(pair), json={"phone": PHONE, "country_code": "CI"})
+    assert r.status_code == 422 and r.json()["detail"] == "C'est deja le numero de ce compte"
