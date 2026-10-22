@@ -165,6 +165,10 @@ class TokenPairOut(BaseModel):
     expires_in: int
     role: str
     phone_masked: str
+    # Password sign-in: whether the number is proven, and whether a temporary
+    # password must be replaced first. Mirrored in the `vf` and `pc` claims.
+    verified: bool = False
+    must_change_password: bool = False
 
 
 class RefreshIn(BaseModel):
@@ -318,10 +322,14 @@ async def issue_tokens(db: AsyncSession, user: models.User, role: str, family: s
             expires_at=now + otp.REFRESH_TTL, created_at=now,
         )
     )
-    access = security.create_access_token({"sub": phone_key(user.phone_e164), "role": role}, expires_delta=ACCESS_TTL)
+    verified = bool(user.phone_verified_at)
+    must_change = bool(user.must_change_password)
+    access = security.create_access_token(
+        {"sub": phone_key(user.phone_e164), "role": role, "vf": verified, "pc": must_change}, expires_delta=ACCESS_TTL
+    )
     return TokenPairOut(
         access_token=access, refresh_token=refresh, expires_in=int(ACCESS_TTL.total_seconds()),
-        role=role, phone_masked=mask_phone(user.phone_e164),
+        role=role, phone_masked=mask_phone(user.phone_e164), verified=verified, must_change_password=must_change,
     )
 
 

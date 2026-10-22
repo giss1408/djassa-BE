@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from .api import payments, auth, transactions, export, tontine, webhooks, config, support, identity
-from .api import orange_sms
+from .api import orange_sms, password_auth
 from .api import customer, payment_requests, deals, billing, sales, statements, counter_loyalty, venue_location, wave, client_events, account, onboarding, media, usage_events, staff, layaway, investor_brief, pilot
 from .graphql_api import router as graphql_router
 from .db import engine, Base
@@ -101,6 +101,7 @@ app.state.limiter = limiter
 app.middleware("http")(observe_request)
 
 app.include_router(auth.router, prefix="/api")
+app.include_router(password_auth.router, prefix="/api")
 app.include_router(account.router, prefix="/api")
 app.include_router(onboarding.router, prefix="/api")
 app.include_router(media.router, prefix="/api")
