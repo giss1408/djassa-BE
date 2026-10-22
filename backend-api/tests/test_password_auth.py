@@ -159,3 +159,13 @@ async def test_weak_password_is_refused(client):
     assert r.json()["detail"] == "Le mot de passe ne peut pas etre compose uniquement de chiffres."
     r = await _register(client, password="court")
     assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_correct_password_resets_the_miss_counter(client):
+    await make_user(PHONE)
+    for _ in range(4):
+        assert (await sign_in(client, PHONE, password="mauvaispass1")).status_code == 401
+    assert (await sign_in(client, PHONE)).status_code == 200
+    for _ in range(4):
+        assert (await sign_in(client, PHONE, password="mauvaispass1")).status_code == 401

@@ -13,7 +13,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
@@ -23,8 +23,6 @@ from ..metrics import AUTH_EVENTS
 from ..rate_limiter import limiter
 from ..services import account_checks
 from .auth import _GRANTED_ONLY, AppName, TokenPairOut, issue_tokens, phone_or_422, session_role, utcnow
-from datetime import timedelta
-from typing import Literal
 
 router = APIRouter()
 
@@ -103,11 +101,22 @@ async def login(request: Request, payload: LoginIn, db: AsyncSession = Depends(g
         AUTH_EVENTS.labels(event="login", result="locked").inc()
         raise HTTPException(status_code=423, detail=LOCKED)
     if not passwords.verify_password(payload.password, user.password_hash):
-        user.failed_logins += 1
-        locked = user.failed_logins >= MAX_FAILED_LOGINS
+        # Incremented in SQL so concurrent wrong guesses cannot undercount.
+        misses = (
+            await db.execute(
+                update(models.User)
+                .where(models.User.id == user.id)
+                .values(failed_logins=models.User.failed_logins + 1)
+                .returning(models.User.failed_logins)
+            )
+        ).scalar_one()
+        locked = misses >= MAX_FAILED_LOGINS
         if locked:
-            user.locked_until = now + LOCK_FOR
-            user.failed_logins = 0
+            await db.execute(
+                update(models.User)
+                .where(models.User.id == user.id)
+                .values(failed_logins=0, locked_until=now + LOCK_FOR)
+            )
         await db.commit()
         AUTH_EVENTS.labels(event="login", result="locked" if locked else "wrong_password").inc()
         raise HTTPException(status_code=401, detail=BAD_LOGIN)
