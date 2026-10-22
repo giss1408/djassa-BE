@@ -13,7 +13,7 @@ os.environ["FIDELIA_SEED_SAMPLE"] = "1"
 os.environ.setdefault("FIDELIA_SECRET_KEY", "test-only-jwt-secret")
 os.environ.setdefault("MOBILE_MONEY_SECRETS", "dev-secret")
 # The sample logins' password: random per run, never a literal in the repository.
-os.environ.setdefault("FIDELIA_SEED_PASSWORD", "seed-" + __import__("secrets").token_urlsafe(12))
+os.environ.setdefault("FIDELIA_SEED_PASSWORD", __import__("secrets").token_urlsafe(16))
 # The whole suite reads the public catalogue from one address; its own limit
 # is tested in test_public_catalogue.py.
 os.environ.setdefault("PUBLIC_READ_RATE_LIMIT", "100000/minute")

@@ -15,10 +15,10 @@ from app.services import account_checks
 
 # Generated per run, so no password literal sits in the repository (secret
 # scanners flag them) and no test depends on a particular value.
-TEST_PASSWORD = "pw-" + secrets.token_urlsafe(9)
-OTHER_PASSWORD = "pw-" + secrets.token_urlsafe(9)
-WRONG_PASSWORD = "pw-" + secrets.token_urlsafe(9)
-SQUATTER_PASSWORD = "pw-" + secrets.token_urlsafe(9)
+TEST_PASSWORD = secrets.token_urlsafe(12)
+OTHER_PASSWORD = secrets.token_urlsafe(12)
+WRONG_PASSWORD = secrets.token_urlsafe(12)
+SQUATTER_PASSWORD = secrets.token_urlsafe(12)
 
 
 async def make_user(phone, roles="customer", password=TEST_PASSWORD, verified=True) -> None:
