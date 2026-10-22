@@ -10,12 +10,11 @@ from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
 from app.rate_limiter import limiter
 from app.seed import DEV_ADMIN_PHONE, seed_sample_data
+from tests.helpers import phone_session
 
 
 @pytest_asyncio.fixture
 async def client(monkeypatch):
-    monkeypatch.setenv("OTP_SENDER", "console")
-    monkeypatch.setenv("OTP_DEV_ECHO", "1")
     monkeypatch.delenv("FIDELIA_ENV", raising=False)
     limiter.enabled = False
     async with engine.begin() as conn:
@@ -28,8 +27,7 @@ async def client(monkeypatch):
 
 
 async def _phone_session(ac, phone, app_name):
-    code = (await ac.post("/api/auth/otp/request", json={"phone": phone, "app": app_name})).json()["dev_code"]
-    return await ac.post("/api/auth/otp/verify", json={"phone": phone, "code": code, "app": app_name})
+    return await phone_session(ac, phone, app_name)
 
 
 async def _admin(ac):

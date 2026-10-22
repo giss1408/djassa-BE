@@ -1,12 +1,12 @@
 """Register and log in with a phone number and a password."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from jose import jwt
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app import models
 from app.api.auth import utcnow
@@ -14,7 +14,7 @@ from app.core.phone import normalize_phone
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
 from app.rate_limiter import limiter
-from tests.helpers import make_user, sign_in
+from tests.helpers import demo_login, make_user, sign_in
 
 PHONE = "0701020304"
 E164 = normalize_phone(PHONE, "CI")
@@ -169,3 +169,141 @@ async def test_correct_password_resets_the_miss_counter(client):
     assert (await sign_in(client, PHONE)).status_code == 200
     for _ in range(4):
         assert (await sign_in(client, PHONE, password="mauvaispass1")).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_old_otp_routes_ask_for_an_update(client):
+    for path, body in (
+        ("/api/auth/otp/request", {"phone": PHONE}),
+        ("/api/auth/otp/verify", {"phone": PHONE, "code": "123456"}),
+    ):
+        r = await client.post(path, json=body)
+        assert r.status_code == 410, path
+        assert r.json() == {"detail": "Mettez a jour l'application Fidelia pour vous connecter."}
+        # Whatever an old build sends, it gets the same answer.
+        assert (await client.post(path, json={})).status_code == 410
+
+
+@pytest.mark.asyncio
+async def test_seed_accounts_sign_in_with_their_password(client):
+    from app.seed import seed_sample_data
+
+    await seed_sample_data()
+    for phone, app_name, role in (
+        ("0700000001", "customer", "customer"),
+        ("0700000002", "merchant", "merchant"),
+        ("0700000003", "merchant", "cashier"),
+        ("0700000004", "admin", "agent"),
+        ("0700000009", "admin", "admin"),
+    ):
+        r = await sign_in(client, phone, app=app_name, password="fidelia2026")
+        assert r.status_code == 200, (phone, r.text)
+        body = r.json()
+        assert body["role"] == role
+        assert body["verified"] is True and body["must_change_password"] is False
+    # The seeded merchant runs the second sample maquis.
+    merchant = (await sign_in(client, "0700000002", app="merchant", password="fidelia2026")).json()
+    h = {"Authorization": f"Bearer {merchant['access_token']}"}
+    assert (await client.get("/api/merchant/venue/location", headers=h)).status_code == 200
+    # Seeding again keeps the same accounts and passwords.
+    await seed_sample_data()
+    assert (await sign_in(client, "0700000001", password="fidelia2026")).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_seed_passwords_are_refused_in_production(client, monkeypatch):
+    from app.seed import seed_sample_data
+
+    monkeypatch.setenv("FIDELIA_ENV", "production")
+    with pytest.raises(RuntimeError):
+        await seed_sample_data()
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(models.User))).first() is None
+
+
+@pytest.mark.asyncio
+async def test_refresh_rotates_and_reuse_kills_the_session(client):
+    await make_user(PHONE)
+    first = (await sign_in(client, PHONE)).json()
+    r = await client.post("/api/auth/refresh", json={"refresh_token": first["refresh_token"]})
+    assert r.status_code == 200
+    second = r.json()
+    assert second["refresh_token"] != first["refresh_token"]
+
+    # The old token again: someone copied it. Both copies die.
+    assert (await client.post("/api/auth/refresh", json={"refresh_token": first["refresh_token"]})).status_code == 401
+    assert (await client.post("/api/auth/refresh", json={"refresh_token": second["refresh_token"]})).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_logout_revokes_refresh(client):
+    await make_user(PHONE)
+    pair = (await sign_in(client, PHONE)).json()
+    assert (await client.post("/api/auth/logout", json={"refresh_token": pair["refresh_token"]})).status_code == 204
+    assert (await client.post("/api/auth/refresh", json={"refresh_token": pair["refresh_token"]})).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_disabled_user_cannot_refresh_or_sign_in_again(client):
+    await make_user(PHONE)
+    pair = (await sign_in(client, PHONE)).json()
+    async with AsyncSessionLocal() as db:
+        await db.execute(update(models.User).where(models.User.phone_e164 == E164).values(disabled=True))
+        await db.commit()
+    assert (await client.post("/api/auth/refresh", json={"refresh_token": pair["refresh_token"]})).status_code == 401
+    assert (await sign_in(client, PHONE)).status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_an_admin_grant_opens_the_merchant_app_for_its_venue(client):
+    from app.seed import seed_sample_data
+
+    await seed_sample_data()
+    await make_user(PHONE)
+    assert (await sign_in(client, PHONE, app="merchant")).status_code == 403
+
+    admin = (await demo_login(client, data={"username": "admin", "password": "admin123"})).json()["access_token"]
+    async with AsyncSessionLocal() as db:
+        venue_id = (
+            await db.execute(select(models.Venue.id).where(models.Venue.owner_username.is_(None)))
+        ).scalars().first()
+    r = await client.post(
+        "/api/admin/users/roles", json={"phone": PHONE, "role": "merchant", "venue_id": venue_id},
+        headers={"Authorization": f"Bearer {admin}"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["roles"] == ["customer", "merchant"]
+
+    r = await sign_in(client, PHONE, app="merchant")
+    assert r.status_code == 200, r.text
+    h = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    assert (await client.get("/api/merchant/venue/location", headers=h)).status_code == 200
+    # The same person still shops as a customer.
+    assert (await sign_in(client, PHONE)).json()["role"] == "customer"
+
+
+@pytest.mark.asyncio
+async def test_only_admin_grants_roles(client):
+    await make_user(PHONE)
+    token = (await sign_in(client, PHONE)).json()["access_token"]
+    r = await client.post(
+        "/api/admin/users/roles", json={"phone": PHONE, "role": "admin"}, headers={"Authorization": f"Bearer {token}"}
+    )
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_counter_points_follow_the_customer_into_the_app(client):
+    from app.seed import seed_sample_data
+
+    await seed_sample_data()
+    async with AsyncSessionLocal() as db:
+        venue = (await db.execute(select(models.Venue))).scalars().first()
+        db.add(models.LoyaltyEntry(customer_id="tel:" + E164, venue_id=venue.id, points=12, reason="payment",
+                                   created_at=datetime.now()))
+        await db.commit()
+        venue_id = venue.id
+    await make_user(PHONE)
+    token = (await sign_in(client, PHONE)).json()["access_token"]
+    r = await client.get(f"/api/venues/{venue_id}", headers={"Authorization": f"Bearer {token}"})
+    assert r.json()["my_points"] >= 12

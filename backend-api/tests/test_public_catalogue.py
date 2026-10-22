@@ -7,6 +7,7 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
+from tests.helpers import demo_login
 from app.db import Base, engine
 from app.main import app
 from app.rate_limiter import limiter
@@ -24,7 +25,7 @@ async def client():
 
 
 async def _auth(ac, username, password):
-    r = await ac.post("/api/token", data={"username": username, "password": password})
+    r = await demo_login(ac, data={"username": username, "password": password})
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 

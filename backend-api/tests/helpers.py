@@ -32,6 +32,21 @@ async def sign_in(ac, phone, app="customer", password="motdepasse1"):
     return await ac.post("/api/auth/login", json={"phone": phone, "country_code": "CI", "password": password, "app": app})
 
 
+async def phone_session(ac, phone, app="customer"):
+    """Signs `phone` in to `app`, the way the old code flow did: a number the
+    database has never seen becomes a verified customer first; a seeded
+    account signs in with the seed password."""
+    e164 = normalize_phone(phone, "CI")
+    async with AsyncSessionLocal() as db:
+        known = (await db.execute(select(models.User.id).where(models.User.phone_e164 == e164))).first()
+    if known is None:
+        await make_user(phone)
+    r = await sign_in(ac, phone, app=app)
+    if r.status_code == 401:
+        r = await sign_in(ac, phone, app=app, password="fidelia2026")
+    return r
+
+
 async def arm(phone, password="motdepasse1") -> None:
     """Gives an existing user (a seeded one, or one a team action created) a
     password and a proven number, so it can sign in."""
@@ -66,3 +81,35 @@ async def send_open_check(phone, kind) -> str:
     text = unquote(link).replace("+", " ")
     match = re.search(r"code Fidelia : (\d{3} \d{3})\.|temporaire Fidelia : (\S+?)\. ", text)
     return match.group(1).replace(" ", "") if match.group(1) else match.group(2)
+
+
+# --- Fixed-credential test accounts -------------------------------------------
+
+# The old POST /api/token demo accounts are gone from the API. Tests that only
+# need "a merchant who owns the first sample maquis", "a customer" or "an admin"
+# mint the same tokens here, without a route that could ship.
+_DEMO_ACCOUNTS = {
+    "demo": ("demo123", "merchant"),
+    "client": ("client123", "customer"),
+    "admin": ("admin123", "admin"),
+}
+
+
+class _TokenResponse:
+    def __init__(self, status_code, body):
+        self.status_code, self._body = status_code, body
+        self.text = str(body)
+
+    def json(self):
+        return self._body
+
+
+async def demo_login(ac, data):
+    """Stands in for the removed POST /api/token: same arguments, same answer."""
+    from app.core import security
+
+    password, role = _DEMO_ACCOUNTS.get(data["username"], (None, None))
+    if password is None or data["password"] != password:
+        return _TokenResponse(401, {"detail": "Incorrect username or password"})
+    token = security.create_access_token({"sub": data["username"], "role": role})
+    return _TokenResponse(200, {"access_token": token, "token_type": "bearer", "role": role})

@@ -1,13 +1,14 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from tests.helpers import demo_login
 from app.main import app
 
 
 @pytest.mark.asyncio
 async def test_tier_zero_identity_profile_and_provider_gated_upgrade():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        token_response = await ac.post("/api/token", data={"username": "demo", "password": "demo123"})
+        token_response = await demo_login(ac, data={"username": "demo", "password": "demo123"})
         token = token_response.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
@@ -33,7 +34,7 @@ async def test_tier_zero_identity_profile_and_provider_gated_upgrade():
 @pytest.mark.asyncio
 async def test_identity_rejects_country_phone_mismatch():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        token_response = await ac.post("/api/token", data={"username": "demo", "password": "demo123"})
+        token_response = await demo_login(ac, data={"username": "demo", "password": "demo123"})
         token = token_response.json()["access_token"]
         response = await ac.post(
             "/api/identity/profile",

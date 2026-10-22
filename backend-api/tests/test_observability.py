@@ -1,5 +1,5 @@
 """What production monitoring relies on: the /metrics gate, bounded metric
-labels, request ids and access lines, and the daily SMS budget."""
+labels, request ids and access lines."""
 
 import base64
 import logging
@@ -16,8 +16,6 @@ from app.seed import seed_sample_data
 
 @pytest_asyncio.fixture
 async def client(monkeypatch):
-    monkeypatch.setenv("OTP_SENDER", "console")
-    monkeypatch.setenv("OTP_DEV_ECHO", "1")
     monkeypatch.delenv("FIDELIA_ENV", raising=False)
     monkeypatch.delenv("METRICS_TOKEN", raising=False)
     limiter.enabled = False
@@ -94,16 +92,3 @@ async def test_each_request_gets_an_id_and_one_access_line(client, caplog):
     assert lines[0].fields["request_id"] == r.headers["X-Request-ID"]
     # The query string (here a phone number) never reaches the log.
     assert all("0712345678" not in rec.getMessage() and "0712345678" not in str(rec.fields) for rec in lines)
-
-
-@pytest.mark.asyncio
-async def test_daily_sms_budget_pauses_codes_for_every_number(client, monkeypatch):
-    monkeypatch.setenv("OTP_DAILY_SMS_BUDGET", "2")
-    for phone in ("07 11 11 11 11", "07 22 22 22 22"):
-        r = await client.post("/api/auth/otp/request", json={"phone": phone, "app": "customer"})
-        assert r.status_code == 202, r.text
-
-    # A third number, under every per-number and per-IP cap, still waits.
-    r = await client.post("/api/auth/otp/request", json={"phone": "07 33 33 33 33", "app": "customer"})
-    assert r.status_code == 503
-    assert 'result="daily_budget"' in (await client.get("/metrics")).text

@@ -28,7 +28,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
-from ..core import otp, passwords, security
+from ..core import passwords, security, tokens
 from ..core.phone import mask_phone, phone_key
 from ..db import get_db
 from ..rate_limiter import limiter
@@ -67,7 +67,7 @@ class RevokeOthersIn(BaseModel):
 async def revoke_other_sessions(payload: RevokeOthersIn, db: AsyncSession = Depends(get_db), user=Depends(security.get_current_user)):
     """Ends every other session. Their access tokens die within the hour."""
     account = await _phone_account(db, user)
-    keep = otp.hash_refresh_token(payload.refresh_token) if payload.refresh_token else None
+    keep = tokens.hash_refresh_token(payload.refresh_token) if payload.refresh_token else None
     revoked = await revoke_all_sessions(db, account.id, utcnow(), keep_token_hash=keep)
     await db.commit()
     return {"revoked": revoked}
@@ -137,7 +137,7 @@ async def confirm_number_change(
         await move_account(db, account, check.new_phone_e164, method="self_service", now=now)
     except NumberTaken:
         raise HTTPException(status_code=409, detail=_NUMBER_TAKEN)
-    pair = await issue_tokens(db, account, user["role"], otp.new_family(), now)
+    pair = await issue_tokens(db, account, user["role"], tokens.new_family(), now)
     await db.commit()
     return pair
 

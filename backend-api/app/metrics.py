@@ -36,15 +36,8 @@ def metrics_endpoint():
     data = generate_latest()
     return CONTENT_TYPE_LATEST, data
 
-# Sign-in. A spike in otp_request/sent with no matching otp_verify/ok is SMS
-# pumping: someone spending our SMS budget on numbers they never verify.
+# Sign-in and session events (event: login, register, refresh, ...).
 AUTH_EVENTS = Counter('fidelia_auth_events_total', 'Sign-in events', ['event', 'result'])
-# Each provider tried for a sign-in code (OTP_SENDER=orange,africastalking):
-# Orange failing while the next provider covers costs more per code.
-OTP_SMS = Counter('fidelia_otp_sms_total', 'SMS provider attempts for sign-in codes', ['provider', 'result'])
-# Orange's delivery receipts (app/api/orange_sms.py), by the recipient's
-# network: a network that stops receiving codes shows here.
-OTP_SMS_DELIVERY = Counter('fidelia_otp_sms_delivery_total', 'Orange SMS delivery receipts', ['network', 'status'])
 
 # Errors reported by the apps themselves (POST /api/client-events). Labels are
 # bounded: app and kind are enums, versions are validated before use.

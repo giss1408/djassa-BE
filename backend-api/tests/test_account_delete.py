@@ -11,6 +11,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import func, select
 
+from tests.helpers import demo_login, phone_session
 from app import models
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
@@ -25,8 +26,6 @@ KEY = "tel:" + E164
 
 @pytest_asyncio.fixture
 async def client(monkeypatch):
-    monkeypatch.setenv("OTP_SENDER", "console")
-    monkeypatch.setenv("OTP_DEV_ECHO", "1")
     monkeypatch.delenv("FIDELIA_ENV", raising=False)
     limiter.enabled = False
     async with engine.begin() as conn:
@@ -38,25 +37,14 @@ async def client(monkeypatch):
     limiter.enabled = True
 
 
-async def _age_codes():
-    from datetime import timedelta
-
-    async with AsyncSessionLocal() as db:
-        for c in (await db.execute(select(models.OtpChallenge))).scalars():
-            c.created_at -= timedelta(seconds=400)
-        await db.commit()
-
-
 async def _sign_in(ac, phone=PHONE, app_name="customer"):
-    await _age_codes()
-    code = (await ac.post("/api/auth/otp/request", json={"phone": phone, "app": app_name})).json()["dev_code"]
-    r = await ac.post("/api/auth/otp/verify", json={"phone": phone, "code": code, "app": app_name})
+    r = await phone_session(ac, phone, app_name)
     assert r.status_code == 200, r.text
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
 async def _password(ac, username, password):
-    r = await ac.post("/api/token", data={"username": username, "password": password})
+    r = await demo_login(ac, data={"username": username, "password": password})
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
@@ -104,7 +92,6 @@ async def test_a_customer_deletes_their_account_and_the_shop_keeps_its_figures(c
     assert await _count(models.SaleEvent, models.SaleEvent.customer_id == KEY) == 0
     assert await _count(models.CustomerPayment, models.CustomerPayment.customer_id == KEY) == 0
     assert await _count(models.CustomerPayment, models.CustomerPayment.payer_msisdn == E164) == 0
-    assert await _count(models.OtpChallenge, models.OtpChallenge.phone_e164 == E164) == 0
     # ...the shop's records are not.
     assert await _count(models.SaleEvent) == sales_before
     assert await _count(models.CustomerPayment, models.CustomerPayment.customer_id.like("deleted:%")) == 1

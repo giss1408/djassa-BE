@@ -17,7 +17,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
-from ..core import otp, passwords, security
+from ..core import passwords, security, tokens
 from ..core.phone import phone_key
 from ..db import get_db
 from ..metrics import AUTH_EVENTS
@@ -80,7 +80,7 @@ async def register(request: Request, payload: RegisterIn, db: AsyncSession = Dep
     check = await account_checks.open_check(db, user, "verify_number", now)
     check.consent_version = payload.loyalty_consent_version
     user.last_login_at = now
-    pair = await issue_tokens(db, user, "customer", otp.new_family(), now)
+    pair = await issue_tokens(db, user, "customer", tokens.new_family(), now)
     await db.commit()
     AUTH_EVENTS.labels(event="register", result="ok").inc()
     return pair
@@ -145,7 +145,7 @@ async def login(request: Request, payload: LoginIn, db: AsyncSession = Depends(g
     user.failed_logins = 0
     user.locked_until = None
     user.last_login_at = now
-    pair = await issue_tokens(db, user, role, otp.new_family(), now)
+    pair = await issue_tokens(db, user, role, tokens.new_family(), now)
     await db.commit()
     AUTH_EVENTS.labels(event="login", result="temporary" if temporary else "ok").inc()
     return pair
@@ -192,7 +192,7 @@ async def verify_number(
         await loyalty_consent.grant(
             db, phone_key(user.phone_e164), source=loyalty_consent.APP, version=check.consent_version, now=now
         )
-    pair = await issue_tokens(db, user, role, otp.new_family(), now)
+    pair = await issue_tokens(db, user, role, tokens.new_family(), now)
     await db.commit()
     AUTH_EVENTS.labels(event="verify_number", result="ok").inc()
     return pair
@@ -237,7 +237,7 @@ async def correct_number(
     await account_move.revoke_all_sessions(db, user.id, now)
     fresh = await account_checks.open_check(db, user, "verify_number", now)
     fresh.consent_version = consent_version
-    pair = await issue_tokens(db, user, session["role"], otp.new_family(), now)
+    pair = await issue_tokens(db, user, session["role"], tokens.new_family(), now)
     await db.commit()
     return pair
 
@@ -289,8 +289,8 @@ async def change_password(
     now = utcnow()
     user.password_hash = passwords.hash_password(payload.new)
     user.must_change_password = False
-    pair = await issue_tokens(db, user, session["role"], otp.new_family(), now)
-    await account_move.revoke_all_sessions(db, user.id, now, keep_token_hash=otp.hash_refresh_token(pair.refresh_token))
+    pair = await issue_tokens(db, user, session["role"], tokens.new_family(), now)
+    await account_move.revoke_all_sessions(db, user.id, now, keep_token_hash=tokens.hash_refresh_token(pair.refresh_token))
     await db.commit()
     AUTH_EVENTS.labels(event="password_change", result="ok").inc()
     return pair

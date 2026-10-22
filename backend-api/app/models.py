@@ -745,23 +745,6 @@ class AdminAction(Base):
     created_at = Column(DateTime, nullable=False)
 
 
-class OtpChallenge(Base):
-    """One code sent to one phone. Only an HMAC of the code is stored."""
-
-    __tablename__ = "otp_challenges"
-    __table_args__ = (Index("ix_otp_challenges_phone_created", "phone_e164", "created_at"),)
-    id = Column(Integer, primary_key=True, index=True)
-    phone_e164 = Column(String(16), nullable=False)
-    # "sign_in", "change_number" or "recovery": a code only works for what it
-    # was sent for, so a number-change code can never open a session.
-    purpose = Column(String(16), nullable=False, default="sign_in")
-    code_hash = Column(String(64), nullable=False)
-    attempts = Column(Integer, nullable=False, default=0)
-    expires_at = Column(DateTime, nullable=False)
-    consumed_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, nullable=False)
-
-
 class RefreshToken(Base):
     """A long-lived, single-use, revocable credential that mints access tokens.
 

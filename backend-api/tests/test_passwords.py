@@ -1,6 +1,6 @@
 import pytest
 
-from app.core import otp, passwords, tokens
+from app.core import passwords, tokens
 
 
 def test_hash_roundtrip():
@@ -28,9 +28,3 @@ def test_secret_hmac_is_bound_to_user_and_kind():
     assert not tokens.secret_matches(2, "verify_number", "123456", stored)
     assert not tokens.secret_matches(1, "reset_password", "123456", stored)
     assert not tokens.secret_matches(1, "verify_number", "654321", stored)
-
-
-def test_otp_still_reexports_token_helpers():
-    assert otp.new_refresh_token is tokens.new_refresh_token
-    assert otp.hash_refresh_token is tokens.hash_refresh_token
-    assert otp.new_family is tokens.new_family

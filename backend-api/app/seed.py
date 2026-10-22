@@ -15,9 +15,12 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import func, select
 
 from . import models
+from .core.passwords import hash_password
 from .core.phone import phone_key
 from .db import DATABASE_URL, AsyncSessionLocal
 
+# A customer account for the customer app in development (sample data only).
+DEV_CUSTOMER_PHONE = "+2250700000001"
 DEV_MERCHANT_PHONE = "+2250700000002"
 # A cashier at the merchant's maquis, and a field agent (fidelia-installer).
 DEV_CASHIER_PHONE = "+2250700000003"
@@ -107,8 +110,7 @@ async def _backfill_pay_codes(db) -> None:
     if baobab is not None:
         baobab.owner_username = "demo"
     # Phone sign-in for the merchant app: 07 00 00 00 02 runs the second
-    # sample maquis. Locally the code comes back in the API response
-    # (OTP_DEV_ECHO=1), so the app can be driven without a SIM.
+    # sample maquis (its password is set by _seed_dev_accounts).
     tantie = (
         await db.execute(select(models.Venue).where(models.Venue.name == _MAQUIS[1][0], models.Venue.owner_username.is_(None)))
     ).scalar_one_or_none()
@@ -213,13 +215,45 @@ async def _seed_shops_and_deals(db) -> None:
     await db.commit()
 
 
+DEV_PASSWORD = "fidelia2026"
+_DEV_ACCOUNTS = (
+    (DEV_CUSTOMER_PHONE, "customer"),
+    (DEV_MERCHANT_PHONE, "merchant"),
+    (DEV_CASHIER_PHONE, "cashier"),
+    (DEV_AGENT_PHONE, "agent"),
+    (DEV_ADMIN_PHONE, "admin"),
+)
+
+
+async def _seed_dev_accounts(db) -> None:
+    """Gives the development logins a known password and a proven number, so
+    the apps can be driven without WhatsApp. Never runs in production: these
+    passwords are public in this repository."""
+    if os.getenv("FIDELIA_ENV") == "production":
+        raise RuntimeError("Sample logins with a known password are refused when FIDELIA_ENV=production")
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    for phone, role in _DEV_ACCOUNTS:
+        user = (await db.execute(select(models.User).where(models.User.phone_e164 == phone))).scalar_one_or_none()
+        if user is None:
+            user = models.User(phone_e164=phone, roles=role, disabled=False, created_at=now)
+            db.add(user)
+        if not user.password_hash:
+            user.password_hash = hash_password(DEV_PASSWORD)
+            user.phone_verified_at = user.phone_verified_at or now
+            user.must_change_password = False
+    await db.commit()
+
+
 async def seed_sample_data() -> None:
     if not seeding_enabled():
         return
+    if os.getenv("FIDELIA_ENV") == "production":
+        raise RuntimeError("Sample data is refused when FIDELIA_ENV=production")
     async with AsyncSessionLocal() as db:
         if (await db.execute(select(func.count(models.Venue.id)))).scalar_one():
             await _seed_shops_and_deals(db)
             await _backfill_pay_codes(db)
+            await _seed_dev_accounts(db)
             return
 
         for i, (name, commune, address, specialties, hours, rate, payout) in enumerate(_MAQUIS):
@@ -272,3 +306,4 @@ async def seed_sample_data() -> None:
         await db.commit()
         await _seed_shops_and_deals(db)
         await _backfill_pay_codes(db)
+        await _seed_dev_accounts(db)

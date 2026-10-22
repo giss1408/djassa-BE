@@ -16,11 +16,6 @@ Prometheus and, in production, by Grafana Cloud. What to do when each fires:
 | `PaymentWebhookFailing` | More than 3 refused payment webhooks in 15 minutes | critical |
 | `AppErrorSpike` | More than 50 error reports per app version in 30 minutes | warning |
 | `AppCrashAfterRelease` | More than 10 crashes per app version in 1 hour | critical |
-| `OtpSentButNotVerified` | Under 30% of codes verified, over 30 sent in an hour | critical |
-| `OtpDeliveryFailing` | More than 5 refused SMS sends in 15 minutes | critical |
-| `OtpSmsNotDelivered` | Over 30% of codes to one network undelivered in an hour (Orange receipts) | warning |
-| `OtpPrimaryProviderFailing` | Orange refused more than 5 codes in 30 minutes; the fallback provider sent them | warning |
-| `OtpDailyBudgetReached` | `OTP_DAILY_SMS_BUDGET` spent: sign-in codes paused | critical |
 
 Thresholds are starting points: tune them with real pilot traffic. Outside the
 rules, an uptime monitor checks `/ready` every minute (PRODUCTION.md § 5).

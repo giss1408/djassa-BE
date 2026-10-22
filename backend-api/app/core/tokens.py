@@ -7,8 +7,11 @@ usable codes or temporary passwords.
 import hashlib
 import hmac
 import secrets
+from datetime import timedelta
 
 from .security import SECRET_KEY
+
+REFRESH_TTL = timedelta(days=90)
 
 
 def new_refresh_token() -> str:

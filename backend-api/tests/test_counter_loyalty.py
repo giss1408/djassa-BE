@@ -12,6 +12,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
+from tests.helpers import demo_login
 from app import models
 from app.core.phone import InvalidPhone, mask_phone, normalize_phone
 from app.db import AsyncSessionLocal, Base, engine
@@ -30,7 +31,7 @@ async def client():
 
 
 async def _auth(ac, username="demo", password="demo123"):
-    r = await ac.post("/api/token", data={"username": username, "password": password})
+    r = await demo_login(ac, data={"username": username, "password": password})
     assert r.status_code == 200
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 

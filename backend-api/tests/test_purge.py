@@ -1,4 +1,4 @@
-"""Spent codes, dead sessions and old error reports are deleted; live ones stay."""
+"""Finished checks, dead sessions and old error reports are deleted; live ones stay."""
 
 from datetime import datetime, timedelta
 
@@ -22,10 +22,10 @@ async def test_purge_keeps_what_is_still_useful():
         db.add(user)
         await db.flush()
 
-        def code(age):
-            return models.OtpChallenge(
-                phone_e164=user.phone_e164, code_hash="x" * 64, attempts=0,
-                expires_at=now - age + timedelta(minutes=5), created_at=now - age,
+        def check(status, done_ago=None):
+            return models.AccountCheck(
+                user_id=user.id, kind="verify_number", status=status, created_at=now - timedelta(days=60),
+                done_at=now - done_ago if done_ago else None,
             )
 
         def token(name, expires_in, revoked_ago=None, rotated=False):
@@ -43,8 +43,11 @@ async def test_purge_keeps_what_is_still_useful():
             )
 
         db.add_all([
-            code(timedelta(hours=2)),
-            code(timedelta(days=2)),
+            check("done", timedelta(days=31)),
+            check("refused", timedelta(days=45)),
+            check("done", timedelta(days=5)),
+            check("sent"),
+            check("pending"),
             token("live", timedelta(days=10)),
             # Rotated but unexpired: kept, it is what detects a stolen token.
             token("rotated", timedelta(days=10), rotated=True),
@@ -56,14 +59,14 @@ async def test_purge_keeps_what_is_still_useful():
         ])
         await db.commit()
 
-    assert await purge_expired(now) == {"otp_challenges": 1, "refresh_tokens": 2, "client_events": 1, "usage_events": 0}
+    assert await purge_expired(now) == {"account_checks": 2, "refresh_tokens": 2, "client_events": 1, "usage_events": 0}
 
     async with AsyncSessionLocal() as db:
         left = {t.token_hash.rstrip("0") for t in (await db.execute(select(models.RefreshToken))).scalars()}
-        codes = (await db.execute(select(models.OtpChallenge))).scalars().all()
+        checks = (await db.execute(select(models.AccountCheck))).scalars().all()
         events = (await db.execute(select(models.ClientEvent))).scalars().all()
     assert left == {"live", "rotated", "revokedrecent"}
-    assert len(codes) == 1 and len(events) == 1
+    assert sorted(c.status for c in checks) == ["done", "pending", "sent"] and len(events) == 1
 
 
 @pytest.mark.asyncio

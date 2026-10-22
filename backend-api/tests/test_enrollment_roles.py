@@ -5,6 +5,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
+from tests.helpers import demo_login
 from app import models
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
@@ -47,7 +48,7 @@ async def _headers(ac, phone, app_name):
 
 
 async def _admin(ac):
-    r = await ac.post("/api/token", data={"username": "admin", "password": "admin123"})
+    r = await demo_login(ac, data={"username": "admin", "password": "admin123"})
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 

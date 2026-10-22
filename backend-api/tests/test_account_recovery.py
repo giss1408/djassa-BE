@@ -12,6 +12,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import String, select
 
+from tests.helpers import demo_login
 from app import models
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
@@ -50,7 +51,7 @@ def _h(pair):
 
 
 async def _admin(ac):
-    r = await ac.post("/api/token", data={"username": "admin", "password": "admin123"})
+    r = await demo_login(ac, data={"username": "admin", "password": "admin123"})
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
@@ -96,7 +97,7 @@ async def test_sign_out_other_devices_keeps_this_one(client):
 
 @pytest.mark.asyncio
 async def test_demo_accounts_have_nothing_to_recover(client):
-    r = await client.post("/api/token", data={"username": "client", "password": "client123"})
+    r = await demo_login(client, data={"username": "client", "password": "client123"})
     h = {"Authorization": f"Bearer {r.json()['access_token']}"}
     assert (await client.post("/api/auth/sessions/revoke-others", json={}, headers=h)).status_code == 403
 

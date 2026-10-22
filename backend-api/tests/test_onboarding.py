@@ -6,6 +6,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
+from tests.helpers import demo_login
 from app import models
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
@@ -30,7 +31,7 @@ async def client():
 
 
 async def _admin(ac):
-    r = await ac.post("/api/token", data={"username": "admin", "password": "admin123"})
+    r = await demo_login(ac, data={"username": "admin", "password": "admin123"})
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
@@ -87,7 +88,7 @@ async def test_one_number_runs_one_shop(client):
 
 @pytest.mark.asyncio
 async def test_only_admins_create_shops(client):
-    r = await client.post("/api/token", data={"username": "demo", "password": "demo123"})
+    r = await demo_login(client, data={"username": "demo", "password": "demo123"})
     h = {"Authorization": f"Bearer {r.json()['access_token']}"}
     assert (await client.post("/api/admin/venues", json=SHOP, headers=h)).status_code == 403
 
