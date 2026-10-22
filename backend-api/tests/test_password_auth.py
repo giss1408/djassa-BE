@@ -75,10 +75,11 @@ async def test_existing_account_without_password_must_create_one(client):
     await make_user(PHONE, password=None, verified=True)
     r = await sign_in(client, PHONE)
     assert r.status_code == 409 and r.json() == {"detail": "password_not_set"}
+    # Registering over it opens a check for the team; nothing else changes.
     r = await _register(client)
-    assert r.status_code == 201 and r.json()["verified"] is False
+    assert r.status_code == 202 and "access_token" not in r.json()
     user = await _user()
-    assert user.password_hash and user.phone_verified_at is None
+    assert user.password_hash is None and user.phone_verified_at is not None
 
 
 @pytest.mark.asyncio

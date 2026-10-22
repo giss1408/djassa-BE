@@ -57,7 +57,9 @@ def upgrade():
     with op.batch_alter_table('recovery_requests') as batch:
         batch.add_column(sa.Column('filer_user_id', sa.Integer(), sa.ForeignKey('users.id', name='fk_recovery_requests_filer_user_id'), nullable=True))
 
-    # Existing users proved their number by SMS: their sessions keep working.
+    # Existing users are treated as verified: they signed in by SMS, or the
+    # team created them. They have no password, so they still need a
+    # temporary password (or a claim code) before they can sign in.
     op.execute("UPDATE users SET phone_verified_at = COALESCE(last_login_at, created_at)")
 
 
