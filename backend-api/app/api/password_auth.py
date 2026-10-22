@@ -96,12 +96,18 @@ async def login(request: Request, payload: LoginIn, db: AsyncSession = Depends(g
         passwords.verify_password(payload.password, _DUMMY_HASH)
         AUTH_EVENTS.labels(event="login", result="unknown").inc()
         raise HTTPException(status_code=401, detail=BAD_LOGIN)
-    if not user.password_hash:
-        raise HTTPException(status_code=409, detail="password_not_set")
     if user.locked_until is not None and user.locked_until > now:
         AUTH_EVENTS.labels(event="login", result="locked").inc()
         raise HTTPException(status_code=423, detail=LOCKED)
-    if not passwords.verify_password(payload.password, user.password_hash):
+    matched = bool(user.password_hash) and passwords.verify_password(payload.password, user.password_hash)
+    temporary = False
+    if not matched:
+        # A temporary password sent by the team also works, even for a login
+        # the team created without any password.
+        temporary = await account_checks.use_temporary_password(db, user, payload.password, now)
+    if not matched and not temporary and not user.password_hash:
+        raise HTTPException(status_code=409, detail="password_not_set")
+    if not matched and not temporary:
         # Incremented in SQL so concurrent wrong guesses cannot undercount.
         misses = (
             await db.execute(
@@ -130,12 +136,18 @@ async def login(request: Request, payload: LoginIn, db: AsyncSession = Depends(g
     if role is None:
         AUTH_EVENTS.labels(event="login", result=f"not_{payload.app}").inc()
         raise HTTPException(status_code=403, detail=_GRANTED_ONLY[payload.app])
+    if temporary:
+        # The team sent it to this number, so the number is proven; the
+        # password must be replaced before anything else.
+        user.must_change_password = True
+        if user.phone_verified_at is None:
+            user.phone_verified_at = now
     user.failed_logins = 0
     user.locked_until = None
     user.last_login_at = now
     pair = await issue_tokens(db, user, role, otp.new_family(), now)
     await db.commit()
-    AUTH_EVENTS.labels(event="login", result="ok").inc()
+    AUTH_EVENTS.labels(event="login", result="temporary" if temporary else "ok").inc()
     return pair
 
 
@@ -227,4 +239,58 @@ async def correct_number(
     fresh.consent_version = consent_version
     pair = await issue_tokens(db, user, session["role"], otp.new_family(), now)
     await db.commit()
+    return pair
+
+
+RESET_ANSWER = "Si ce numero a un compte, Fidelia vous enverra un mot de passe temporaire sur WhatsApp."
+
+
+class PasswordResetIn(BaseModel):
+    phone: str = Field(min_length=6, max_length=32)
+    country_code: str = Field(default="CI", min_length=2, max_length=2)
+
+
+class ChangePasswordIn(BaseModel):
+    current: str | None = Field(default=None, max_length=256)
+    new: str = Field(min_length=1, max_length=256)
+
+
+@router.post("/auth/password-reset", status_code=202)
+@limiter.limit("5/minute;20/hour")
+async def password_reset(request: Request, payload: PasswordResetIn, db: AsyncSession = Depends(get_db)):
+    """Asks the team for a temporary password. The answer never tells whether
+    the number has an account."""
+    e164 = phone_or_422(payload.phone, payload.country_code)
+    user = (await db.execute(select(models.User).where(models.User.phone_e164 == e164))).scalar_one_or_none()
+    if user is not None and not user.disabled:
+        await account_checks.open_check(db, user, "reset_password", utcnow())
+        await db.commit()
+    AUTH_EVENTS.labels(event="password_reset", result="asked").inc()
+    return {"message": RESET_ANSWER}
+
+
+@router.post("/auth/password", response_model=TokenPairOut)
+@limiter.limit("5/minute;20/hour")
+async def change_password(
+    request: Request,
+    payload: ChangePasswordIn,
+    db: AsyncSession = Depends(get_db),
+    session=Depends(security.get_session_user),
+):
+    user = await _session_account(db, session)
+    # Whoever signed in with a temporary password may not know an old one.
+    if not user.must_change_password:
+        if not user.password_hash or not payload.current or not passwords.verify_password(payload.current, user.password_hash):
+            raise HTTPException(status_code=401, detail="Mot de passe actuel incorrect.")
+    try:
+        passwords.check_rules(payload.new)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    now = utcnow()
+    user.password_hash = passwords.hash_password(payload.new)
+    user.must_change_password = False
+    pair = await issue_tokens(db, user, session["role"], otp.new_family(), now)
+    await account_move.revoke_all_sessions(db, user.id, now, keep_token_hash=otp.hash_refresh_token(pair.refresh_token))
+    await db.commit()
+    AUTH_EVENTS.labels(event="password_change", result="ok").inc()
     return pair
