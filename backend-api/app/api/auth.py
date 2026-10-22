@@ -181,6 +181,8 @@ class MeOut(BaseModel):
     phone_masked: str | None
     verified: bool = True
     must_change_password: bool = False
+    # The team looked at this number and turned it down.
+    number_refused: bool = False
 
 
 def phone_or_422(raw: str, country_code: str) -> str:
@@ -436,12 +438,25 @@ async def logout(payload: RefreshIn, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/auth/me", response_model=MeOut)
-async def me(user=Depends(security.get_session_user)):
+async def me(user=Depends(security.get_session_user), db: AsyncSession = Depends(get_db)):
     sub = user["username"]
     masked = mask_phone(sub[4:]) if sub.startswith("tel:") else None
+    refused = False
+    if sub.startswith("tel:") and not user["verified"]:
+        latest = (
+            await db.execute(
+                select(models.AccountCheck.status)
+                .join(models.User, models.User.id == models.AccountCheck.user_id)
+                .where(models.User.phone_e164 == sub[4:], models.AccountCheck.kind == "verify_number")
+                .order_by(models.AccountCheck.id.desc())
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        refused = latest == "refused"
     return MeOut(
         sub=sub, role=user["role"], phone_masked=masked,
         verified=user["verified"], must_change_password=user["must_change_password"],
+        number_refused=refused,
     )
 
 
