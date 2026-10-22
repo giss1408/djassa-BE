@@ -140,14 +140,14 @@ resource "cloudflare_ruleset" "rate_limit" {
   phase   = "http_ratelimit"
 
   rules = [{
-    ref         = "fidelia_otp_request"
-    description = "Sign-in codes: each one is an SMS paid for"
-    expression  = "(http.host in {${local.api_host_set}} and http.request.uri.path eq \"/api/auth/otp/request\")"
+    ref         = "fidelia_login"
+    description = "Password guessing: sign-in, sign-up and password-reset requests"
+    expression  = "(http.host in {${local.api_host_set}} and http.request.uri.path in {\"/api/auth/login\" \"/api/auth/register\" \"/api/auth/password-reset\"} and http.request.method eq \"POST\")"
     action      = "block"
     ratelimit = {
       characteristics     = ["cf.colo.id", "ip.src"]
       period              = 10
-      requests_per_period = var.otp_rate_limit
+      requests_per_period = var.login_rate_limit
       mitigation_timeout  = 10
     }
   }]
