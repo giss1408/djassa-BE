@@ -6,21 +6,20 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
+from tests.helpers import TEST_PASSWORD, demo_login
 from app import models
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
 from app.rate_limiter import limiter
 from app.seed import seed_sample_data
+from tests.helpers import make_user, send_open_check, sign_in
 
 PHONE = "07 44 55 66 77"
 E164 = "+2250744556677"
 
 
 @pytest_asyncio.fixture
-async def client(monkeypatch):
-    monkeypatch.setenv("OTP_SENDER", "console")
-    monkeypatch.setenv("OTP_DEV_ECHO", "1")
-    monkeypatch.delenv("FIDELIA_ENV", raising=False)
+async def client():
     limiter.enabled = False
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -32,21 +31,18 @@ async def client(monkeypatch):
 
 
 async def _admin(ac):
-    r = await ac.post("/api/token", data={"username": "admin", "password": "admin123"})
+    r = await demo_login(ac, data={"username": "admin", "password": "admin123"})
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
 async def _merchant_sign_in(ac, phone=PHONE):
-    code = (await ac.post("/api/auth/otp/request", json={"phone": phone, "app": "merchant"})).json()["dev_code"]
-    return await ac.post("/api/auth/otp/verify", json={"phone": phone, "code": code, "app": "merchant"})
-
-
-async def _age_codes(seconds=61):
-    from datetime import timedelta
-    async with AsyncSessionLocal() as db:
-        for c in (await db.execute(select(models.OtpChallenge))).scalars():
-            c.created_at -= timedelta(seconds=seconds)
-        await db.commit()
+    """A merchant made by the team has no password: the team sends a temporary
+    one, and the first thing they do is choose their own."""
+    r = await sign_in(ac, phone, "merchant", password=await send_open_check(phone, "reset_password"))
+    assert r.status_code == 200, r.text
+    assert r.json()["must_change_password"] is True
+    h = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    return await ac.post("/api/auth/password", json={"new": TEST_PASSWORD}, headers=h)
 
 
 SHOP = {
@@ -92,25 +88,24 @@ async def test_one_number_runs_one_shop(client):
 
 @pytest.mark.asyncio
 async def test_only_admins_create_shops(client):
-    r = await client.post("/api/token", data={"username": "demo", "password": "demo123"})
+    r = await demo_login(client, data={"username": "demo", "password": "demo123"})
     h = {"Authorization": f"Bearer {r.json()['access_token']}"}
     assert (await client.post("/api/admin/venues", json=SHOP, headers=h)).status_code == 403
 
 
 async def _file_request(ac, **extra):
-    code = (await ac.post("/api/partner-requests/code", json={"phone": PHONE})).json()["dev_code"]
-    body = {"phone": PHONE, "code": code, "contact_name": "Awa Kone", "shop_name": "Chez Awa",
+    body = {"phone": PHONE, "contact_name": "Awa Kone", "shop_name": "Chez Awa",
             "category": "maquis", "commune": "Abobo", "wallet_provider": "wave", **extra}
     return await ac.post("/api/partner-requests", json=body)
 
 
 @pytest.mark.asyncio
 async def test_merchant_asks_to_join_and_an_admin_approves(client):
+    await make_user(PHONE)
     r = await _file_request(client)
     assert r.status_code == 202, r.text
     # Not a merchant until approved.
-    await _age_codes()
-    assert (await _merchant_sign_in(client)).status_code == 403
+    assert (await sign_in(client, PHONE, "merchant")).status_code == 403
 
     admin = await _admin(client)
     pending = (await client.get("/api/admin/partner-requests", headers=admin)).json()
@@ -134,20 +129,18 @@ async def test_merchant_asks_to_join_and_an_admin_approves(client):
     assert venue["name"] == "Maquis Chez Awa"
     assert venue["pay_code"]
 
-    await _age_codes(400)
-    signed = await _merchant_sign_in(client)
+    # Already registered with a password: they keep it.
+    signed = await sign_in(client, PHONE, "merchant")
     assert signed.status_code == 200
     assert (await client.post(f"/api/admin/partner-requests/{request['id']}/approve", json={}, headers=admin)).status_code == 409
 
 
 @pytest.mark.asyncio
-async def test_partner_request_needs_the_code_and_only_one_at_a_time(client):
-    body = {"phone": PHONE, "code": "000000", "contact_name": "Awa", "shop_name": "Chez Awa",
-            "category": "maquis", "commune": "Abobo"}
-    assert (await client.post("/api/partner-requests", json=body)).status_code == 401
-
-    assert (await _file_request(client)).status_code == 202
-    await _age_codes()
+async def test_partner_request_without_code(client):
+    assert (await client.post("/api/partner-requests/code", json={"phone": PHONE})).status_code == 404
+    body = {"phone": PHONE, "contact_name": "Awa", "shop_name": "Chez Awa", "category": "maquis", "commune": "Abobo"}
+    assert (await client.post("/api/partner-requests", json=body)).status_code == 202
+    # One at a time.
     assert (await _file_request(client)).status_code == 409
 
 

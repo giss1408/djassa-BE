@@ -5,6 +5,32 @@ test environment deploys `integration`, production deploys `trunk`. Entries
 are grouped by the day the work landed. The product was called **Djassa**
 until 6 October 2026, then **Hossouko**, and is **Fidelia** since 9 October.
 
+## 2026-10-22
+
+- **Password sign-in** (`app/api/password_auth.py`): `POST /api/auth/register`,
+  `/login`, `/verify-number`, `/number`, `/password-reset`, `/password` replace
+  the SMS codes. Passwords are argon2id (8 to 128 characters, not only
+  digits); five wrong ones lock a number for 15 minutes. Access tokens carry
+  `vf` and `pc`: an unverified number gets `403 number_not_verified` and a
+  temporary password `403 password_change_required` everywhere else.
+- **WhatsApp number checks** (`account_checks`, `app/services/whatsapp.py`):
+  the team sends each code by hand through a `wa.me` link (24 h, 5 attempts).
+  Change of number and lost-number recovery use the same checks; logins
+  created by the team or a shop owner wait for a temporary password.
+- **Admin accounts API**: `/api/admin/accounts` (checks, send, refuse, user
+  search, suspend, restore, sign out, reset password) for the Fidelia Admin
+  app; every call is logged in `admin_actions`.
+- **SMS removed**: `/api/auth/otp/*` answer 410 ("Mettez a jour
+  l'application"); the Orange SMS integration, `OTP_SENDER`, `OTP_DEV_ECHO`
+  and `TEST_OTP_NUMBERS` are gone.
+- **Seed passwords**: the shared test numbers sign in with the password in `FIDELIA_SEED_PASSWORD` (a Render secret; unset = no password)
+  (refused when `FIDELIA_ENV=production`).
+- **First admin**: `python -m app.scripts.set_password +225...` sets a
+  verified password on an existing number.
+- Cloudflare rate limit now covers `POST` login, register and password-reset
+  (`login_rate_limit`, was `otp_rate_limit`).
+- Migrations `0029_password_signin`, `0030_drop_otp_challenges`.
+
 ## 2026-10-12
 
 - **Pilot record and scorecard** (`app/api/pilot.py`): `GET/PUT

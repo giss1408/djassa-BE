@@ -696,25 +696,52 @@ class User(Base):
     disabled = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=False)
     last_login_at = Column(DateTime, nullable=True)
+    # argon2id; null until the person sets one (accounts from the SMS era).
+    password_hash = Column(String(255), nullable=True)
+    must_change_password = Column(Boolean, nullable=False, default=False, server_default="0")
+    phone_verified_at = Column(DateTime, nullable=True)
+    failed_logins = Column(Integer, nullable=False, default=0, server_default="0")
+    locked_until = Column(DateTime, nullable=True)
 
     def role_set(self) -> set[str]:
         return {role for role in (self.roles or "").split(",") if role}
 
 
-class OtpChallenge(Base):
-    """One code sent to one phone. Only an HMAC of the code is stored."""
+class AccountCheck(Base):
+    """A check the team does by hand on WhatsApp: verify a number, reset a
+    password or move an account to a new number. Only an HMAC of the code or
+    temporary password is stored."""
 
-    __tablename__ = "otp_challenges"
-    __table_args__ = (Index("ix_otp_challenges_phone_created", "phone_e164", "created_at"),)
+    __tablename__ = "account_checks"
+    __table_args__ = (Index("ix_account_checks_user_kind_status", "user_id", "kind", "status"),)
     id = Column(Integer, primary_key=True, index=True)
-    phone_e164 = Column(String(16), nullable=False)
-    # "sign_in", "change_number" or "recovery": a code only works for what it
-    # was sent for, so a number-change code can never open a session.
-    purpose = Column(String(16), nullable=False, default="sign_in")
-    code_hash = Column(String(64), nullable=False)
-    attempts = Column(Integer, nullable=False, default=0)
-    expires_at = Column(DateTime, nullable=False)
-    consumed_at = Column(DateTime, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # "verify_number", "reset_password" or "change_number".
+    kind = Column(String(24), nullable=False)
+    new_phone_e164 = Column(String(16), nullable=True)
+    # "pending", "sent", "done" or "refused".
+    status = Column(String(16), nullable=False, default="pending")
+    secret_hash = Column(String(64), nullable=True)
+    attempts = Column(Integer, nullable=False, default=0, server_default="0")
+    expires_at = Column(DateTime, nullable=True)
+    sent_by = Column(String(128), nullable=True)
+    sent_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False)
+    done_at = Column(DateTime, nullable=True)
+    team_created = Column(Boolean, nullable=False, default=False, server_default="0")
+    consent_version = Column(String(64), nullable=True)
+
+
+class AdminAction(Base):
+    """One row per admin route call, for the audit trail."""
+
+    __tablename__ = "admin_actions"
+    id = Column(Integer, primary_key=True, index=True)
+    admin_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    action = Column(String(32), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    check_id = Column(Integer, ForeignKey("account_checks.id"), nullable=True)
+    ip = Column(String(64), nullable=True)
     created_at = Column(DateTime, nullable=False)
 
 
@@ -834,6 +861,9 @@ class RecoveryRequest(Base):
     decided_by = Column(String(128), nullable=True)
     decided_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, nullable=False)
+    # The account that was signed in on the new number when this was filed.
+    # Approval only takes over that very account, never a later one.
+    filer_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
 
 class AccountDeletionRequest(Base):

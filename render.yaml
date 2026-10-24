@@ -16,7 +16,7 @@
 # This is a TEST environment: payments are simulated (no real money moves),
 # EXCEPT at a venue whose merchant connected their own Wave Business account
 # (pilot option B): there a Wave payment is real and goes straight to that
-# merchant's wallet. Plus shared test numbers with a fixed code (TEST_OTP_NUMBERS). Never point real users
+# merchant's wallet. The seeded test accounts share one password (app/seed.py). Never point real users
 # or real payments at it. See docs/technical/DEPLOY-TEST.md. Production is
 # render.production.yaml (docs/technical/PRODUCTION.md).
 #
@@ -77,14 +77,11 @@ services:
       # later starts detect them and add nothing.
       - key: FIDELIA_SEED_SAMPLE
         value: "1"
-      # Phone sign-in codes (app/services/otp_sender.py). "console" writes the
-      # code to the service log; set "orange" plus ORANGE_CLIENT_ID and
-      # ORANGE_CLIENT_SECRET (or "africastalking" plus AT_USERNAME and
-      # AT_API_KEY, or both: "orange,africastalking") to send real SMS. OTP_DEV_ECHO=1 would return the code in
-      # the API response so testers need no SIM, but then anyone can sign in
-      # as any number: never on a deployment holding real data.
-      - key: OTP_SENDER
-        value: console
+      # Password of the shared test logins (07 00 00 00 01/02/03/04/09),
+      # app/seed.py. A secret: set it in the dashboard, never in this file.
+      # Unset = the sample logins get no password.
+      - key: FIDELIA_SEED_PASSWORD
+        sync: false
       # Offer alerts to the customer app (app/services/push.py). "console" logs
       # them; set "fcm" plus FCM_PROJECT_ID and FCM_SERVICE_ACCOUNT_JSON (the
       # Firebase service account key file's content) to send real pushes.
@@ -99,14 +96,6 @@ services:
       # https://fidelia.onrender.com). Unset, the link is left out.
       - key: FIDELIA_SITE_URL
         sync: false
-      # Shared test accounts: these numbers sign in with their fixed code, no
-      # SMS, no log line. 07 00 00 00 01 is a customer; 07 00 00 00 02 is the
-      # seeded merchant of the second sample maquis, 07 00 00 00 03 its
-      # cashier, 07 00 00 00 04 a field agent (fidelia-installer). Shown on the public
-      # download page, so anyone can use them: only with FIDELIA_ENV=test (the
-      # API refuses to start with it in production, ignores it elsewhere).
-      - key: TEST_OTP_NUMBERS
-        value: "+2250700000001:000000,+2250700000002:000000,+2250700000003:000000,+2250700000004:000000"
       # Shop photos and videos (app/services/media_storage.py). Videos are
       # converted by the image's ffmpeg, one at a time, in the API process
       # (no worker here): a 60 s clip takes a few minutes on the free

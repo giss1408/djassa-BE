@@ -124,7 +124,6 @@ async def delete_account(
         update(models.CustomerPayment).where(models.CustomerPayment.customer_id == tombstone).values(payer_msisdn="")
     )
 
-    await db.execute(delete(models.OtpChallenge).where(models.OtpChallenge.phone_e164 == e164))
     await db.execute(
         delete(models.RecoveryRequest).where(
             or_(models.RecoveryRequest.old_phone_e164 == e164, models.RecoveryRequest.new_phone_e164 == e164)

@@ -30,12 +30,11 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
-from ..core import otp, security
+from ..core import security
 from ..core.phone import mask_phone
 from ..db import get_db
 from ..rate_limiter import limiter
-from ..services.otp_sender import OtpDeliveryFailed, get_sender
-from .auth import check_code, dev_code, link_merchant, phone_or_422, send_code, utcnow
+from .auth import link_merchant, phone_or_422, utcnow
 from .customer import CATEGORIES, new_pay_code, qr_payload
 from .pilot import forget_owner
 from .customer import _venue_out as _public_venue_out
@@ -47,14 +46,6 @@ Category = Literal["maquis", "restaurant", "superette", "pharmacy", "mode", "bea
 WalletProvider = Literal["wave", "orange", "mtn", "moov"]
 
 assert set(Category.__args__) == set(CATEGORIES), "keep Category in step with customer.CATEGORIES"
-
-
-async def _notify(e164: str, message: str) -> None:
-    """Best effort: a failed courtesy SMS must not undo the decision."""
-    try:
-        await get_sender().send(e164, message)
-    except (OtpDeliveryFailed, RuntimeError):
-        pass
 
 
 # --- Enrol a shop in one call ------------------------------------------------
@@ -132,8 +123,6 @@ async def admin_create_venue(
         raise HTTPException(status_code=422, detail="Indiquez le numero du gerant")
     venue = await create_venue(db, payload, utcnow(), enrolled_by=user["username"])
     await db.commit()
-    if venue.owner_username and venue.owner_username.startswith("tel:"):
-        await _notify(venue.owner_username[4:], f"Fidelia Pro : {venue.name} est inscrit. Connectez-vous a Fidelia Pro avec ce numero.")
     return _venue_out(venue)
 
 
@@ -151,13 +140,9 @@ async def agent_my_venues(db: AsyncSession = Depends(get_db), user=Depends(secur
 # --- The merchant asks to join -----------------------------------------------
 
 
-class PartnerCodeIn(BaseModel):
+class PartnerRequestIn(BaseModel):
     phone: str = Field(min_length=6, max_length=32)
     country_code: str = Field(default="CI", min_length=2, max_length=2)
-
-
-class PartnerRequestIn(PartnerCodeIn):
-    code: str = Field(pattern=r"^\d{6}$")
     contact_name: str = Field(min_length=2, max_length=120)
     shop_name: str = Field(min_length=2, max_length=255)
     category: Category
@@ -199,29 +184,14 @@ def _request_out(r: models.PartnerRequest) -> PartnerRequestOut:
     )
 
 
-@router.post("/partner-requests/code", status_code=202)
-@limiter.limit("5/minute;20/hour")
-async def partner_code(request: Request, payload: PartnerCodeIn, db: AsyncSession = Depends(get_db)):
-    e164 = phone_or_422(payload.phone, payload.country_code)
-    code = await send_code(db, e164, "partner", utcnow())
-    return {
-        "phone_masked": mask_phone(e164),
-        "expires_in": int(otp.CODE_TTL.total_seconds()),
-        "resend_in": int(otp.RESEND_AFTER.total_seconds()),
-        "dev_code": dev_code(code),
-    }
-
-
 @router.post("/partner-requests", status_code=202)
 @limiter.limit("5/minute;20/hour")
 async def file_partner_request(request: Request, payload: PartnerRequestIn, db: AsyncSession = Depends(get_db)):
     e164 = phone_or_422(payload.phone, payload.country_code)
     now = utcnow()
-    await check_code(db, e164, payload.code, "partner", now)
 
     account = (await db.execute(select(models.User).where(models.User.phone_e164 == e164))).scalar_one_or_none()
     if account is not None and "merchant" in account.role_set():
-        await db.commit()
         raise HTTPException(status_code=409, detail="Ce numero est deja commercant Fidelia : connectez-vous.")
     pending = (
         await db.execute(
@@ -231,7 +201,6 @@ async def file_partner_request(request: Request, payload: PartnerRequestIn, db: 
         )
     ).scalar_one_or_none()
     if pending is not None:
-        await db.commit()
         raise HTTPException(status_code=409, detail="Votre demande est deja en cours. Nous vous appelons bientot.")
 
     wallet = None
@@ -327,7 +296,6 @@ async def approve_partner_request(
     r.status, r.venue_id, r.decided_at, r.decided_by, r.decision_note = "approved", venue.id, now, admin["username"], payload.note
     r.review_checks = ",".join(k for k in APPROVAL_CHECKS if k in required)
     await db.commit()
-    await _notify(r.phone_e164, f"Fidelia Pro : {venue.name} est inscrit. Connectez-vous a Fidelia Pro avec ce numero.")
     return _venue_out(venue)
 
 
@@ -338,7 +306,6 @@ async def reject_partner_request(
     r = await _pending(db, request_id)
     r.status, r.decided_at, r.decided_by, r.decision_note = "rejected", utcnow(), admin["username"], payload.note
     await db.commit()
-    await _notify(r.phone_e164, "Fidelia Pro : votre demande d'inscription n'a pas pu etre acceptee pour l'instant. Contactez Fidelia.")
     return _request_out(r)
 
 

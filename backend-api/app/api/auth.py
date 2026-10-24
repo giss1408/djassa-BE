@@ -1,44 +1,37 @@
-"""Sign-in.
+"""Sessions: tokens, refresh, logout and the roles an admin grants.
 
-Phone + one-time code is the real path (CONCEPT.md, Tier 0: the customer is
-recognised by phone number). The token subject is `phone_key(e164)`, the key
-counter loyalty already uses, so a customer's counter points follow them into
-the app the moment they prove they hold the number.
+Sign-in itself (phone + password) lives in `app/api/password_auth.py`. The
+token subject is `phone_key(e164)`, the key counter loyalty already uses, so a
+customer's counter points follow them into the app once they prove the number.
 
-    POST /api/auth/otp/request   {phone, app}         -> code sent
-    POST /api/auth/otp/verify    {phone, code, app}   -> access + refresh token
     POST /api/auth/refresh       {refresh_token}      -> rotated pair
     POST /api/auth/logout        {refresh_token}      -> session revoked
     GET  /api/auth/me
     POST /api/admin/users/roles  (admin) grant merchant/admin, link a venue
 
-`app` is "customer" or "merchant". Anyone can open a customer session; a
-merchant session needs the merchant role, which only an admin grants.
+The old SMS-code routes answer 410 so a build that still has them shows an
+"update the app" message instead of a broken screen.
 
-`POST /api/token` (username/password demo accounts) stays for local
-development and the test suite, and answers 404 when FIDELIA_ENV=production.
+`app` is "customer", "merchant" or "admin". Anyone can open a customer
+session; the other two need a role, which only an admin grants.
 """
 
-import hmac
 import logging
-import os
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
-from ..core import otp, security
+from ..core import security, tokens
 from ..core.phone import InvalidPhone, mask_phone, normalize_phone, phone_key
 from ..db import get_db
 from ..metrics import AUTH_EVENTS
 from ..rate_limiter import limiter
-from ..services import loyalty_consent
-from ..services.otp_sender import OtpDeliveryFailed, dev_echo_enabled, get_sender
+from ..services import account_checks
 
 router = APIRouter()
 log = logging.getLogger("fidelia.auth")
@@ -50,64 +43,7 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-# --- Demo accounts (development and tests only) -----------------------------
-
-# The role travels in the token so the customer app, the merchant app and admin
-# tools share one login endpoint without seeing each other's routes.
-_DEMO_USERS = {
-    "demo": {"hashed_password": security.get_password_hash("demo123"), "role": "merchant"},
-    "client": {"hashed_password": security.get_password_hash("client123"), "role": "customer"},
-    "admin": {"hashed_password": security.get_password_hash("admin123"), "role": "admin"},
-}
-
-
-def demo_login_enabled() -> bool:
-    return os.getenv("FIDELIA_ENV") != "production" and os.getenv("FIDELIA_DEMO_LOGIN", "1") != "0"
-
-
-@router.post("/token")
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    if not demo_login_enabled():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
-    user = _DEMO_USERS.get(form_data.username)
-    if not user or not security.verify_password(form_data.password, user["hashed_password"]):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
-
-    access_token = security.create_access_token({"sub": form_data.username, "role": user["role"]})
-    return {"access_token": access_token, "token_type": "bearer", "role": user["role"]}
-
-
-# --- Shared test numbers (FIDELIA_ENV=test only) ------------------------------
-
-# TEST_OTP_NUMBERS="+2250700000001:000000,+2250700000002:000000": these numbers
-# sign in with their fixed code, so testers share an account the way they
-# shared demo/demo123. Nothing is stored or sent for them, so the per-number
-# cooldown and hourly cap (which bound SMS spend) do not apply, and one
-# tester's request never voids another's code. Sign-in only: recovery and
-# number changes on these numbers still go through real codes.
-
-
-def test_numbers() -> dict[str, str]:
-    raw = os.getenv("TEST_OTP_NUMBERS", "").strip()
-    if not raw:
-        return {}
-    env = os.getenv("FIDELIA_ENV")
-    if env == "production":
-        raise RuntimeError("TEST_OTP_NUMBERS is refused when FIDELIA_ENV=production")
-    if env != "test":
-        return {}
-    numbers = {}
-    for entry in raw.split(","):
-        phone, _, code = entry.strip().partition(":")
-        if not phone:
-            continue
-        if not (len(code) == otp.CODE_LENGTH and code.isdigit()):
-            raise RuntimeError(f"TEST_OTP_NUMBERS: {phone} needs a {otp.CODE_LENGTH}-digit code after ':'")
-        numbers[normalize_phone(phone, "CI")] = code
-    return numbers
-
-
-# --- Phone + one-time code ---------------------------------------------------
+# --- Apps and the sessions they open ---------------------------------------
 
 AppName = Literal["customer", "merchant", "admin"]
 
@@ -136,28 +72,6 @@ _GRANTED_ONLY = {
 }
 
 
-class OtpRequestIn(BaseModel):
-    phone: str = Field(min_length=6, max_length=32)
-    country_code: str = Field(default="CI", min_length=2, max_length=2)
-    app: AppName = "customer"
-
-
-class OtpRequestOut(BaseModel):
-    phone_masked: str
-    expires_in: int
-    resend_in: int
-    # Only with OTP_SENDER=console and OTP_DEV_ECHO=1, never in production.
-    dev_code: str | None = None
-
-
-class OtpVerifyIn(OtpRequestIn):
-    code: str = Field(pattern=r"^\d{6}$")
-    # Customer app only: the loyalty wording version the customer agreed to on
-    # the sign-in screen (app/services/loyalty_consent.py). Absent means no
-    # consent: the account works, but no payment is tied to the number.
-    loyalty_consent_version: str | None = Field(default=None, min_length=1, max_length=64)
-
-
 class TokenPairOut(BaseModel):
     access_token: str
     refresh_token: str
@@ -165,6 +79,10 @@ class TokenPairOut(BaseModel):
     expires_in: int
     role: str
     phone_masked: str
+    # Password sign-in: whether the number is proven, and whether a temporary
+    # password must be replaced first. Mirrored in the `vf` and `pc` claims.
+    verified: bool = False
+    must_change_password: bool = False
 
 
 class RefreshIn(BaseModel):
@@ -175,6 +93,10 @@ class MeOut(BaseModel):
     sub: str
     role: str
     phone_masked: str | None
+    verified: bool = True
+    must_change_password: bool = False
+    # The team looked at this number and turned it down.
+    number_refused: bool = False
 
 
 def phone_or_422(raw: str, country_code: str) -> str:
@@ -184,186 +106,33 @@ def phone_or_422(raw: str, country_code: str) -> str:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-# One message for every failed verification: wrong, expired, used or
-# exhausted codes all look the same from outside.
-BAD_CODE = "Code incorrect ou expire. Demandez un nouveau code."
+# Builds that still carry the SMS-code screens get a message to show.
+UPDATE_APP = "Mettez a jour l'application Fidelia pour vous connecter."
 
 
-_MESSAGES = {
-    "sign_in": "Fidelia : votre code est {code}. Il expire dans 5 minutes. Ne le donnez a personne.",
-    "change_number": "Fidelia : code {code} pour changer le numero de votre compte. Si ce n'est pas vous, ignorez ce message.",
-    "recovery": "Fidelia : code {code} pour recuperer votre compte sur ce numero. Ne le donnez a personne.",
-    "partner": "Fidelia Pro : votre code est {code}. Il confirme votre demande d'inscription.",
-}
-
-
-async def send_code(db: AsyncSession, e164: str, purpose: str, now: datetime) -> str:
-    """Stores and sends a code for `purpose`, or raises 429/503. Commits.
-
-    The per-number cooldown and hourly cap count codes of every purpose: they
-    exist to bound SMS spend, whatever the code is for.
-    """
-    fixed = test_numbers().get(e164) if purpose == "sign_in" else None
-    if fixed is not None:
-        AUTH_EVENTS.labels(event="otp_request", result="test_number").inc()
-        return fixed
-    recent = (
-        await db.execute(
-            select(models.OtpChallenge)
-            .where(models.OtpChallenge.phone_e164 == e164, models.OtpChallenge.created_at > now - timedelta(hours=1))
-            .order_by(models.OtpChallenge.created_at.desc())
-        )
-    ).scalars().all()
-    if recent and now - recent[0].created_at < otp.RESEND_AFTER:
-        wait = int((otp.RESEND_AFTER - (now - recent[0].created_at)).total_seconds()) + 1
-        AUTH_EVENTS.labels(event="otp_request", result="too_soon").inc()
-        raise HTTPException(status_code=429, detail=f"Patientez {wait} s avant de redemander un code", headers={"Retry-After": str(wait)})
-    if len(recent) >= otp.MAX_SENDS_PER_HOUR:
-        AUTH_EVENTS.labels(event="otp_request", result="hourly_cap").inc()
-        raise HTTPException(status_code=429, detail="Trop de codes demandes pour ce numero. Reessayez dans une heure.")
-    sent_today = (
-        await db.execute(select(func.count(models.OtpChallenge.id)).where(models.OtpChallenge.created_at > now - timedelta(hours=24)))
-    ).scalar_one()
-    if sent_today >= otp.daily_sms_budget():
-        AUTH_EVENTS.labels(event="otp_request", result="daily_budget").inc()
-        log.error("Daily SMS budget reached (%s codes in 24 h); sign-in codes are paused", sent_today)
-        raise HTTPException(status_code=503, detail="Connexion momentanement indisponible. Reessayez plus tard.")
-
-    # A new code voids the previous ones for the same purpose, so only the
-    # latest SMS works.
-    await db.execute(
-        update(models.OtpChallenge)
-        .where(
-            models.OtpChallenge.phone_e164 == e164,
-            models.OtpChallenge.purpose == purpose,
-            models.OtpChallenge.consumed_at.is_(None),
-        )
-        .values(consumed_at=now)
-    )
-    code = otp.new_code()
-    db.add(
-        models.OtpChallenge(
-            phone_e164=e164, purpose=purpose, code_hash=otp.hash_code(e164, code), attempts=0,
-            expires_at=now + otp.CODE_TTL, created_at=now,
-        )
-    )
-    await db.commit()
-
-    try:
-        await get_sender().send(e164, _MESSAGES[purpose].format(code=code))
-    except OtpDeliveryFailed:
-        AUTH_EVENTS.labels(event="otp_request", result="delivery_failed").inc()
-        raise HTTPException(status_code=503, detail="Le SMS n'a pas pu etre envoye. Reessayez dans un instant.")
-    AUTH_EVENTS.labels(event="otp_request", result="sent").inc()
-    return code
-
-
-async def check_code(db: AsyncSession, e164: str, code: str, purpose: str, now: datetime) -> None:
-    """Consumes the latest `purpose` code for the number, or raises 401.
-
-    On success the caller commits; a wrong guess is committed here so the
-    attempt counts even though the request fails.
-    """
-    fixed = test_numbers().get(e164) if purpose == "sign_in" else None
-    if fixed is not None:
-        if not hmac.compare_digest(code, fixed):
-            AUTH_EVENTS.labels(event="otp_verify", result="wrong_code").inc()
-            raise HTTPException(status_code=401, detail=BAD_CODE)
-        return
-    challenge = (
-        await db.execute(
-            select(models.OtpChallenge)
-            .where(
-                models.OtpChallenge.phone_e164 == e164,
-                models.OtpChallenge.purpose == purpose,
-                models.OtpChallenge.consumed_at.is_(None),
-            )
-            .order_by(models.OtpChallenge.created_at.desc())
-        )
-    ).scalars().first()
-    if challenge is None or challenge.expires_at <= now or challenge.attempts >= otp.MAX_ATTEMPTS:
-        AUTH_EVENTS.labels(event="otp_verify", result="no_code").inc()
-        raise HTTPException(status_code=401, detail=BAD_CODE)
-
-    challenge.attempts += 1
-    if not otp.code_matches(e164, code, challenge.code_hash):
-        await db.commit()
-        AUTH_EVENTS.labels(event="otp_verify", result="wrong_code").inc()
-        raise HTTPException(status_code=401, detail=BAD_CODE)
-    challenge.consumed_at = now
-
-
-def dev_code(code: str) -> str | None:
-    return code if dev_echo_enabled() else None
-
-
-@router.post("/auth/otp/request", response_model=OtpRequestOut, status_code=202)
-@limiter.limit("10/minute;30/hour")
-async def request_code(request: Request, payload: OtpRequestIn, db: AsyncSession = Depends(get_db)):
-    e164 = phone_or_422(payload.phone, payload.country_code)
-    code = await send_code(db, e164, "sign_in", utcnow())
-    return OtpRequestOut(
-        phone_masked=mask_phone(e164),
-        expires_in=int(otp.CODE_TTL.total_seconds()),
-        resend_in=int(otp.RESEND_AFTER.total_seconds()),
-        dev_code=dev_code(code),
-    )
+@router.post("/auth/otp/request", include_in_schema=False)
+@router.post("/auth/otp/verify", include_in_schema=False)
+async def sms_codes_are_gone():
+    raise HTTPException(status_code=410, detail=UPDATE_APP)
 
 
 async def issue_tokens(db: AsyncSession, user: models.User, role: str, family: str, now: datetime) -> TokenPairOut:
-    refresh = otp.new_refresh_token()
+    refresh = tokens.new_refresh_token()
     db.add(
         models.RefreshToken(
-            user_id=user.id, token_hash=otp.hash_refresh_token(refresh), family=family, role=role,
-            expires_at=now + otp.REFRESH_TTL, created_at=now,
+            user_id=user.id, token_hash=tokens.hash_refresh_token(refresh), family=family, role=role,
+            expires_at=now + tokens.REFRESH_TTL, created_at=now,
         )
     )
-    access = security.create_access_token({"sub": phone_key(user.phone_e164), "role": role}, expires_delta=ACCESS_TTL)
+    verified = bool(user.phone_verified_at)
+    must_change = bool(user.must_change_password)
+    access = security.create_access_token(
+        {"sub": phone_key(user.phone_e164), "role": role, "vf": verified, "pc": must_change}, expires_delta=ACCESS_TTL
+    )
     return TokenPairOut(
         access_token=access, refresh_token=refresh, expires_in=int(ACCESS_TTL.total_seconds()),
-        role=role, phone_masked=mask_phone(user.phone_e164),
+        role=role, phone_masked=mask_phone(user.phone_e164), verified=verified, must_change_password=must_change,
     )
-
-
-@router.post("/auth/otp/verify", response_model=TokenPairOut)
-@limiter.limit("20/minute")
-async def verify_code(request: Request, payload: OtpVerifyIn, db: AsyncSession = Depends(get_db)):
-    e164 = phone_or_422(payload.phone, payload.country_code)
-    now = utcnow()
-    await check_code(db, e164, payload.code, "sign_in", now)
-
-    user = (await db.execute(select(models.User).where(models.User.phone_e164 == e164))).scalar_one_or_none()
-    if user is None:
-        if payload.app in _GRANTED_ONLY:
-            await db.commit()
-            AUTH_EVENTS.labels(event="otp_verify", result=f"not_{payload.app}").inc()
-            raise HTTPException(status_code=403, detail=_GRANTED_ONLY[payload.app])
-        user = models.User(phone_e164=e164, roles="customer", disabled=False, created_at=now)
-        db.add(user)
-        await db.flush()
-    if user.disabled:
-        await db.commit()
-        AUTH_EVENTS.labels(event="otp_verify", result="disabled").inc()
-        raise HTTPException(status_code=403, detail="Ce compte est suspendu. Contactez Fidelia.")
-    role = session_role(user, payload.app)
-    if role is None:
-        await db.commit()
-        AUTH_EVENTS.labels(event="otp_verify", result=f"not_{payload.app}").inc()
-        raise HTTPException(status_code=403, detail=_GRANTED_ONLY[payload.app])
-    if role == "customer" and "customer" not in user.role_set():
-        # Proving a number is all a customer account needs.
-        user.roles = ",".join(sorted(user.role_set() | {"customer"}))
-
-    if role == "customer" and payload.loyalty_consent_version:
-        await loyalty_consent.grant(
-            db, phone_key(e164), source=loyalty_consent.APP, version=payload.loyalty_consent_version, now=now
-        )
-
-    user.last_login_at = now
-    pair = await issue_tokens(db, user, role, otp.new_family(), now)
-    await db.commit()
-    AUTH_EVENTS.labels(event="otp_verify", result="ok").inc()
-    return pair
 
 
 @router.post("/auth/refresh", response_model=TokenPairOut)
@@ -372,7 +141,7 @@ async def refresh(request: Request, payload: RefreshIn, db: AsyncSession = Depen
     now = utcnow()
     stored = (
         await db.execute(
-            select(models.RefreshToken).where(models.RefreshToken.token_hash == otp.hash_refresh_token(payload.refresh_token))
+            select(models.RefreshToken).where(models.RefreshToken.token_hash == tokens.hash_refresh_token(payload.refresh_token))
         )
     ).scalar_one_or_none()
     if stored is None or stored.revoked_at is not None or stored.expires_at <= now:
@@ -410,7 +179,7 @@ async def logout(payload: RefreshIn, db: AsyncSession = Depends(get_db)):
     the token existed. The current access token lives out its hour."""
     stored = (
         await db.execute(
-            select(models.RefreshToken).where(models.RefreshToken.token_hash == otp.hash_refresh_token(payload.refresh_token))
+            select(models.RefreshToken).where(models.RefreshToken.token_hash == tokens.hash_refresh_token(payload.refresh_token))
         )
     ).scalar_one_or_none()
     if stored is not None:
@@ -423,10 +192,26 @@ async def logout(payload: RefreshIn, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/auth/me", response_model=MeOut)
-async def me(user=Depends(security.get_current_user)):
+async def me(user=Depends(security.get_session_user), db: AsyncSession = Depends(get_db)):
     sub = user["username"]
     masked = mask_phone(sub[4:]) if sub.startswith("tel:") else None
-    return MeOut(sub=sub, role=user["role"], phone_masked=masked)
+    refused = False
+    if sub.startswith("tel:") and not user["verified"]:
+        latest = (
+            await db.execute(
+                select(models.AccountCheck.status)
+                .join(models.User, models.User.id == models.AccountCheck.user_id)
+                .where(models.User.phone_e164 == sub[4:], models.AccountCheck.kind == "verify_number")
+                .order_by(models.AccountCheck.id.desc())
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        refused = latest == "refused"
+    return MeOut(
+        sub=sub, role=user["role"], phone_masked=masked,
+        verified=user["verified"], must_change_password=user["must_change_password"],
+        number_refused=refused,
+    )
 
 
 # --- Admin: who may run a shop, enroll shops, administer --------------------
@@ -467,13 +252,24 @@ async def grant_role(payload: GrantRoleIn, db: AsyncSession = Depends(get_db), a
 
 
 async def ensure_role(db: AsyncSession, e164: str, role: str, now: datetime) -> models.User:
-    """The account for `e164`, created if needed, holding `role`."""
+    """The account for `e164`, created if needed, holding `role`.
+
+    A login the team creates, or one that never had a password, waits in the
+    team's queue for a temporary password sent on WhatsApp (the hash stays
+    empty; that password signs in, and must be replaced). Someone who already
+    has a password keeps it and gets no check.
+    """
     user = (await db.execute(select(models.User).where(models.User.phone_e164 == e164))).scalar_one_or_none()
     if user is None:
         user = models.User(phone_e164=e164, roles=role, disabled=False, created_at=now)
         db.add(user)
+        await db.flush()
     else:
         user.roles = ",".join(sorted(user.role_set() | {role}))
+    if not user.password_hash:
+        user.must_change_password = True
+        check = await account_checks.open_check(db, user, "reset_password", now, team_created=True)
+        check.team_created = True
     return user
 
 

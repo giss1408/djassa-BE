@@ -1,6 +1,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from tests.helpers import demo_login
 from app.main import app
 
 
@@ -31,7 +32,7 @@ async def test_graphql_sync_requires_authentication():
 @pytest.mark.asyncio
 async def test_graphql_sync_transaction():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        token_response = await ac.post("/api/token", data={"username": "demo", "password": "demo123"})
+        token_response = await demo_login(ac, data={"username": "demo", "password": "demo123"})
         token = token_response.json()["access_token"]
         response = await ac.post(
             "/graphql",
@@ -57,7 +58,7 @@ async def test_graphql_my_sales_reads_the_merged_stream():
         from app.seed import seed_sample_data
 
         await seed_sample_data()
-        token = (await ac.post("/api/token", data={"username": "demo", "password": "demo123"})).json()[
+        token = (await demo_login(ac, data={"username": "demo", "password": "demo123"})).json()[
             "access_token"
         ]
         headers = {"Authorization": f"Bearer {token}"}

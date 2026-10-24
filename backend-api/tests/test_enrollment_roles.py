@@ -1,17 +1,18 @@
 """Cashiers added by a shop owner, and field agents who enrol shops."""
 
-from datetime import timedelta
-
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
+from tests.helpers import demo_login
 from app import models
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
 from app.rate_limiter import limiter
+from app.core.phone import normalize_phone
 from app.seed import seed_sample_data
+from tests.helpers import arm, make_user, sign_in
 
 OWNER = "07 00 00 00 02"  # seeded: runs "Chez Tantie Awa (exemple)"
 SEEDED_CASHIER = "07 00 00 00 03"
@@ -21,10 +22,7 @@ CASHIER_KEY = "tel:+2250711223344"
 
 
 @pytest_asyncio.fixture
-async def client(monkeypatch):
-    monkeypatch.setenv("OTP_SENDER", "console")
-    monkeypatch.setenv("OTP_DEV_ECHO", "1")
-    monkeypatch.delenv("FIDELIA_ENV", raising=False)
+async def client():
     limiter.enabled = False
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -35,17 +33,12 @@ async def client(monkeypatch):
     limiter.enabled = True
 
 
-async def _age_codes():
-    async with AsyncSessionLocal() as db:
-        for c in (await db.execute(select(models.OtpChallenge))).scalars():
-            c.created_at -= timedelta(seconds=400)
-        await db.commit()
-
-
 async def _sign_in(ac, phone, app_name):
-    await _age_codes()
-    code = (await ac.post("/api/auth/otp/request", json={"phone": phone, "app": app_name})).json()["dev_code"]
-    return await ac.post("/api/auth/otp/verify", json={"phone": phone, "code": code, "app": app_name})
+    """Seeded and team-created logins have no password yet: give one, then sign in."""
+    async with AsyncSessionLocal() as db:
+        exists = (await db.execute(select(models.User.id).where(models.User.phone_e164 == normalize_phone(phone, "CI")))).first()
+    await (arm(phone) if exists else make_user(phone))
+    return await sign_in(ac, phone, app_name)
 
 
 async def _headers(ac, phone, app_name):
@@ -55,7 +48,7 @@ async def _headers(ac, phone, app_name):
 
 
 async def _admin(ac):
-    r = await ac.post("/api/token", data={"username": "admin", "password": "admin123"})
+    r = await demo_login(ac, data={"username": "admin", "password": "admin123"})
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 

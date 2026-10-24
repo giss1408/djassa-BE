@@ -1,5 +1,6 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
+from tests.helpers import demo_login
 from app.main import app
 from app.core.security import create_access_token
 
@@ -7,7 +8,7 @@ from app.core.security import create_access_token
 @pytest.mark.asyncio
 async def test_create_and_list_transactions():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        token_resp = await ac.post("/api/token", data={"username": "demo", "password": "demo123"})
+        token_resp = await demo_login(ac, data={"username": "demo", "password": "demo123"})
         assert token_resp.status_code == 200
         token = token_resp.json()["access_token"]
 
@@ -41,7 +42,7 @@ async def test_create_and_list_transactions():
 @pytest.mark.asyncio
 async def test_transaction_sync_is_idempotent():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        token_resp = await ac.post("/api/token", data={"username": "demo", "password": "demo123"})
+        token_resp = await demo_login(ac, data={"username": "demo", "password": "demo123"})
         token = token_resp.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
         operation = {

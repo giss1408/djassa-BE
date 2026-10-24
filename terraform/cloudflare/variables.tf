@@ -63,8 +63,8 @@ variable "origin_secrets" {
   }
 }
 
-variable "otp_rate_limit" {
-  description = "Sign-in code requests allowed per IP per 10 seconds at the edge, before the API's own limits."
+variable "login_rate_limit" {
+  description = "Sign-in, sign-up and password-reset requests allowed per IP per 10 seconds at the edge, before the API's own limits."
   type        = number
   default     = 5
 }

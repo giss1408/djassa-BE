@@ -10,7 +10,7 @@ from strawberry.types import Info
 
 from .api.transactions import persist_transaction, request_fingerprint, transaction_output
 from .core.countries import country_dict, get_country
-from .core.security import decode_access_token
+from .core.security import decode_access_token, is_held, session_from_payload
 from .db import AsyncSessionLocal
 from .models import SaleEvent as SaleEventModel
 from .models import Transaction as TransactionModel
@@ -128,11 +128,12 @@ def authenticated_user(request: Request) -> str:
     scheme, _, token = authorization.partition(" ")
     if scheme.lower() != "bearer" or not token:
         raise GraphQLError("Authentication required")
-    payload = decode_access_token(token)
-    subject = payload.get("sub") if payload else None
-    if not subject or not isinstance(subject, str):
+    session = session_from_payload(decode_access_token(token))
+    if session is None:
         raise GraphQLError("Invalid authentication credentials")
-    return subject
+    if is_held(session):
+        raise GraphQLError("Authentication required")
+    return session["username"]
 
 
 @strawberry.type

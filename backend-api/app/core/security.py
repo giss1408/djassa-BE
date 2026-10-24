@@ -14,9 +14,9 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 # Same scheme, but a missing token is not an error: for the public catalogue.
-oauth2_optional = OAuth2PasswordBearer(tokenUrl="/api/token", auto_error=False)
+oauth2_optional = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
 def verify_password(plain_password, hashed_password):
@@ -46,13 +46,45 @@ def decode_access_token(token: str):
         return None
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    payload = decode_access_token(token)
+def session_from_payload(payload: dict | None) -> dict | None:
+    """The session a decoded token describes, or None without a usable subject.
+    The one place that reads `vf` and `pc`; code that decodes a token itself
+    must go through here and check `is_held`."""
     subject = payload.get("sub") if payload else None
     if not subject or not isinstance(subject, str):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
+        return None
     # Tokens issued before roles existed carry none; they were merchant tokens.
-    return {"username": subject, "role": payload.get("role", "merchant")}
+    # Tokens issued before password sign-in carry no `vf`: they came from SMS,
+    # which proved the number.
+    return {
+        "username": subject,
+        "role": payload.get("role", "merchant"),
+        "verified": bool(payload.get("vf", True)),
+        "must_change_password": bool(payload.get("pc", False)),
+    }
+
+
+def is_held(session: dict) -> bool:
+    return not session["verified"] or session["must_change_password"]
+
+
+async def get_session_user(token: str = Depends(oauth2_scheme)):
+    """Any valid session, including one still held back: a number not yet
+    proven (`vf` false) or a temporary password to replace (`pc` true).
+    Only the few routes that finish those steps use this."""
+    session = session_from_payload(decode_access_token(token))
+    if session is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
+    return session
+
+
+async def get_current_user(user=Depends(get_session_user)):
+    """A fully signed-in caller: number proven and no password change owed."""
+    if not user["verified"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="number_not_verified")
+    if user["must_change_password"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="password_change_required")
+    return user
 
 
 async def get_optional_user(token: str | None = Depends(oauth2_optional)):
@@ -61,10 +93,12 @@ async def get_optional_user(token: str | None = Depends(oauth2_optional)):
     The customer app shows offers, shops and on-duty pharmacies before any
     sign-in; only paying and points need one. A token that is present but
     invalid is still a 401, so the app renews it instead of silently
-    showing the anonymous view to a signed-in customer."""
+    showing the anonymous view to a signed-in customer. A session still held
+    back (number unproven, password to change) browses as anonymous."""
     if not token:
         return None
-    return await get_current_user(token)
+    user = await get_session_user(token)
+    return None if is_held(user) else user
 
 
 # Fidelia Pro sessions: the shop owner, and the cashiers the owner added.

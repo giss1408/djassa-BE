@@ -9,6 +9,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
+from tests.helpers import demo_login
 from app import models
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
@@ -44,7 +45,7 @@ def _batch(app_name="user", install_id=INSTALL, events=None):
 
 
 async def _auth(ac, username, password):
-    r = await ac.post("/api/token", data={"username": username, "password": password})
+    r = await demo_login(ac, data={"username": username, "password": password})
     assert r.status_code == 200, r.text
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 

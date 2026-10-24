@@ -1,7 +1,7 @@
 """Deletes sign-in and monitoring rows that no longer serve any purpose.
 
-* `otp_challenges` older than a day. The resend cooldown and hourly cap read
-  only the last hour, so anything older is dead weight holding phone numbers.
+* `account_checks` the team has finished (done or refused) more than 30 days
+  ago: each row holds a phone number's check and the hashed secret sent.
 * `refresh_tokens` past their expiry, and revoked ones after 30 days. Rotated
   but unexpired tokens stay: presenting one again is how stolen-token reuse is
   detected (`app/api/auth.py`).
@@ -18,7 +18,7 @@ from sqlalchemy import delete, or_
 from .. import models
 from ..db import AsyncSessionLocal
 
-OTP_RETENTION = timedelta(days=1)
+CHECKS_RETENTION = timedelta(days=30)
 REVOKED_RETENTION = timedelta(days=30)
 
 
@@ -34,8 +34,11 @@ async def purge_expired(now: datetime | None = None) -> dict[str, int]:
     """Returns how many rows each table lost."""
     now = now or datetime.now(timezone.utc).replace(tzinfo=None)
     async with AsyncSessionLocal() as session:
-        otp = await session.execute(
-            delete(models.OtpChallenge).where(models.OtpChallenge.created_at < now - OTP_RETENTION)
+        checks = await session.execute(
+            delete(models.AccountCheck).where(
+                models.AccountCheck.status.in_(("done", "refused")),
+                models.AccountCheck.done_at < now - CHECKS_RETENTION,
+            )
         )
         tokens = await session.execute(
             delete(models.RefreshToken).where(
@@ -53,7 +56,7 @@ async def purge_expired(now: datetime | None = None) -> dict[str, int]:
         )
         await session.commit()
         return {
-            "otp_challenges": otp.rowcount,
+            "account_checks": checks.rowcount,
             "refresh_tokens": tokens.rowcount,
             "client_events": events.rowcount,
             "usage_events": usage.rowcount,

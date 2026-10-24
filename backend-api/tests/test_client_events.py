@@ -7,6 +7,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
+from tests.helpers import demo_login
 from app import models
 from app.api.client_events import fingerprint, scrub, scrub_tokens
 from app.db import AsyncSessionLocal, Base, engine
@@ -40,7 +41,7 @@ def _batch(**overrides):
 
 
 async def _admin(ac):
-    r = await ac.post("/api/token", data={"username": "admin", "password": "admin123"})
+    r = await demo_login(ac, data={"username": "admin", "password": "admin123"})
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
@@ -86,7 +87,7 @@ async def test_bounds(client):
 
 @pytest.mark.asyncio
 async def test_only_admin_reads_reports(client):
-    r = await client.post("/api/token", data={"username": "client", "password": "client123"})
+    r = await demo_login(client, data={"username": "client", "password": "client123"})
     h = {"Authorization": f"Bearer {r.json()['access_token']}"}
     assert (await client.get("/api/admin/client-events", headers=h)).status_code == 403
 

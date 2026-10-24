@@ -24,6 +24,7 @@ from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
 from app.rate_limiter import limiter
 from app.seed import seed_sample_data
+from tests.helpers import TEST_PASSWORD, demo_login, phone_session, send_open_check, sign_in
 
 # Statements need a period at least this long; every sale in a scenario lands today.
 STATEMENT_PERIOD = {"from": "2026-01-01T00:00:00"}
@@ -53,7 +54,9 @@ class World:
         return self.response
 
     def password_sign_in(self, username, password):
-        r = self.call("POST", "/api/token", data={"username": username, "password": password})
+        """The fixed-credential test accounts (tests/helpers.demo_login)."""
+        r = self.run(demo_login(self.client, data={"username": username, "password": password}))
+        self.response = r
         assert r.status_code == 200, r.text
         return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
@@ -61,13 +64,10 @@ class World:
         return self.password_sign_in("admin", "admin123")
 
     def phone_sign_in(self, phone, app_name):
-        """Phone and SMS code, the way the apps sign in. Returns the response."""
-        self.run(_age_codes(400))  # skip the resend cooldown rather than wait it out
-        code = self.call("POST", "/api/auth/otp/request", json={"phone": phone, "app": app_name})
-        assert code.status_code == 202, code.text
-        return self.call(
-            "POST", "/api/auth/otp/verify", json={"phone": phone, "code": code.json()["dev_code"], "app": app_name}
-        )
+        """Phone and password, the way the apps sign in. A number the database
+        has never seen becomes a customer first. Returns the response."""
+        self.response = self.run(phone_session(self.client, phone, app_name))
+        return self.response
 
     def next_key(self, prefix):
         self.sale_key += 1
@@ -88,14 +88,6 @@ async def _fresh_database():
     await seed_sample_data()
 
 
-async def _age_codes(seconds):
-    async with AsyncSessionLocal() as db:
-        for c in (await db.execute(select(models.OtpChallenge))).scalars():
-            c.created_at -= timedelta(seconds=seconds)
-            c.expires_at -= timedelta(seconds=seconds)
-        await db.commit()
-
-
 async def _demo_venue():
     async with AsyncSessionLocal() as db:
         return (
@@ -110,9 +102,6 @@ async def _layaway_sales():
 
 @pytest.fixture
 def world(monkeypatch):
-    # Codes come back in the response instead of by SMS.
-    monkeypatch.setenv("OTP_SENDER", "console")
-    monkeypatch.setenv("OTP_DEV_ECHO", "1")
     monkeypatch.delenv("FIDELIA_ENV", raising=False)
     limiter.enabled = False
     runner = asyncio.Runner()
@@ -154,10 +143,8 @@ def customer_signs_in(world, phone):
 
 @given(parsers.parse('{name} asks to join Fidelia for her {category} "{shop}" with the number "{phone}"'))
 def asks_to_join(world, name, category, shop, phone):
-    code = world.call("POST", "/api/partner-requests/code", json={"phone": phone})
-    assert code.status_code == 202, code.text
     body = {
-        "phone": phone, "code": code.json()["dev_code"], "contact_name": name, "shop_name": shop,
+        "phone": phone, "contact_name": name, "shop_name": shop,
         "category": category, "commune": "Abobo", "wallet_provider": "wave",
     }
     r = world.call("POST", "/api/partner-requests", json=body)
@@ -200,12 +187,24 @@ def approval_refused(world):
 
 @then(parsers.parse("{name} cannot sign in to Fidelia Pro yet"))
 def cannot_sign_in(world, name):
-    assert world.phone_sign_in(world.applicant["phone"], "merchant").status_code == 403
+    # No password, or no shop yet: either way the merchant app stays closed.
+    r = world.run(sign_in(world.client, world.applicant["phone"], app="merchant"))
+    assert r.status_code in (401, 403), r.text
 
 
 @then(parsers.parse("{name} can sign in to Fidelia Pro"))
 def can_sign_in(world, name):
-    r = world.phone_sign_in(world.applicant["phone"], "merchant")
+    # The team creates the login and sends a temporary password on WhatsApp.
+    phone = world.applicant["phone"]
+    temporary = world.run(send_open_check(phone, "reset_password"))
+    r = world.run(sign_in(world.client, phone, app="merchant", password=temporary))
+    world.response = r
+    assert r.status_code == 200, r.text
+    assert r.json()["must_change_password"]
+    r = world.call(
+        "POST", "/api/auth/password", json={"new": TEST_PASSWORD},
+        headers={"Authorization": f"Bearer {r.json()['access_token']}"},
+    )
     assert r.status_code == 200, r.text
     world.shop = {"Authorization": f"Bearer {r.json()['access_token']}"}
 

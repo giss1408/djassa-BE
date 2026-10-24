@@ -14,6 +14,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
+from tests.helpers import demo_login
 from app import models
 from app.api.layaway import TERMS_VERSION
 from app.core.security import create_access_token
@@ -40,7 +41,7 @@ def _bearer(sub, role):
 
 
 async def _merchant(ac):
-    r = await ac.post("/api/token", data={"username": "demo", "password": "demo123"})
+    r = await demo_login(ac, data={"username": "demo", "password": "demo123"})
     assert r.status_code == 200
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
