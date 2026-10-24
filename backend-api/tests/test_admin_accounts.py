@@ -238,3 +238,83 @@ async def test_an_admin_cannot_lock_the_super_admin_out(client):
     for action in ("suspend", "sign-out", "reset-password"):
         assert (await client.post(f"{BASE}/users/{target}/{action}", headers=h)).status_code == 403
     assert (await sign_in(client, SUPER, "admin")).status_code == 200
+
+
+# --- Removing accounts and shops -----------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_an_admin_deletes_a_customer_even_after_looking_them_up_and_checking_them(client):
+    h = await _admin(client)
+    await make_user(SHOPPER)
+    await _open(SHOPPER_E164, "verify_number")
+    found = await client.get(f"{BASE}/users", params={"phone": SHOPPER}, headers=h)
+    user_id = found.json()["id"]
+    r = await client.delete(f"{BASE}/users/{user_id}", headers=h)
+    assert r.status_code == 204, r.text
+    assert (await client.get(f"{BASE}/users", params={"phone": SHOPPER}, headers=h)).status_code == 404
+    assert (await sign_in(client, SHOPPER)).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_an_admin_cannot_delete_a_shop_owner_themselves_or_the_super_admin(client):
+    h = await _admin(client)
+    await _super(client)
+    await make_user(OWNER, roles="merchant")
+    async with AsyncSessionLocal() as db:
+        db.add(models.Venue(category="maquis", name="Chez Test", commune="Cocody", owner_username="tel:+2250712345679"))
+        await db.commit()
+    owner = await _user_id("+2250712345679")
+    assert (await client.delete(f"{BASE}/users/{owner}", headers=h)).status_code == 409
+    assert (await client.delete(f"{BASE}/users/{await _user_id('+2250799000001')}", headers=h)).status_code == 409
+    assert (await client.delete(f"{BASE}/users/{await _user_id('+2250799000003')}", headers=h)).status_code == 403
+
+
+async def _shop_with_everything(ac):
+    """A shop with an owner, a cashier, a deal, a reward and a customer's payment."""
+    from datetime import datetime, timedelta
+
+    await make_user(OWNER, roles="merchant")
+    await make_user(NEWBIE, roles="cashier")
+    await make_user(SHOPPER)
+    now = datetime.utcnow()
+    async with AsyncSessionLocal() as db:
+        venue = models.Venue(category="maquis", name="Chez Test", commune="Cocody", owner_username="tel:+2250712345679", is_sample=True)
+        venue.rewards = [models.LoyaltyReward(title="Boisson", cost_points=10)]
+        db.add(venue)
+        await db.flush()
+        db.add(models.VenueStaff(venue_id=venue.id, user_key="tel:+2250712345680", name="Caissier", added_by="tel:+2250712345679", created_at=now))
+        db.add(models.Deal(venue_id=venue.id, title="Promo", starts_at=now, ends_at=now + timedelta(days=3), active=True, created_at=now))
+        await db.commit()
+        return venue.id
+
+
+@pytest.mark.asyncio
+async def test_the_super_admin_removes_a_shop_with_its_data_and_the_logins_only_it_needed(client):
+    h = await _super(client)
+    venue_id = await _shop_with_everything(client)
+    listed = await client.get(f"{BASE}/shops", params={"q": "chez"}, headers=h)
+    assert [s["name"] for s in listed.json()] == ["Chez Test"]
+
+    refused = await client.request("DELETE", f"{BASE}/shops/{venue_id}", json={"confirm_name": "Chez"}, headers=h)
+    assert refused.status_code == 422
+    r = await client.request("DELETE", f"{BASE}/shops/{venue_id}", json={"confirm_name": "Chez Test"}, headers=h)
+    assert r.status_code == 200, r.text
+    deleted = r.json()["deleted"]
+    assert deleted["venues"] == 1 and deleted["deals"] == 1 and deleted["loyalty_rewards"] == 1 and deleted["venue_staff"] == 1
+    assert deleted["users"] == 2
+    async with AsyncSessionLocal() as db:
+        assert await db.get(models.Venue, venue_id) is None
+        left = (await db.execute(select(models.User.phone_e164))).scalars().all()
+    assert "+2250712345679" not in left and "+2250712345680" not in left
+    # A customer who only shopped there keeps their account.
+    assert SHOPPER_E164 in left
+
+
+@pytest.mark.asyncio
+async def test_only_the_super_admin_lists_and_removes_shops(client):
+    h = await _admin(client)
+    venue_id = await _shop_with_everything(client)
+    assert (await client.get(f"{BASE}/shops", headers=h)).status_code == 403
+    r = await client.request("DELETE", f"{BASE}/shops/{venue_id}", json={"confirm_name": "Chez Test"}, headers=h)
+    assert r.status_code == 403

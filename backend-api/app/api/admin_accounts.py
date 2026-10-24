@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,10 +16,11 @@ from .. import models
 from ..core import passwords, security
 from ..core.phone import mask_phone
 from ..db import get_db
-from ..services import account_checks
+from ..services import account_checks, account_delete, shop_delete
 from ..seed import DEV_ACCOUNTS
 from ..services import super_admin
 from ..services.account_move import revoke_all_sessions
+from ..services.media_storage import get_storage
 from .auth import phone_or_422, utcnow
 
 router = APIRouter()
@@ -272,3 +274,89 @@ async def set_test_password(
         _log(db, request, admin, "set_test_password", user_id=user.id)
     await db.commit()
     return Response(status_code=204)
+
+
+# --- Removing accounts and shops ----------------------------------------------
+
+
+@router.delete("/users/{user_id}", status_code=204)
+async def delete_user(user_id: int, request: Request, db: AsyncSession = Depends(get_db), admin: models.User = Depends(admin_user)):
+    """Deletes an account the way a deletion request would (account_delete):
+    the person is erased, the shops keep their records anonymously."""
+    user = await _user(db, user_id, admin)
+    if user.id == admin.id:
+        raise HTTPException(status_code=409, detail="Vous ne pouvez pas supprimer votre propre compte.")
+    if "superadmin" in user.role_set():
+        raise HTTPException(status_code=403, detail="Reserve au super admin.")
+    try:
+        await account_delete.delete_account(db, user, utcnow(), staff=True, decided_by=f"admin:{admin.id}")
+    except account_delete.OwnsShop:
+        raise HTTPException(status_code=409, detail="Ce compte a un commerce : supprimez d'abord le commerce.")
+    except account_delete.LayawayInProgress:
+        raise HTTPException(status_code=409, detail="Un paiement en plusieurs fois est en cours sur ce compte.")
+    _log(db, request, admin, "delete_user")
+    await db.commit()
+    return Response(status_code=204)
+
+
+class ShopOut(BaseModel):
+    id: int
+    name: str
+    category: str
+    commune: str
+    is_sample: bool
+    owner_masked: str | None
+
+
+class DeleteShopIn(BaseModel):
+    # The shop's name, typed again: a slip of the thumb must not wipe a shop.
+    confirm_name: str
+
+
+class DeletedOut(BaseModel):
+    deleted: dict[str, int]
+
+
+@router.get("/shops", response_model=list[ShopOut])
+async def list_shops(
+    request: Request, q: str | None = None, db: AsyncSession = Depends(get_db), admin: models.User = Depends(super_admin_user)
+):
+    query = select(models.Venue).order_by(models.Venue.name).limit(200)
+    if q and q.strip():
+        like = f"%{q.strip()}%"
+        query = query.where(models.Venue.name.ilike(like) | models.Venue.commune.ilike(like))
+    venues = (await db.execute(query)).scalars().all()
+    _log(db, request, admin, "list_shops")
+    await db.commit()
+    return [
+        ShopOut(
+            id=v.id, name=v.name, category=v.category, commune=v.commune, is_sample=bool(v.is_sample),
+            owner_masked=mask_phone(v.owner_username[4:]) if (v.owner_username or "").startswith("tel:") else None,
+        )
+        for v in venues
+    ]
+
+
+@router.delete("/shops/{venue_id}", response_model=DeletedOut)
+async def delete_shop(
+    venue_id: int, payload: DeleteShopIn, request: Request,
+    db: AsyncSession = Depends(get_db), admin: models.User = Depends(super_admin_user),
+):
+    """Removes the shop with all its data, and the logins only it needed
+    (services/shop_delete.py). Super admin only; nothing is kept."""
+    venue = await db.get(models.Venue, venue_id)
+    if venue is None:
+        raise HTTPException(status_code=404, detail="Commerce introuvable.")
+    if payload.confirm_name.strip() != venue.name:
+        raise HTTPException(status_code=422, detail="Le nom saisi ne correspond pas au commerce.")
+    _log(db, request, admin, "delete_shop")
+    counts, media_keys = await shop_delete.delete_shop(db, venue, utcnow(), decided_by=f"admin:{admin.id}")
+    await db.commit()
+    storage = get_storage()
+    for key in media_keys:
+        try:
+            await run_in_threadpool(storage.delete, key)
+        except Exception:
+            # The rows are gone; a file left behind costs storage, not privacy.
+            pass
+    return DeletedOut(deleted=counts)
