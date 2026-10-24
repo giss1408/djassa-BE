@@ -36,6 +36,7 @@ from ..schemas.customer import (
 )
 from ..services import loyalty_consent, sale_events
 from ..services.mobile_money import ProviderUnavailable, provider_for
+from ..services.review_account import public_venue_filter
 
 router = APIRouter()
 
@@ -214,7 +215,7 @@ async def list_venues(
 ):
     if category is not None and category not in CATEGORIES:
         raise HTTPException(status_code=422, detail=f"category must be one of {tuple(CATEGORIES)}")
-    stmt = select(models.Venue)
+    stmt = select(models.Venue).where(*public_venue_filter())
     if category:
         stmt = stmt.where(models.Venue.category == category)
     if commune:

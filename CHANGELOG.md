@@ -5,6 +5,16 @@ test environment deploys `integration`, production deploys `trunk`. Entries
 are grouped by the day the work landed. The product was called **Djassa**
 until 6 October 2026, then **Hossouko**, and is **Fidelia** since 9 October.
 
+## 2026-10-24
+
+- **Store review login** (`app/services/review_account.py`): with
+  `STORE_REVIEW_PHONE` and `STORE_REVIEW_PASSWORD` set (Render secrets), every
+  start gives that number a password, a verified number and the customer and
+  merchant roles, so Apple and Google reviewers sign in to both apps without a
+  WhatsApp code. It runs its own sample shop, with no wallet and kept out of
+  `/api/venues` and `/api/deals`. Allowed in production; half a setup or a
+  weak password stops the start.
+
 ## 2026-10-22
 
 - **Password sign-in** (`app/api/password_auth.py`): `POST /api/auth/register`,

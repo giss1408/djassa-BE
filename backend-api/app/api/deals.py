@@ -31,6 +31,7 @@ from ..schemas.customer import (
     PlacementPaidIn,
 )
 from ..services import push
+from ..services.review_account import public_venue_filter
 from .customer import CATEGORIES, deal_out, live_deals_filter, utcnow
 from .payment_requests import _my_venue
 
@@ -67,7 +68,7 @@ async def list_deals(
         select(models.Deal)
         .join(models.Venue, models.Deal.venue_id == models.Venue.id)
         .options(selectinload(models.Deal.venue))
-        .where(*live_deals_filter(utcnow()))
+        .where(*live_deals_filter(utcnow()), *public_venue_filter())
     )
     if category:
         stmt = stmt.where(models.Venue.category == category)
