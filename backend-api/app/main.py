@@ -5,6 +5,7 @@ from .api import customer, payment_requests, deals, billing, sales, statements, 
 from .graphql_api import router as graphql_router
 from .db import engine, Base
 from .seed import seed_sample_data, seeding_enabled
+from .services.review_account import ensure_review_account
 from starlette.middleware import Middleware
 from slowapi.middleware import SlowAPIMiddleware
 from fastapi.middleware.cors import CORSMiddleware
@@ -63,6 +64,8 @@ async def startup():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         await seed_sample_data()
+    # The store reviewers' login, production included (app/services/review_account.py).
+    await ensure_review_account()
 
 # instrument frameworks after app creation
 FastAPIInstrumentor.instrument_app(app)
