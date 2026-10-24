@@ -8,6 +8,7 @@ from sqlalchemy import select
 from app import models
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
+from app.rate_limiter import limiter
 from app.services import review_account
 from tests.helpers import OTHER_PASSWORD, TEST_PASSWORD, make_user, sign_in
 
@@ -21,8 +22,10 @@ async def client(monkeypatch):
         await conn.run_sync(Base.metadata.create_all)
     monkeypatch.setenv("STORE_REVIEW_PHONE", PHONE)
     monkeypatch.setenv("STORE_REVIEW_PASSWORD", TEST_PASSWORD)
+    limiter.enabled = False
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
+    limiter.enabled = True
 
 
 async def _shops():

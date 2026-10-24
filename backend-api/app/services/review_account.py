@@ -28,24 +28,45 @@ _ROLES = {"customer", "merchant"}
 _REWARDS = [("Boisson offerte", 50), ("Plat offert", 150)]
 
 
-def review_phone() -> str | None:
-    """The review number in E.164, or None when the account is not set up.
-    Half a setup, or a weak password, stops the start rather than leaving the
-    store reviewers locked out without anyone noticing."""
-    phone = os.getenv("STORE_REVIEW_PHONE", "").strip()
-    password = os.getenv("STORE_REVIEW_PASSWORD", "")
+def env_login(phone_var: str, password_var: str) -> str | None:
+    """A login configured by a pair of environment variables: the number in
+    E.164, or None when neither is set. Half a setup, or a weak password,
+    stops the start rather than leaving someone locked out unnoticed."""
+    phone = os.getenv(phone_var, "").strip()
+    password = os.getenv(password_var, "")
     if not phone and not password:
         return None
     if not phone or not password:
-        raise RuntimeError("STORE_REVIEW_PHONE and STORE_REVIEW_PASSWORD are set together, or not at all")
+        raise RuntimeError(f"{phone_var} and {password_var} are set together, or not at all")
     try:
         passwords.check_rules(password)
     except ValueError as exc:
-        raise RuntimeError(f"STORE_REVIEW_PASSWORD: {exc}") from exc
+        raise RuntimeError(f"{password_var}: {exc}") from exc
     try:
         return normalize_phone(phone, "CI")
     except InvalidPhone as exc:
-        raise RuntimeError(f"STORE_REVIEW_PHONE: {exc}") from exc
+        raise RuntimeError(f"{phone_var}: {exc}") from exc
+
+
+def ensure_login(user: models.User | None, phone: str, password: str, roles: set[str], now: datetime) -> models.User:
+    """Gives `phone` the roles, the password (replaced when it changed), a
+    proven number and a clean slate: unlocked, not suspended."""
+    if user is None:
+        user = models.User(phone_e164=phone, roles="", disabled=False, created_at=now)
+    user.roles = ",".join(sorted(user.role_set() | roles))
+    if not user.password_hash or not passwords.verify_password(password, user.password_hash):
+        user.password_hash = passwords.hash_password(password)
+    user.phone_verified_at = user.phone_verified_at or now
+    user.must_change_password = False
+    user.disabled = False
+    user.failed_logins = 0
+    user.locked_until = None
+    return user
+
+
+def review_phone() -> str | None:
+    """The review number in E.164, or None when the account is not set up."""
+    return env_login("STORE_REVIEW_PHONE", "STORE_REVIEW_PASSWORD")
 
 
 def public_venue_filter() -> tuple:
@@ -65,17 +86,7 @@ async def ensure_review_account() -> None:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     async with AsyncSessionLocal() as db:
         user = (await db.execute(select(models.User).where(models.User.phone_e164 == phone))).scalar_one_or_none()
-        if user is None:
-            user = models.User(phone_e164=phone, roles="", disabled=False, created_at=now)
-            db.add(user)
-        user.roles = ",".join(sorted(user.role_set() | _ROLES))
-        if not user.password_hash or not passwords.verify_password(password, user.password_hash):
-            user.password_hash = passwords.hash_password(password)
-        user.phone_verified_at = user.phone_verified_at or now
-        user.must_change_password = False
-        user.disabled = False
-        user.failed_logins = 0
-        user.locked_until = None
+        db.add(ensure_login(user, phone, password, _ROLES, now))
 
         owner = phone_key(phone)
         shop = (await db.execute(select(models.Venue).where(models.Venue.owner_username == owner))).scalars().first()

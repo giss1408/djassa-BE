@@ -49,9 +49,9 @@ async def phone_session(ac, phone, app="customer"):
         known = (await db.execute(select(models.User.id).where(models.User.phone_e164 == e164))).first()
     if known is None:
         await make_user(phone)
-    from app.seed import _DEV_ACCOUNTS, dev_password
+    from app.seed import DEV_ACCOUNTS, dev_password
 
-    if e164 in {seeded for seeded, _ in _DEV_ACCOUNTS}:
+    if e164 in {seeded for seeded, _ in DEV_ACCOUNTS}:
         return await sign_in(ac, phone, app=app, password=dev_password())
     return await sign_in(ac, phone, app=app)
     return r

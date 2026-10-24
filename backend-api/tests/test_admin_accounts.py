@@ -9,7 +9,7 @@ from app import models
 from app.db import AsyncSessionLocal, Base, engine
 from app.main import app
 from app.rate_limiter import limiter
-from tests.helpers import make_user, sign_in
+from tests.helpers import OTHER_PASSWORD, make_user, sign_in
 
 ADMIN = "07 99 00 00 01"
 AGENT = "07 99 00 00 02"
@@ -177,3 +177,64 @@ async def test_reset_password_opens_a_check(client):
     assert (await sign_in(client, SHOPPER)).status_code == 200
     assert [a.action for a in await _actions()] == ["reset_password"]
     assert (await client.post(f"{BASE}/users/9999/reset-password", headers=h)).status_code == 404
+
+
+# --- Shared test logins ---------------------------------------------------------
+
+TESTER = "07 00 00 00 01"
+SUPER = "07 99 00 00 03"
+
+
+async def _super(ac):
+    await make_user(SUPER, roles="admin,superadmin")
+    return await _h(ac, SUPER, "admin")
+
+
+@pytest.mark.asyncio
+async def test_the_super_admin_sets_one_password_for_every_test_login(client):
+    h = await _super(client)
+    listed = await client.get(f"{BASE}/test-accounts", headers=h)
+    assert listed.status_code == 200
+    assert {a["role"] for a in listed.json()} == {"customer", "merchant", "cashier", "agent", "admin"}
+
+    r = await client.put(f"{BASE}/test-accounts/password", json={"password": OTHER_PASSWORD}, headers=h)
+    assert r.status_code == 204, r.text
+    assert (await sign_in(client, TESTER, password=OTHER_PASSWORD)).status_code == 200
+    assert (await sign_in(client, "07 00 00 00 02", "merchant", password=OTHER_PASSWORD)).status_code == 200
+    assert all(a["has_password"] for a in (await client.get(f"{BASE}/test-accounts", headers=h)).json())
+    # The super admin who did it keeps their own password.
+    assert (await sign_in(client, SUPER, "admin")).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_a_weak_test_password_is_refused(client):
+    h = await _super(client)
+    r = await client.put(f"{BASE}/test-accounts/password", json={"password": "12345678"}, headers=h)
+    assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_test_logins_cannot_be_touched_in_production(client, monkeypatch):
+    h = await _super(client)
+    monkeypatch.setenv("FIDELIA_ENV", "production")
+    assert (await client.get(f"{BASE}/test-accounts", headers=h)).status_code == 404
+    assert (await client.put(f"{BASE}/test-accounts/password", json={"password": OTHER_PASSWORD}, headers=h)).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_only_the_super_admin_sees_and_sets_the_test_password(client):
+    await make_user(AGENT, roles="agent")
+    for h in (await _admin(client), await _h(client, AGENT, "admin")):
+        assert (await client.get(f"{BASE}/test-accounts", headers=h)).status_code == 403
+        r = await client.put(f"{BASE}/test-accounts/password", json={"password": OTHER_PASSWORD}, headers=h)
+        assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_an_admin_cannot_lock_the_super_admin_out(client):
+    await _super(client)
+    h = await _admin(client)
+    target = await _user_id("+2250799000003")
+    for action in ("suspend", "sign-out", "reset-password"):
+        assert (await client.post(f"{BASE}/users/{target}/{action}", headers=h)).status_code == 403
+    assert (await sign_in(client, SUPER, "admin")).status_code == 200
