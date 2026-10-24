@@ -2,6 +2,7 @@
 team handles by hand, and look after accounts. Every call, reads included,
 leaves one `AdminAction` row."""
 
+import os
 from datetime import datetime
 from typing import Literal
 
@@ -11,10 +12,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
-from ..core import security
+from ..core import passwords, security
 from ..core.phone import mask_phone
 from ..db import get_db
 from ..services import account_checks
+from ..seed import DEV_ACCOUNTS
+from ..services import super_admin
 from ..services.account_move import revoke_all_sessions
 from .auth import phone_or_422, utcnow
 
@@ -83,10 +86,15 @@ async def _open_check(db: AsyncSession, check_id: int) -> tuple[models.AccountCh
     return check, await db.get(models.User, check.user_id)
 
 
-async def _user(db: AsyncSession, user_id: int) -> models.User:
+async def _user(db: AsyncSession, user_id: int, admin: models.User | None = None) -> models.User:
+    """The account to act on. Given the acting `admin`, a super admin's
+    account is refused unless the admin is one too: an admin cannot lock the
+    team's way back in."""
     user = await db.get(models.User, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="Compte introuvable.")
+    if admin is not None and "superadmin" in user.role_set() and "superadmin" not in admin.role_set():
+        raise HTTPException(status_code=403, detail="Reserve au super admin.")
     return user
 
 
@@ -156,7 +164,7 @@ async def find_user(
 
 @router.post("/users/{user_id}/suspend", status_code=204)
 async def suspend(user_id: int, request: Request, db: AsyncSession = Depends(get_db), admin: models.User = Depends(admin_user)):
-    user = await _user(db, user_id)
+    user = await _user(db, user_id, admin)
     user.disabled = True
     await revoke_all_sessions(db, user.id, utcnow())
     _log(db, request, admin, "suspend", user_id=user.id)
@@ -175,7 +183,7 @@ async def restore(user_id: int, request: Request, db: AsyncSession = Depends(get
 
 @router.post("/users/{user_id}/sign-out", status_code=204)
 async def sign_out(user_id: int, request: Request, db: AsyncSession = Depends(get_db), admin: models.User = Depends(admin_user)):
-    user = await _user(db, user_id)
+    user = await _user(db, user_id, admin)
     await revoke_all_sessions(db, user.id, utcnow())
     _log(db, request, admin, "sign_out", user_id=user.id)
     await db.commit()
@@ -185,8 +193,82 @@ async def sign_out(user_id: int, request: Request, db: AsyncSession = Depends(ge
 @router.post("/users/{user_id}/reset-password", response_model=CheckIdOut)
 async def reset_password(user_id: int, request: Request, db: AsyncSession = Depends(get_db), admin: models.User = Depends(admin_user)):
     """Opens the check; the user keeps the old password until they use the temporary one."""
-    user = await _user(db, user_id)
+    user = await _user(db, user_id, admin)
     check = await account_checks.open_check(db, user, "reset_password", utcnow(), team_created=False)
     _log(db, request, admin, "reset_password", user_id=user.id, check_id=check.id)
     await db.commit()
     return CheckIdOut(check_id=check.id)
+
+
+# --- Shared test logins (app/seed.py) -----------------------------------------
+#
+# The sample numbers testers share. Their password starts as
+# FIDELIA_SEED_PASSWORD on Render; from here the super admin replaces it
+# without a redeploy. Never on production, where these logins must not exist.
+
+
+class TestAccountOut(BaseModel):
+    phone_masked: str
+    role: str
+    has_password: bool
+
+
+class TestPasswordIn(BaseModel):
+    password: str
+
+
+def _not_in_production() -> None:
+    if os.getenv("FIDELIA_ENV") == "production":
+        raise HTTPException(status_code=404, detail="Not Found")
+
+
+async def super_admin_user(admin: models.User = Depends(admin_user)) -> models.User:
+    if super_admin.ROLE not in admin.role_set():
+        raise HTTPException(status_code=403, detail="Reserve au super admin.")
+    return admin
+
+
+@router.get("/test-accounts", response_model=list[TestAccountOut])
+async def test_accounts(request: Request, db: AsyncSession = Depends(get_db), admin: models.User = Depends(super_admin_user)):
+    _not_in_production()
+    phones = [phone for phone, _ in DEV_ACCOUNTS]
+    users = {u.phone_e164: u for u in (await db.execute(select(models.User).where(models.User.phone_e164.in_(phones)))).scalars()}
+    _log(db, request, admin, "list_test_accounts")
+    await db.commit()
+    return [
+        TestAccountOut(phone_masked=mask_phone(phone), role=role, has_password=bool(users.get(phone) and users[phone].password_hash))
+        for phone, role in DEV_ACCOUNTS
+    ]
+
+
+@router.put("/test-accounts/password", status_code=204)
+async def set_test_password(
+    payload: TestPasswordIn, request: Request, db: AsyncSession = Depends(get_db), admin: models.User = Depends(super_admin_user)
+):
+    """One password for every shared test login, created if missing, verified
+    and unlocked. Their open sessions end. The calling admin's own login is
+    left alone, even when it is one of them: it changes from Compte."""
+    _not_in_production()
+    try:
+        passwords.check_rules(payload.password)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    now = utcnow()
+    hashed = passwords.hash_password(payload.password)
+    for phone, role in DEV_ACCOUNTS:
+        user = (await db.execute(select(models.User).where(models.User.phone_e164 == phone))).scalar_one_or_none()
+        if user is None:
+            user = models.User(phone_e164=phone, roles=role, disabled=False, created_at=now)
+            db.add(user)
+            await db.flush()
+        if user.id == admin.id:
+            continue
+        user.password_hash = hashed
+        user.phone_verified_at = user.phone_verified_at or now
+        user.must_change_password = False
+        user.failed_logins = 0
+        user.locked_until = None
+        await revoke_all_sessions(db, user.id, now)
+        _log(db, request, admin, "set_test_password", user_id=user.id)
+    await db.commit()
+    return Response(status_code=204)

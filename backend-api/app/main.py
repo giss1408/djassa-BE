@@ -6,6 +6,7 @@ from .graphql_api import router as graphql_router
 from .db import engine, Base
 from .seed import seed_sample_data, seeding_enabled
 from .services.review_account import ensure_review_account
+from .services.super_admin import ensure_super_admin
 from starlette.middleware import Middleware
 from slowapi.middleware import SlowAPIMiddleware
 from fastapi.middleware.cors import CORSMiddleware
@@ -66,6 +67,8 @@ async def startup():
         await seed_sample_data()
     # The store reviewers' login, production included (app/services/review_account.py).
     await ensure_review_account()
+    # The super admin, so Fidelia Admin is never locked out (app/services/super_admin.py).
+    await ensure_super_admin()
 
 # instrument frameworks after app creation
 FastAPIInstrumentor.instrument_app(app)

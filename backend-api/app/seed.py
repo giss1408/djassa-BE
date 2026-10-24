@@ -221,7 +221,7 @@ def dev_password() -> str | None:
     public. Unset means the sample logins get no password."""
     return os.getenv("FIDELIA_SEED_PASSWORD") or None
 
-_DEV_ACCOUNTS = (
+DEV_ACCOUNTS = (
     (DEV_CUSTOMER_PHONE, "customer"),
     (DEV_MERCHANT_PHONE, "merchant"),
     (DEV_CASHIER_PHONE, "cashier"),
@@ -239,7 +239,7 @@ async def _seed_dev_accounts(db) -> None:
     if password is None:
         return
     now = datetime.now(timezone.utc).replace(tzinfo=None)
-    for phone, role in _DEV_ACCOUNTS:
+    for phone, role in DEV_ACCOUNTS:
         user = (await db.execute(select(models.User).where(models.User.phone_e164 == phone))).scalar_one_or_none()
         if user is None:
             user = models.User(phone_e164=phone, roles=role, disabled=False, created_at=now)

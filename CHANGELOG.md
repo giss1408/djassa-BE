@@ -7,6 +7,15 @@ until 6 October 2026, then **Hossouko**, and is **Fidelia** since 9 October.
 
 ## 2026-10-24
 
+- **Super admin** (`app/services/super_admin.py`): `FIDELIA_SUPER_ADMIN_PHONE`
+  and `FIDELIA_SUPER_ADMIN_PASSWORD` (Render secrets) give one number the
+  `admin` and `superadmin` roles and a verified password on every start, so
+  Fidelia Admin is never locked out. Other admins cannot suspend, sign out or
+  reset it.
+- **Test logins' password from Fidelia Admin**: `GET
+  /api/admin/accounts/test-accounts` and `PUT .../test-accounts/password`
+  (super admin only, 404 in production) set one password on the shared test
+  numbers, which `FIDELIA_SEED_PASSWORD` only seeds.
 - **Store review login** (`app/services/review_account.py`): with
   `STORE_REVIEW_PHONE` and `STORE_REVIEW_PASSWORD` set (Render secrets), every
   start gives that number a password, a verified number and the customer and
