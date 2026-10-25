@@ -87,6 +87,13 @@ async def test_only_admin_edits_the_rotation(client):
     backwards = {"starts_at": body["ends_at"], "ends_at": body["starts_at"]}
     assert (await client.post(f"/api/admin/pharmacies/{target}/duties", json=backwards, headers=admin)).status_code == 422
 
+    listed = (await client.get("/api/admin/pharmacies", headers=admin)).json()
+    duty = next(d for d in next(p for p in listed if p["id"] == target)["duties"] if d["starts_at"].startswith("2030"))
+    assert (await client.get("/api/admin/pharmacies", headers=customer)).status_code == 403
+    assert (await client.delete(f"/api/admin/duties/{duty['id']}", headers=customer)).status_code == 403
+    assert (await client.delete(f"/api/admin/duties/{duty['id']}", headers=admin)).status_code == 204
+    assert (await client.get("/api/pharmacies/on-duty", params={"at": (far + timedelta(days=1)).isoformat()}, headers=customer)).json() == []
+
 
 @pytest.mark.asyncio
 async def test_payment_earns_points_once_and_retry_is_idempotent(client):

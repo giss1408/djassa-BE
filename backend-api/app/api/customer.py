@@ -13,6 +13,7 @@ from ..core.security import get_optional_user, require_role
 from ..rate_limiter import limiter, public_read_limit
 from ..db import get_db
 from ..schemas.customer import (
+    AdminPharmacyOut,
     CategoryOut,
     DealOut,
     DutyIn,
@@ -315,6 +316,43 @@ async def add_duty(
     await db.commit()
     await db.refresh(duty)
     return duty
+
+
+@router.get("/admin/pharmacies", response_model=list[AdminPharmacyOut])
+async def list_pharmacies_for_duty(
+    commune: str | None = Query(None, max_length=64),
+    db: AsyncSession = Depends(get_db),
+    user=Depends(require_role("admin")),
+):
+    """Every pharmacy, with its current and coming duties, so the admin can
+    enter the weekly rotation and see what is already set."""
+    stmt = select(models.Venue).where(models.Venue.category == "pharmacy")
+    if commune:
+        stmt = stmt.where(func.lower(models.Venue.commune) == commune.lower())
+    venues = (await db.execute(stmt.order_by(models.Venue.commune, models.Venue.name))).scalars().all()
+    duties = (await db.execute(
+        select(models.PharmacyDuty)
+        .where(models.PharmacyDuty.venue_id.in_([v.id for v in venues]), models.PharmacyDuty.ends_at > utcnow())
+        .order_by(models.PharmacyDuty.starts_at)
+    )).scalars().all() if venues else []
+    by_venue: dict[int, list] = {}
+    for duty in duties:
+        by_venue.setdefault(duty.venue_id, []).append(duty)
+    return [
+        AdminPharmacyOut(id=v.id, name=v.name, commune=v.commune, address=v.address,
+                         duties=[DutyOut.model_validate(d) for d in by_venue.get(v.id, [])])
+        for v in venues
+    ]
+
+
+@router.delete("/admin/duties/{duty_id}", status_code=204)
+async def delete_duty(duty_id: int, db: AsyncSession = Depends(get_db), user=Depends(require_role("admin"))):
+    """Removes a period entered by mistake."""
+    duty = await db.get(models.PharmacyDuty, duty_id)
+    if duty is None:
+        raise HTTPException(status_code=404, detail="duty not found")
+    await db.delete(duty)
+    await db.commit()
 
 
 # --- Payment ----------------------------------------------------------------
