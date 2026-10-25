@@ -45,3 +45,36 @@ async def test_support_rejects_unavailable_language():
             },
         )
         assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_support_request_alerts_the_team_without_its_text(monkeypatch):
+    from app.services import admin_alerts
+
+    monkeypatch.setenv("NTFY_TOPIC", "fidelia-test-topic")
+    monkeypatch.setenv("NTFY_URL", "memory")
+    admin_alerts.SENT.clear()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        token = (await ac.post("/api/token", data={"username": "demo", "password": "demo123"})).json()["access_token"]
+        r = await ac.post(
+            "/api/support/requests",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"country_code": "CI", "language": "fr", "channel": "whatsapp", "category": "payment",
+                  "message": "Je n'ai pas recu la confirmation."},
+        )
+    assert r.status_code == 201
+    [alert] = admin_alerts.SENT
+    assert alert["title"] == "Nouvelle demande de support"
+    assert alert["message"] == f"#{r.json()['id']} · payment · CI (whatsapp)"
+    assert "confirmation" not in alert["message"]
+
+
+@pytest.mark.asyncio
+async def test_alerts_are_off_without_a_topic(monkeypatch):
+    from app.services import admin_alerts
+
+    monkeypatch.delenv("NTFY_TOPIC", raising=False)
+    monkeypatch.setenv("NTFY_URL", "memory")
+    admin_alerts.SENT.clear()
+    await admin_alerts.send("t", "m")
+    assert admin_alerts.SENT == []

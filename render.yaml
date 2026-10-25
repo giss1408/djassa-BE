@@ -90,6 +90,12 @@ services:
       # Firebase service account key file's content) to send real pushes.
       - key: PUSH_PROVIDER
         value: console
+      # Team alerts on phones via the ntfy app (app/services/admin_alerts.py).
+      # Set a long random topic; empty = off. NTFY_TOKEN only for a reserved topic.
+      - key: NTFY_TOPIC
+        sync: false
+      - key: NTFY_TOKEN
+        sync: false
       # The investor brief at /brief/ (app/api/investor_brief.py): one shared
       # password, at least 12 characters, given to investors by the team.
       # Unset or shorter, the brief is closed. Changing it signs everyone out.

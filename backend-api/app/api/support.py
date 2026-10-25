@@ -1,7 +1,7 @@
 import os
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +12,7 @@ from ..core.security import SHOP_STAFF, get_current_user
 from ..db import get_db
 from ..models import LoyaltyEntry, SupportRequest
 from ..schemas.support import SupportRequestIn, SupportRequestOut
+from ..services import admin_alerts
 
 router = APIRouter(prefix="/support", tags=["support"])
 
@@ -65,6 +66,7 @@ async def suggestion_access(db: AsyncSession = Depends(get_db), user=Depends(get
 @router.post("/requests", response_model=SupportRequestOut, status_code=201)
 async def create_support_request(
     payload: SupportRequestIn,
+    background: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
@@ -90,6 +92,12 @@ async def create_support_request(
     db.add(request)
     await db.commit()
     await db.refresh(request)
+    background.add_task(
+        admin_alerts.send,
+        "Nouvelle demande de support",
+        f"#{request.id} · {request.category} · {request.country_code} ({request.channel})",
+        tags=["sos"],
+    )
     return SupportRequestOut(
         id=request.id,
         status=request.status,

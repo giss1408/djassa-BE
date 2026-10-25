@@ -93,6 +93,12 @@ services:
       # --- Offer alerts (app/services/push.py) -----------------------------
       - key: PUSH_PROVIDER
         value: fcm
+      # Team alerts on phones via the ntfy app (app/services/admin_alerts.py).
+      # Set a long random topic; empty = off. NTFY_TOKEN only for a reserved topic.
+      - key: NTFY_TOPIC
+        sync: false
+      - key: NTFY_TOKEN
+        sync: false
       - key: FCM_PROJECT_ID
         sync: false
       # The Firebase service account key file's content (JSON), one line.

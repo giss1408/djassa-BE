@@ -169,3 +169,18 @@ async def test_rejecting_a_request(client):
     assert r.json()["status"] == "rejected"
     async with AsyncSessionLocal() as db:
         assert (await db.execute(select(models.Venue).where(models.Venue.name == "Chez Awa"))).first() is None
+
+
+@pytest.mark.asyncio
+async def test_partner_request_alerts_the_team_on_ntfy(client, monkeypatch):
+    from app.services import admin_alerts
+
+    monkeypatch.setenv("NTFY_TOPIC", "fidelia-test-topic")
+    monkeypatch.setenv("NTFY_URL", "memory")
+    admin_alerts.SENT.clear()
+    assert (await _file_request(client)).status_code == 202
+    assert admin_alerts.SENT == [{
+        "topic": "fidelia-test-topic", "title": "Nouvelle demande commerçant",
+        "message": "Chez Awa (maquis, Abobo) : à appeler", "priority": 4, "tags": ["shopping_cart"],
+    }]
+    assert E164 not in str(admin_alerts.SENT)  # no phone numbers in alerts

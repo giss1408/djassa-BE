@@ -24,7 +24,7 @@ own account, points only by default.
 from datetime import datetime
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,6 +34,7 @@ from ..core import otp, security
 from ..core.phone import mask_phone
 from ..db import get_db
 from ..rate_limiter import limiter
+from ..services import admin_alerts
 from ..services.otp_sender import OtpDeliveryFailed, get_sender
 from .auth import check_code, dev_code, link_merchant, phone_or_422, send_code, utcnow
 from .customer import CATEGORIES, new_pay_code, qr_payload
@@ -214,7 +215,9 @@ async def partner_code(request: Request, payload: PartnerCodeIn, db: AsyncSessio
 
 @router.post("/partner-requests", status_code=202)
 @limiter.limit("5/minute;20/hour")
-async def file_partner_request(request: Request, payload: PartnerRequestIn, db: AsyncSession = Depends(get_db)):
+async def file_partner_request(
+    request: Request, payload: PartnerRequestIn, background: BackgroundTasks, db: AsyncSession = Depends(get_db)
+):
     e164 = phone_or_422(payload.phone, payload.country_code)
     now = utcnow()
     await check_code(db, e164, payload.code, "partner", now)
@@ -246,6 +249,13 @@ async def file_partner_request(request: Request, payload: PartnerRequestIn, db: 
         )
     )
     await db.commit()
+    background.add_task(
+        admin_alerts.send,
+        "Nouvelle demande commerçant",
+        f"{payload.shop_name.strip()} ({payload.category}, {payload.commune.strip()}) : à appeler",
+        priority=4,
+        tags=["shopping_cart"],
+    )
     return {
         "status": "pending",
         "message": "Demande recue. Un agent Fidelia vous appelle pour finaliser votre inscription.",
