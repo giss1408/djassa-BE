@@ -104,9 +104,9 @@ def deal_alert(deal: models.Deal) -> dict:
         # Strings only (FCM's rule). The app opens the shop page on tap.
         "data": {"type": "deal", "deal_id": str(deal.id), "venue_id": str(deal.venue_id)},
         "android": {
-            # Normal priority: an offer can wait for the phone's next wake-up;
-            # high priority is for things a person must see at once.
-            "priority": "normal",
+            # High priority: at normal, Android holds the alert while the phone
+            # dozes, so it only shows once the app is opened.
+            "priority": "high",
             "notification": {"channel_id": "offers", "tag": f"deal_{deal.id}"},
             # Gone after a day: an alert for an offer that may be over is noise.
             "ttl": "86400s",
