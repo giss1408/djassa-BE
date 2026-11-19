@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from .api import payments, auth, transactions, export, tontine, webhooks, config, support, identity
 from .api import orange_sms
-from .api import customer, payment_requests, deals, billing, sales, statements, counter_loyalty, venue_location, wave, client_events, account, onboarding, media, usage_events, staff, layaway, investor_brief, pilot
+from .api import customer, payment_requests, deals, billing, sales, statements, counter_loyalty, venue_location, wave, client_events, account, onboarding, media, usage_events, staff, layaway, investor_brief, pilot, wallet_change
 from .graphql_api import router as graphql_router
 from .db import engine, Base
 from .seed import seed_sample_data, seeding_enabled
@@ -146,6 +146,7 @@ app.include_router(identity.router, prefix="/api")
 app.include_router(client_events.router, prefix="/api")
 app.include_router(usage_events.router, prefix="/api")
 app.include_router(staff.router, prefix="/api")
+app.include_router(wallet_change.router, prefix="/api")
 app.include_router(layaway.router, prefix="/api")
 app.include_router(pilot.router, prefix="/api")
 app.include_router(graphql_router, prefix="/graphql")

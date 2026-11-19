@@ -35,7 +35,7 @@ from ..schemas.customer import (
     VenueDetailOut,
     VenueOut,
 )
-from ..services import loyalty_consent, sale_events
+from ..services import loyalty_consent, sale_events, wallet_change
 from ..services.mobile_money import ProviderUnavailable, provider_for
 
 router = APIRouter()
@@ -469,6 +469,7 @@ async def pay_venue(payload: PaymentIn, db: AsyncSession = Depends(get_db), user
     # Re-checked here, not trusted from step 1: the code may have been
     # rotated, paid or expired between the scan and the confirmation.
     venue, request = await resolve_code(db, payload.pay_code)
+    await wallet_change.apply_due(db, venue)  # a confirmed wallet change whose 24 h are over takes effect now
     if request is not None:
         if payload.amount is not None and payload.amount != request.amount:
             raise HTTPException(status_code=409, detail="Le montant ne correspond pas a la demande du commercant")
@@ -478,6 +479,7 @@ async def pay_venue(payload: PaymentIn, db: AsyncSession = Depends(get_db), user
             raise HTTPException(status_code=422, detail="Montant requis")
         amount = payload.amount
 
+    await wallet_change.enforce_cap(db, venue, amount)  # first week of a newly activated wallet: 50,000 XOF in total
     # Chosen before anything is written: a venue that cannot take this wallet
     # is refused without leaving a pending payment or a claimed QR behind.
     try:
