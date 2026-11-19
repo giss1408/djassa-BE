@@ -55,6 +55,12 @@ AUDIT = [
     (models.LayawayInstallment, "recorded_by"),
     (models.AccountDeletionRequest, "decided_by"),
     (models.PilotMerchant, "updated_by"),
+    # wallet changes (app/services/wallet_change.py): who requested, sent the code, activated or rejected, and the trail's actors
+    (models.WalletChange, "requested_by"),
+    (models.WalletChange, "code_sent_by"),
+    (models.WalletChange, "activated_by"),
+    (models.WalletChange, "resolved_by"),
+    (models.WalletChangeEvent, "actor"),
 ]
 
 
