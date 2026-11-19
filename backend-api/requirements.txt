@@ -12,7 +12,7 @@ pytest-bdd
 alembic
 sqlalchemy[asyncio]>=1.4  # [asyncio] pulls greenlet, which SQLAlchemy 2.1 no longer installs by default
 asyncpg
-python-jose[cryptography]
+PyJWT[crypto]  # was python-jose (unmaintained, known vulnerabilities, drags in ecdsa/pyasn1)
 passlib[bcrypt]
 bcrypt<5
 aiosqlite

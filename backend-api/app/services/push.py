@@ -30,7 +30,7 @@ import unicodedata
 from datetime import timedelta
 
 import httpx
-from jose import jwt
+import jwt
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
