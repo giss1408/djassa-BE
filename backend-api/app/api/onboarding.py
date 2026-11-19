@@ -131,6 +131,9 @@ async def admin_create_venue(
     shop enrolled in person without its merchant would wait for an admin."""
     if user["role"] == "agent" and not payload.merchant_phone:
         raise HTTPException(status_code=422, detail="Indiquez le numero du gerant")
+    if user["role"] == "agent" and (payload.payout_provider or payload.payout_account):
+        # Where customers' money is paid out is entered by the merchant in Fidelia Pro, never by the agent who enrols the shop.
+        raise HTTPException(status_code=422, detail="wallet_set_by_merchant")
     venue = await create_venue(db, payload, utcnow(), enrolled_by=user["username"])
     await db.commit()
     if venue.owner_username and venue.owner_username.startswith("tel:"):

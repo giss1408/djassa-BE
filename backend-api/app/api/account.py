@@ -352,7 +352,7 @@ class RevokeSessionsIn(BaseModel):
     country_code: str = Field(default="CI", min_length=2, max_length=2)
 
 
-@router.post("/admin/users/revoke-sessions")
+@router.post("/admin/users/revoke-sessions", dependencies=[Depends(security.require_step_up())])
 async def admin_revoke_sessions(payload: RevokeSessionsIn, db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))):
     """A reported theft: end every session of that number now."""
     e164 = phone_or_422(payload.phone, payload.country_code)
@@ -423,7 +423,7 @@ async def admin_find_user(phone: str, country_code: str = "CI", db: AsyncSession
     return await _user_out(db, await _user_by_phone(db, phone, country_code))
 
 
-@router.post("/admin/users/disable", response_model=UserOut)
+@router.post("/admin/users/disable", response_model=UserOut, dependencies=[Depends(security.require_step_up())])
 async def admin_disable_user(payload: DisableIn, db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))):
     """Suspends (or restores) an account. Suspending also ends its sessions."""
     account = await _user_by_phone(db, payload.phone, payload.country_code)
@@ -436,7 +436,7 @@ async def admin_disable_user(payload: DisableIn, db: AsyncSession = Depends(get_
     return await _user_out(db, account)
 
 
-@router.post("/admin/users/roles/revoke", response_model=UserOut)
+@router.post("/admin/users/roles/revoke", response_model=UserOut, dependencies=[Depends(security.require_step_up())])
 async def admin_revoke_role(payload: RevokeRoleIn, db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))):
     """Removes merchant, field agent or admin access. Sessions for that role
     cannot renew; an access token already issued lives out its hour."""

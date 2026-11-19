@@ -446,7 +446,7 @@ class GrantRoleOut(BaseModel):
     venue_id: int | None
 
 
-@router.post("/admin/users/roles", response_model=GrantRoleOut)
+@router.post("/admin/users/roles", response_model=GrantRoleOut, dependencies=[Depends(security.require_step_up())])
 async def grant_role(payload: GrantRoleIn, db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))):
     e164 = phone_or_422(payload.phone, payload.country_code)
     now = utcnow()
