@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from passlib.context import CryptContext
-from jose import jwt, JWTError
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
@@ -42,7 +42,7 @@ def decode_access_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
-    except JWTError:
+    except jwt.PyJWTError:
         return None
 
 
