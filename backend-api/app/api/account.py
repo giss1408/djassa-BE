@@ -21,6 +21,8 @@ and revokes every session, so whoever holds the old number, or a phone signed
 in on it, is out.
 """
 
+import hmac
+import os
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -152,6 +154,36 @@ async def confirm_number_change(
     pair = await issue_tokens(db, account, user["role"], otp.new_family(), now)
     await db.commit()
     return pair
+
+
+# --- The auth service moved a number ------------------------------------------
+
+
+class PhoneChangedIn(BaseModel):
+    old_phone: str = Field(min_length=6, max_length=32)
+    new_phone: str = Field(min_length=6, max_length=32)
+
+
+@router.post("/internal/phone-changed")
+async def auth_phone_changed(payload: PhoneChangedIn, request: Request, db: AsyncSession = Depends(get_db)):
+    """Called by the platform auth service BEFORE it changes a person's number (the person proved the new one there): everything keyed
+    by the old number moves to the new one, exactly as a self-service change here does. Idempotent: nothing to move, or already moved,
+    answers ok. Only the auth service's shared key (FIDELIA_AUTH_HOOK_KEY) opens it; off when the key is not set."""
+    key = os.getenv("FIDELIA_AUTH_HOOK_KEY", "")
+    given = request.headers.get("x-service-key", "")
+    if len(key) < 16 or not hmac.compare_digest(key.encode(), given.encode()):
+        raise HTTPException(status_code=403, detail="forbidden")
+    old_e164 = phone_or_422(payload.old_phone, "CI")
+    new_e164 = phone_or_422(payload.new_phone, "CI")
+    account = (await db.execute(select(models.User).where(models.User.phone_e164 == old_e164))).scalar_one_or_none()
+    if account is None:
+        return {"ok": True, "moved": False}  # no fidelia data on that number yet, or already moved
+    try:
+        await move_account(db, account, new_e164, method="auth", now=utcnow())
+    except NumberTaken:
+        raise HTTPException(status_code=409, detail="number_taken")
+    await db.commit()
+    return {"ok": True, "moved": True}
 
 
 # --- Lost number: reviewed by a person ---------------------------------------

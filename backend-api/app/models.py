@@ -814,7 +814,7 @@ class AccountNumberChange(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     old_phone_e164 = Column(String(16), nullable=False, index=True)
     new_phone_e164 = Column(String(16), nullable=False, index=True)
-    method = Column(String(16), nullable=False)  # "self_service" | "recovery"
+    method = Column(String(16), nullable=False)  # "self_service" | "recovery" | "auth"
     recovery_request_id = Column(Integer, ForeignKey("recovery_requests.id"), nullable=True)
     created_at = Column(DateTime, nullable=False)
 

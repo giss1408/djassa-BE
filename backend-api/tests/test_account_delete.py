@@ -268,3 +268,41 @@ async def test_erase_identity_calls_auth_with_the_service_key_and_never_raises(m
     caplog.set_level("ERROR")
     assert await sso.erase_identity(E164) is False
     assert "FAILED" in caplog.text and E164 not in caplog.text  # logged for a rerun, without the number
+
+
+# --- the auth service moves a number: fidelia moves its data first ---------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_auth_phone_hook_moves_the_account_and_is_idempotent(client, monkeypatch):
+    monkeypatch.setenv("FIDELIA_AUTH_HOOK_KEY", "k" * 32)
+    await _sign_in(client)
+    key = {"X-Service-Key": "k" * 32}
+    body = {"old_phone": E164, "new_phone": "+2250755555555"}
+    r = await client.post("/api/internal/phone-changed", json=body, headers=key)
+    assert r.status_code == 200 and r.json() == {"ok": True, "moved": True}
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(models.User).where(models.User.phone_e164 == "+2250755555555"))).scalar_one_or_none() is not None
+        assert (await db.execute(select(models.AccountNumberChange.method))).scalars().all() == ["auth"]
+    again = await client.post("/api/internal/phone-changed", json=body, headers=key)
+    assert again.json() == {"ok": True, "moved": False}
+
+
+@pytest.mark.asyncio
+async def test_auth_phone_hook_needs_the_key_and_refuses_a_taken_number(client, monkeypatch):
+    body = {"old_phone": E164, "new_phone": "+2250755555555"}
+    assert (await client.post("/api/internal/phone-changed", json=body, headers={"X-Service-Key": "k" * 32})).status_code == 403  # off: no key set
+    monkeypatch.setenv("FIDELIA_AUTH_HOOK_KEY", "k" * 32)
+    assert (await client.post("/api/internal/phone-changed", json=body)).status_code == 403
+    assert (await client.post("/api/internal/phone-changed", json=body, headers={"X-Service-Key": "x" * 32})).status_code == 403
+    await _sign_in(client)
+    await _sign_in(client, "07 55 55 55 55")
+    taken = await client.post("/api/internal/phone-changed", json=body, headers={"X-Service-Key": "k" * 32})
+    assert taken.status_code == 409
+
+
+def test_the_hook_is_reachable_without_the_cloudflare_header_but_nothing_else_is():
+    from app import edge
+
+    assert "/api/internal/phone-changed" in edge.EXEMPT_PATHS
+    assert "/api/account" not in edge.EXEMPT_PATHS
