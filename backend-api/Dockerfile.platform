@@ -1,0 +1,33 @@
+# The Fidelia API image for the shared platform (compose.platform.yaml). Same as `Dockerfile` (what Render builds) plus the shared platform kit,
+# which the SSO code needs (regisse_kit). The kit is a named build context declared in the compose file; Render keeps using `Dockerfile`.
+FROM python:3.11-slim-bookworm
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+RUN groupadd -r app && useradd --no-log-init -r -g app app
+
+# ffmpeg re-encodes shop videos for low bandwidth (app/services/media_processing.py).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt requirements.lock ./
+RUN pip install --no-cache-dir --disable-pip-version-check -r requirements.txt -c requirements.lock
+
+# Shared platform kit (build context `kit`). Pin by git tag once the kit has a remote.
+COPY --from=kit . /kit
+RUN pip install --no-cache-dir --disable-pip-version-check -c requirements.lock "/kit[sso]"
+
+COPY ./app ./app
+COPY ./alembic ./alembic
+COPY ./alembic.ini ./alembic.ini
+
+# Local media (MEDIA_STORAGE=local) lives on a volume: created here so the volume inherits the owner.
+RUN mkdir -p /app/media && chown -R app:app /app
+USER app
+
+EXPOSE 8000
+# The command is set by compose (web: migrations then uvicorn; worker: celery).
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips '*' --no-access-log"]

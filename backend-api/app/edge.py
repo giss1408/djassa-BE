@@ -36,7 +36,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 ORIGIN_HEADER = "x-origin-auth"
 # `/api/internal/phone-changed` is called by the auth service over the private network, behind its own shared key.
-EXEMPT_PATHS = frozenset({"/health", "/metrics", "/api/internal/phone-changed"})
+EXEMPT_PATHS = frozenset({"/health", "/healthz", "/metrics", "/api/internal/phone-changed"})
 MIN_SECRET_LENGTH = 32
 
 

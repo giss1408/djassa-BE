@@ -1,0 +1,53 @@
+# Fidelia on the shared platform. Postgres/Redis/Caddy come from platform/infra (run `infra/scripts/new-product.sh fidelia` first, then
+# `infra/scripts/make-product-env.sh fidelia .env.platform --defaults platform.env.defaults`). This file runs only the app and its worker.
+name: fidelia
+
+x-common: &common
+  build:
+    context: .
+    dockerfile: Dockerfile.platform
+    additional_contexts:
+      kit: ../../../platform/kit
+  image: fidelia-backend:local
+  env_file: .env.platform
+  restart: unless-stopped
+  networks: [infra_net]
+  volumes: [media:/app/media]
+
+services:
+  web:
+    <<: *common
+    container_name: fidelia-web              # the upstream infra/conf.d/fidelia.caddy proxies to, and the host the auth service calls its hook on
+    command: ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips '*' --no-access-log"]
+    mem_limit: 768m
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  worker:
+    <<: *common
+    container_name: fidelia-worker
+    # -B: the beat schedule (auth erase outbox every 10 minutes). The schedule file goes to /tmp: the app dir is not writable.
+    # --concurrency 1: one video conversion at a time (ffmpeg), as the code expects (app/celery_tasks.py).
+    command: ["celery", "-A", "app.celery_app", "worker", "-B", "-s", "/tmp/celerybeat-schedule", "-l", "info", "--concurrency", "1"]
+    mem_limit: 768m
+    cpus: 1.0
+    depends_on:
+      web: {condition: service_healthy}   # web applies the migrations first
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery_app inspect ping -d celery@$$HOSTNAME -t 5 | grep -q pong"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  media:
+
+networks:
+  infra_net:
+    external: true

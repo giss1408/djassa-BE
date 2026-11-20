@@ -166,6 +166,7 @@ def metrics(request: Request):
 
 
 @app.get("/health")
+@app.get("/healthz")  # the platform standard (Caddy and container health checks)
 async def health():
     return {"status": "ok"}
 

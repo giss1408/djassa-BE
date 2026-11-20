@@ -141,7 +141,7 @@ async def observe_request(request: Request, call_next):
         duration = time.perf_counter() - start
         route = route_label(request)
         record_request(request.method, route, status, duration)
-        if route not in ("/health", "/metrics"):
+        if route not in ("/health", "/healthz", "/metrics"):
             level = logging.ERROR if status >= 500 else logging.INFO
             access_log.log(
                 level,

@@ -51,3 +51,6 @@ venv/
 
 # Shop media in development (MEDIA_STORAGE=local)
 media/
+
+# built by platform/infra/scripts/make-product-env.sh: holds secrets
+.env.platform
