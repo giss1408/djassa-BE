@@ -29,7 +29,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
-from ..core import otp, security
+from ..core import otp, security, sso
 from ..core.phone import mask_phone, phone_key
 from ..db import get_db
 from ..rate_limiter import limiter
@@ -465,6 +465,7 @@ _DELETE_LAYAWAY = (
 async def delete_my_account(db: AsyncSession = Depends(get_db), user=Depends(security.require_role("customer"))):
     """A customer deletes their own account, at once (services/account_delete.py)."""
     account = await _phone_account(db, user)
+    phone = account.phone_e164
     try:
         await account_delete.delete_account(db, account, utcnow())
     except account_delete.IsShopStaff:
@@ -472,6 +473,7 @@ async def delete_my_account(db: AsyncSession = Depends(get_db), user=Depends(sec
     except account_delete.LayawayInProgress:
         raise HTTPException(status_code=409, detail=_DELETE_LAYAWAY)
     await db.commit()
+    await sso.erase_identity(phone)  # auth is the last step: fidelia's data is gone first
     return {"deleted": True}
 
 
@@ -573,6 +575,7 @@ async def complete_deletion_request(
         await db.execute(select(models.User).where(models.User.phone_e164 == r.phone_e164))
     ).scalar_one_or_none()
     now = utcnow()
+    erased_phone = account.phone_e164 if account is not None else None
     if account is not None:
         try:
             await account_delete.delete_account(db, account, now, staff=True, decided_by=admin["username"])
@@ -584,6 +587,8 @@ async def complete_deletion_request(
             raise HTTPException(status_code=409, detail=_DELETE_LAYAWAY)
     r.status, r.decision_note, r.decided_by, r.decided_at = "done", payload.note, admin["username"], now
     await db.commit()
+    if erased_phone:
+        await sso.erase_identity(erased_phone)
     return await _deletion_out(db, r)
 
 

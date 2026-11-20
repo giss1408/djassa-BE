@@ -183,3 +183,88 @@ async def test_an_owner_is_deleted_only_once_the_shop_is_handed_over(client):
 async def test_only_admins_see_and_decide_requests(client):
     customer = await _sign_in(client)
     assert (await client.get("/api/admin/deletion-requests", headers=customer)).status_code == 403
+
+
+# --- auth is told (platform SSO): the identity there goes after the data here ---------------------------------------------
+
+
+@pytest.fixture
+def told_auth(monkeypatch):
+    from app.core import sso
+
+    calls: list[str] = []
+
+    async def fake(phone):
+        calls.append(phone)
+        return True
+
+    monkeypatch.setattr(sso, "erase_identity", fake)
+    return calls
+
+
+@pytest.mark.asyncio
+async def test_a_customer_deleting_her_account_tells_auth_afterwards(client, told_auth):
+    customer = await _sign_in(client)
+    assert (await client.delete("/api/account", headers=customer)).status_code == 200
+    assert told_auth == [E164]
+
+
+@pytest.mark.asyncio
+async def test_a_refused_deletion_does_not_touch_auth(client, told_auth):
+    as_customer = await _sign_in(client, "07 00 00 00 02")  # a shop's number
+    assert (await client.delete("/api/account", headers=as_customer)).status_code == 409
+    assert told_auth == []
+
+
+@pytest.mark.asyncio
+async def test_an_admin_closing_a_deletion_request_tells_auth(client, told_auth):
+    cashier = await _sign_in(client, "07 00 00 00 03", "merchant")
+    await client.post("/api/account/deletion-request", json={}, headers=cashier)
+    admin = await _sign_in(client, "07 00 00 00 09", "admin")
+    pending = (await client.get("/api/admin/deletion-requests", headers=admin)).json()
+    assert (await client.post(f"/api/admin/deletion-requests/{pending[0]['id']}/done", json={"note": "ok"}, headers=admin)).status_code == 200
+    assert told_auth == ["+2250700000003"]
+
+
+@pytest.mark.asyncio
+async def test_rejecting_a_request_does_not_touch_auth(client, told_auth):
+    cashier = await _sign_in(client, "07 00 00 00 03", "merchant")
+    await client.post("/api/account/deletion-request", json={}, headers=cashier)
+    admin = await _sign_in(client, "07 00 00 00 09", "admin")
+    pending = (await client.get("/api/admin/deletion-requests", headers=admin)).json()
+    await client.post(f"/api/admin/deletion-requests/{pending[0]['id']}/reject", json={"note": "doublon"}, headers=admin)
+    assert told_auth == []
+
+
+@pytest.mark.asyncio
+async def test_erase_identity_calls_auth_with_the_service_key_and_never_raises(monkeypatch, caplog):
+    import httpx
+
+    from app.core import sso
+
+    seen = []
+
+    def handler(request):
+        seen.append((str(request.url), request.headers.get("x-service-key"), request.content))
+        return httpx.Response(200, json={"result": "erased"})
+
+    real = httpx.AsyncClient
+    monkeypatch.setattr(sso.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
+    assert await sso.erase_identity(E164) is False  # SSO off: nothing is sent
+    monkeypatch.setenv("FIDELIA_SSO_ENABLED", "1")
+    monkeypatch.setenv("FIDELIA_SSO_ISSUER", "http://auth.test")
+    monkeypatch.setenv("FIDELIA_SSO_JWKS_URL", "http://auth.test/.well-known/jwks.json")
+    monkeypatch.setenv("FIDELIA_SSO_AUTH_URL", "http://auth.test/")
+    monkeypatch.delenv("FIDELIA_SSO_SERVICE_KEY", raising=False)
+    assert await sso.erase_identity(E164) is False  # no service key: nothing is sent
+    monkeypatch.setenv("FIDELIA_SSO_SERVICE_KEY", "svc-key")
+    assert await sso.erase_identity(E164) is True
+    assert seen == [("http://auth.test/v1/service/erase", "svc-key", b'{"phone":"%s"}' % E164.encode())]
+
+    def down(request):
+        raise httpx.ConnectError("auth is down")
+
+    monkeypatch.setattr(sso.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(down), **kw))
+    caplog.set_level("ERROR")
+    assert await sso.erase_identity(E164) is False
+    assert "FAILED" in caplog.text and E164 not in caplog.text  # logged for a rerun, without the number
