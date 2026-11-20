@@ -469,3 +469,12 @@ async def test_the_auth_hook_moves_a_sso_only_customers_data_without_a_users_row
         await db.commit()
     taken = await client.post("/api/internal/phone-changed", json={"old_phone": new_e164, "new_phone": "+2250766666666"}, headers={"X-Service-Key": "k" * 32})
     assert taken.status_code == 409
+
+
+def test_the_erase_outbox_is_scheduled_every_ten_minutes_and_the_task_exists():
+    from app.celery_app import celery_app
+    from app import celery_tasks  # noqa: F401  (registers the tasks)
+
+    entry = celery_app.conf.beat_schedule["auth-erase-outbox"]
+    assert entry["task"] == "auth.erase_outbox" and entry["schedule"] == 600.0
+    assert "auth.erase_outbox" in celery_app.tasks

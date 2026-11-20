@@ -22,6 +22,12 @@ celery_app.conf.update(
     # cap, plus transfers), shorter than the 30 min after which the API calls
     # the video interrupted (app/api/media.py STALE_AFTER).
     broker_transport_options={'visibility_timeout': int(os.getenv('CELERY_VISIBILITY_TIMEOUT', '1200'))},
+    # Run the worker with -B (beat) to apply this schedule, like the other products on the platform: `celery -A app.celery_app worker -B
+    # -s /tmp/celerybeat-schedule`. Other tasks are still scheduled by the host (see README-CELERY.md).
+    beat_schedule={
+        # tell the auth service about people erased while it was unreachable (only does anything with SSO on and rows in the outbox)
+        'auth-erase-outbox': {'task': 'auth.erase_outbox', 'schedule': float(os.getenv('AUTH_ERASE_OUTBOX_SECONDS', '600'))},
+    },
 )
 
 # Instrument Celery task events
