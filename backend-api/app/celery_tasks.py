@@ -3,6 +3,7 @@ import logging
 from .celery_app import celery_app
 from .services import media_jobs
 from .services import placements as placements_service
+from .services import auth_erase as auth_erase_service
 from .services import purge as purge_service
 from .services import sale_events as sale_events_service
 from .services import tontine as tontine_service
@@ -74,6 +75,19 @@ def report_quarantine_task():
         return result
     except Exception:
         record_task('sale_events.report_quarantine', 'failure')
+        raise
+
+
+@celery_app.task(name='auth.erase_outbox')
+def auth_erase_outbox_task():
+    """Retry telling the auth service about people fidelia erased while it was unreachable (every 10 minutes)."""
+    try:
+        result = auth_erase_service.process_outbox_sync()
+        logging.getLogger('fidelia.auth_erase').info('erase_outbox: %s', result)
+        record_task('auth.erase_outbox', 'success')
+        return result
+    except Exception:
+        record_task('auth.erase_outbox', 'failure')
         raise
 
 

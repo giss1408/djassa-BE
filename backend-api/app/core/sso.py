@@ -89,14 +89,14 @@ async def session_alive(token: str) -> bool | None:
         return None
 
 
-async def erase_identity(phone_e164: str) -> bool:
+async def erase_identity(phone_e164: str) -> bool | None:
     """After fidelia erased a person's data (her own deletion, or an admin acting on a request), tell auth so her access to fidelia
     ends and her identity is erased when nothing else is left (`POST /v1/service/erase`, idempotent). Best effort, never raises: the
     deletion in fidelia stands either way, and a failure is logged with no phone number so the team can run it again. Off unless SSO is
-    on and configured. True = auth answered."""
+    on and configured. None = not configured (nothing to do), True = auth answered, False = it could not be reached (retry later)."""
     url, key = os.getenv("FIDELIA_SSO_AUTH_URL"), os.getenv("FIDELIA_SSO_SERVICE_KEY")
     if not enabled() or not url or not key:
-        return False
+        return None
     log = logging.getLogger("fidelia.sso")
     try:
         async with httpx.AsyncClient(timeout=5) as c:

@@ -803,6 +803,20 @@ class UsageEvent(Base):
     received_at = Column(DateTime, nullable=False)
 
 
+class AuthEraseOutbox(Base):
+    """A person fidelia erased whose identity in the auth service could not be erased yet (auth unreachable). The number is kept ONLY until
+    auth answers (sealed at rest, blanked at once when done) and for at most AUTH_ERASE_MAX_DAYS: it is the only way to find her there."""
+
+    __tablename__ = "auth_erase_outbox"
+    id = Column(Integer, primary_key=True, index=True)
+    phone_sealed = Column(Text, nullable=False, default="")  # core.secretbox.seal(e164); "" once done or given up
+    created_at = Column(DateTime, nullable=False)
+    attempts = Column(Integer, nullable=False, default=0)
+    next_attempt_at = Column(DateTime, nullable=False, index=True)
+    status = Column(String(12), nullable=False, default="pending")  # pending | done | gave_up
+    finished_at = Column(DateTime, nullable=True)
+
+
 class AccountNumberChange(Base):
     """Every time an account moved to another phone number, and how.
 

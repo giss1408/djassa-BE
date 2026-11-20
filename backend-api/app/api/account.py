@@ -35,7 +35,7 @@ from ..core import otp, security, sso
 from ..core.phone import mask_phone, phone_key
 from ..db import get_db
 from ..rate_limiter import limiter
-from ..services import account_delete
+from ..services import account_delete, auth_erase
 from ..services.account_move import NumberTaken, move_account, revoke_all_sessions, revoke_role_sessions
 from ..services.otp_sender import OtpDeliveryFailed, get_sender
 from .auth import (
@@ -505,7 +505,7 @@ async def delete_my_account(db: AsyncSession = Depends(get_db), user=Depends(sec
     except account_delete.LayawayInProgress:
         raise HTTPException(status_code=409, detail=_DELETE_LAYAWAY)
     await db.commit()
-    await sso.erase_identity(phone)  # auth is the last step: fidelia's data is gone first
+    await auth_erase.tell_auth(phone)  # auth is the last step: fidelia's data is gone first (queued for retry if auth is down)
     return {"deleted": True}
 
 
@@ -620,7 +620,7 @@ async def complete_deletion_request(
     r.status, r.decision_note, r.decided_by, r.decided_at = "done", payload.note, admin["username"], now
     await db.commit()
     if erased_phone:
-        await sso.erase_identity(erased_phone)
+        await auth_erase.tell_auth(erased_phone)
     return await _deletion_out(db, r)
 
 

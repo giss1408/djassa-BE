@@ -250,13 +250,13 @@ async def test_erase_identity_calls_auth_with_the_service_key_and_never_raises(m
 
     real = httpx.AsyncClient
     monkeypatch.setattr(sso.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
-    assert await sso.erase_identity(E164) is False  # SSO off: nothing is sent
+    assert await sso.erase_identity(E164) is None  # SSO off: nothing is sent, nothing to retry
     monkeypatch.setenv("FIDELIA_SSO_ENABLED", "1")
     monkeypatch.setenv("FIDELIA_SSO_ISSUER", "http://auth.test")
     monkeypatch.setenv("FIDELIA_SSO_JWKS_URL", "http://auth.test/.well-known/jwks.json")
     monkeypatch.setenv("FIDELIA_SSO_AUTH_URL", "http://auth.test/")
     monkeypatch.delenv("FIDELIA_SSO_SERVICE_KEY", raising=False)
-    assert await sso.erase_identity(E164) is False  # no service key: nothing is sent
+    assert await sso.erase_identity(E164) is None  # no service key: nothing is sent
     monkeypatch.setenv("FIDELIA_SSO_SERVICE_KEY", "svc-key")
     assert await sso.erase_identity(E164) is True
     assert seen == [("http://auth.test/v1/service/erase", "svc-key", b'{"phone":"%s"}' % E164.encode())]
@@ -306,3 +306,116 @@ def test_the_hook_is_reachable_without_the_cloudflare_header_but_nothing_else_is
 
     assert "/api/internal/phone-changed" in edge.EXEMPT_PATHS
     assert "/api/account" not in edge.EXEMPT_PATHS
+
+
+# --- auth is down when someone is deleted: the call is queued and retried -------------------------------------------------
+
+
+@pytest.fixture
+def auth_state(monkeypatch):
+    """`state["answer"]`: True = auth answers, False = unreachable, None = SSO not configured. `state["calls"]` records the numbers sent."""
+    from app.core import sso
+
+    state = {"answer": False, "calls": []}
+
+    async def fake(phone):
+        state["calls"].append(phone)
+        return state["answer"]
+
+    monkeypatch.setattr(sso, "erase_identity", fake)
+    return state
+
+
+async def _outbox():
+    async with AsyncSessionLocal() as db:
+        return list((await db.execute(select(models.AuthEraseOutbox).order_by(models.AuthEraseOutbox.id))).scalars())
+
+
+@pytest.mark.asyncio
+async def test_a_deletion_while_auth_is_down_is_queued_with_the_number_sealed(client, auth_state):
+    from app.core import secretbox
+
+    customer = await _sign_in(client)
+    assert (await client.delete("/api/account", headers=customer)).status_code == 200  # the deletion stands
+    rows = await _outbox()
+    assert len(rows) == 1 and rows[0].status == "pending" and rows[0].attempts == 1
+    assert E164 not in rows[0].phone_sealed and secretbox.unseal(rows[0].phone_sealed) == E164  # sealed at rest
+
+
+@pytest.mark.asyncio
+async def test_nothing_is_queued_when_auth_answers_or_is_not_configured(client, auth_state):
+    from app.services import auth_erase
+
+    auth_state["answer"] = True
+    await auth_erase.tell_auth(E164)
+    auth_state["answer"] = None
+    await auth_erase.tell_auth(E164)
+    assert await _outbox() == []
+
+
+@pytest.mark.asyncio
+async def test_the_job_retries_with_a_growing_delay_then_finishes_and_forgets_the_number(client, auth_state):
+    from datetime import datetime, timedelta
+
+    from app.services import auth_erase
+
+    await auth_erase.tell_auth(E164)
+    row = (await _outbox())[0]
+    soon = row.created_at + timedelta(minutes=2)
+    assert await auth_erase.process_outbox(row.created_at) == {"done": 0, "retry": 0, "gave_up": 0, "purged": 0}  # not due yet
+    out = await auth_erase.process_outbox(soon)  # still down
+    assert out["retry"] == 1
+    row = (await _outbox())[0]
+    assert row.attempts == 2 and row.next_attempt_at - soon == timedelta(minutes=2)
+    auth_state["answer"] = True
+    later = row.next_attempt_at + timedelta(seconds=1)
+    assert (await auth_erase.process_outbox(later))["done"] == 1
+    row = (await _outbox())[0]
+    assert row.status == "done" and row.phone_sealed == "" and row.finished_at is not None  # the number is gone
+    assert auth_state["calls"] == [E164, E164, E164]
+    assert (await auth_erase.process_outbox(later + timedelta(days=8)))["purged"] == 1
+    assert await _outbox() == []
+
+
+@pytest.mark.asyncio
+async def test_after_the_maximum_age_it_gives_up_blanks_the_number_and_says_so_without_it(client, auth_state, caplog):
+    from datetime import timedelta
+
+    from app.services import auth_erase
+
+    await auth_erase.tell_auth(E164)
+    row = (await _outbox())[0]
+    caplog.set_level("ERROR")
+    out = await auth_erase.process_outbox(row.created_at + auth_erase.max_age() + timedelta(days=1))
+    assert out["gave_up"] == 1
+    row = (await _outbox())[0]
+    assert row.status == "gave_up" and row.phone_sealed == ""
+    assert "GIVEN UP" in caplog.text and E164 not in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_sso_switched_off_meanwhile_finishes_the_row_and_an_unreadable_seal_gives_up(client, auth_state, monkeypatch):
+    from datetime import timedelta
+
+    from app.services import auth_erase
+
+    await auth_erase.tell_auth(E164)
+    row = (await _outbox())[0]
+    auth_state["answer"] = None
+    assert (await auth_erase.process_outbox(row.next_attempt_at + timedelta(seconds=1)))["done"] == 1
+    auth_state["answer"] = False
+    await auth_erase.tell_auth(E164)
+    monkeypatch.setenv("FIDELIA_ENCRYPTION_KEY", "another-key-entirely")  # rotated: the seal cannot be opened
+    second = (await _outbox())[-1]
+    assert (await auth_erase.process_outbox(second.next_attempt_at + timedelta(seconds=1)))["gave_up"] == 1
+
+
+@pytest.mark.asyncio
+async def test_a_failure_to_queue_never_breaks_the_deletion(client, auth_state, monkeypatch):
+    from app.services import auth_erase
+
+    async def boom(*a, **k):
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(auth_erase.secretbox, "seal", lambda p: (_ for _ in ()).throw(RuntimeError("no key")))
+    await auth_erase.tell_auth(E164)  # does not raise
