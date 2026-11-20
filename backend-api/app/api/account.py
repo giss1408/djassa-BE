@@ -36,7 +36,7 @@ from ..core.phone import mask_phone, phone_key
 from ..db import get_db
 from ..rate_limiter import limiter
 from ..services import account_delete, auth_erase
-from ..services.account_move import NumberTaken, move_account, revoke_all_sessions, revoke_role_sessions
+from ..services.account_move import NumberTaken, has_phone_data, move_account, move_phone_keys, revoke_all_sessions, revoke_role_sessions
 from ..services.otp_sender import OtpDeliveryFailed, get_sender
 from .auth import (
     TokenPairOut, check_code, dev_code, issue_tokens, phone_or_422, send_code, utcnow,
@@ -53,6 +53,12 @@ async def _phone_account(db: AsyncSession, user) -> models.User:
     account = None
     if sub.startswith("tel:"):
         account = (await db.execute(select(models.User).where(models.User.phone_e164 == sub[4:]))).scalar_one_or_none()
+        if account is None and user.get("sso") and user.get("role") == "customer":
+            # A customer who signs in only through the auth service has no row here yet: open it from her (verified) number, so
+            # deletion, number change and the rest work for her like for everyone. Auth already proved the number.
+            account = models.User(phone_e164=sub[4:], roles="customer", disabled=False, created_at=utcnow())
+            db.add(account)
+            await db.flush()
     if account is None or account.disabled:
         raise HTTPException(status_code=403, detail="Disponible uniquement pour un compte connecte par telephone")
     return account
@@ -177,7 +183,15 @@ async def auth_phone_changed(payload: PhoneChangedIn, request: Request, db: Asyn
     new_e164 = phone_or_422(payload.new_phone, "CI")
     account = (await db.execute(select(models.User).where(models.User.phone_e164 == old_e164))).scalar_one_or_none()
     if account is None:
-        return {"ok": True, "moved": False}  # no fidelia data on that number yet, or already moved
+        # A person who signs in only through auth has no `users` row, but her points, consent and payments are keyed by her number all the
+        # same: they follow. A `users` row on the NEW number is someone else's account: never merged.
+        if (await db.execute(select(models.User.id).where(models.User.phone_e164 == new_e164))).scalar_one_or_none() is not None:
+            if await has_phone_data(db, old_e164):
+                raise HTTPException(status_code=409, detail="number_taken")
+            return {"ok": True, "moved": False}  # nothing left under the old number: already moved (her own row is on the new one)
+        moved = await move_phone_keys(db, old_e164, new_e164)
+        await db.commit()
+        return {"ok": True, "moved": moved > 0}  # idempotent: a second call finds nothing under the old key
     try:
         await move_account(db, account, new_e164, method="auth", now=utcnow())
     except NumberTaken:

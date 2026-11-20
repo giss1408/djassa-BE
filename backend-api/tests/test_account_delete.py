@@ -9,6 +9,8 @@ deletes once the person owns no shop.
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from datetime import datetime
+
 from sqlalchemy import func, select
 
 from app import models
@@ -419,3 +421,51 @@ async def test_a_failure_to_queue_never_breaks_the_deletion(client, auth_state, 
 
     monkeypatch.setattr(auth_erase.secretbox, "seal", lambda p: (_ for _ in ()).throw(RuntimeError("no key")))
     await auth_erase.tell_auth(E164)  # does not raise
+
+
+# --- people who sign in only through auth have no users row: everything still works for them -------------------------------
+
+
+@pytest.mark.asyncio
+async def test_a_sso_only_customer_can_delete_her_account(client, monkeypatch):
+    from app.api import account as account_api
+    from app.core import security
+
+    sso_user = {"username": KEY, "role": "customer", "sso": True, "principal": None, "token": "t"}
+    async with AsyncSessionLocal() as db:
+        row = await account_api._phone_account(db, sso_user)  # opens her row from the verified number
+        await db.commit()
+        assert row.phone_e164 == E164 and row.roles == "customer"
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.count()).select_from(models.User).where(models.User.phone_e164 == E164))).scalar() == 1
+        again = await account_api._phone_account(db, sso_user)  # the second time it finds the same row
+        assert again.phone_e164 == E164
+    legacy = {"username": KEY, "role": "customer"}  # a token that is not from auth never opens a row on its own
+    async with AsyncSessionLocal() as db:
+        await db.execute(models.User.__table__.delete())
+        await db.commit()
+    async with AsyncSessionLocal() as db:
+        from fastapi import HTTPException
+
+        with pytest.raises(HTTPException):
+            await account_api._phone_account(db, legacy)
+
+
+@pytest.mark.asyncio
+async def test_the_auth_hook_moves_a_sso_only_customers_data_without_a_users_row(client, monkeypatch):
+    monkeypatch.setenv("FIDELIA_AUTH_HOOK_KEY", "k" * 32)
+    new_e164 = "+2250755555555"
+    async with AsyncSessionLocal() as db:
+        db.add(models.LoyaltyConsent(customer_id=KEY, source="app", consent_version="fidelite-2026-10", granted_at=datetime(2026, 11, 1)))
+        await db.commit()
+    r = await client.post("/api/internal/phone-changed", json={"old_phone": E164, "new_phone": new_e164}, headers={"X-Service-Key": "k" * 32})
+    assert r.status_code == 200 and r.json() == {"ok": True, "moved": True}
+    async with AsyncSessionLocal() as db:
+        keys = (await db.execute(select(models.LoyaltyConsent.customer_id))).scalars().all()
+        assert keys == ["tel:" + new_e164]  # the data followed, though she never had a users row
+    # a users row on the NEW number is someone else's account
+    async with AsyncSessionLocal() as db:
+        db.add(models.User(phone_e164="+2250766666666", roles="customer", disabled=False, created_at=datetime(2026, 11, 1)))
+        await db.commit()
+    taken = await client.post("/api/internal/phone-changed", json={"old_phone": new_e164, "new_phone": "+2250766666666"}, headers={"X-Service-Key": "k" * 32})
+    assert taken.status_code == 409
