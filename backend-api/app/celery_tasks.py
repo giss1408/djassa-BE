@@ -1,7 +1,9 @@
 import logging
 
 from .celery_app import celery_app
+from .services import media_jobs
 from .services import placements as placements_service
+from .services import auth_erase as auth_erase_service
 from .services import purge as purge_service
 from .services import sale_events as sale_events_service
 from .services import tontine as tontine_service
@@ -76,6 +78,19 @@ def report_quarantine_task():
         raise
 
 
+@celery_app.task(name='auth.erase_outbox')
+def auth_erase_outbox_task():
+    """Retry telling the auth service about people fidelia erased while it was unreachable (every 10 minutes)."""
+    try:
+        result = auth_erase_service.process_outbox_sync()
+        logging.getLogger('fidelia.auth_erase').info('erase_outbox: %s', result)
+        record_task('auth.erase_outbox', 'success')
+        return result
+    except Exception:
+        record_task('auth.erase_outbox', 'failure')
+        raise
+
+
 @celery_app.task(name='maintenance.purge_expired')
 def purge_expired_task():
     """Delete spent sign-in codes, dead sessions and old app error reports."""
@@ -86,4 +101,17 @@ def purge_expired_task():
         return result
     except Exception:
         record_task('maintenance.purge_expired', 'failure')
+        raise
+
+
+# One video at a time per worker process (run the worker with --concurrency 1).
+# acks_late: a worker killed mid-conversion (a deploy) leaves the job queued,
+# and the next worker starts it again from the staged original.
+@celery_app.task(name=media_jobs.TASK_NAME, acks_late=True, reject_on_worker_lost=True, ignore_result=True)
+def process_media_upload_task(media_id: int, venue_id: int, kind: str, key: str):
+    try:
+        media_jobs.process_staged_sync(media_id, venue_id, kind, key)
+        record_task(media_jobs.TASK_NAME, 'success')
+    except Exception:
+        record_task(media_jobs.TASK_NAME, 'failure')
         raise

@@ -40,7 +40,7 @@ from sqlalchemy.orm import selectinload
 from .. import models
 from ..core.phone import InvalidPhone, normalize_phone, phone_key
 from ..core.secretbox import SecretUnavailable, hint, seal, unseal
-from ..core.security import require_role
+from ..core.security import require_role, step_up
 from ..db import get_db
 from ..services import loyalty_consent, sale_events, wave
 from ..services.mobile_money import public_base_url
@@ -102,7 +102,7 @@ async def my_wave(db: AsyncSession = Depends(get_db), user=Depends(require_role(
     return _out(await _account(db, venue.id))
 
 
-@router.put("/merchant/wave", response_model=WaveAccountOut)
+@router.put("/merchant/wave", response_model=WaveAccountOut, dependencies=[Depends(step_up)])
 async def connect_wave(
     payload: WaveConnectIn, db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))
 ):
@@ -141,7 +141,7 @@ async def connect_wave(
     return _out(account)
 
 
-@router.delete("/merchant/wave", status_code=204)
+@router.delete("/merchant/wave", status_code=204, dependencies=[Depends(step_up)])
 async def disconnect_wave(db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
     """Forget the connection: key, secret and webhook address. The merchant should also revoke the key in
     their Wave portal; Fidelia cannot do that for them."""

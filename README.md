@@ -6,14 +6,14 @@ This repository is the platform behind the merchant app (`fidelia-App-retailer`)
 
 ## Start here
 
-- [Concept](docs/business/CONCEPT.md): what Fidelia is, for whom, and how to explain it to each audience.
-- [Market](docs/business/MARKET.md): sourced figures, regulation and positioning.
-- [Business model](docs/business/BUSINESS-MODEL.md): how the project creates and earns value.
-- [Partners](docs/business/PARTNERS.md): who to contact and what to ask.
-- [Roadmap](docs/business/ROADMAP.md): where we stand, phases and validation gates.
-- [Technical guide](docs/technical/TECHNICAL-GUIDE.md): local development, deployment, and technical boundaries.
+- [Concept](https://github.com/giss1408/fidelia-docs/blob/main/docs/business/CONCEPT.md): what Fidelia is, for whom, and how to explain it to each audience.
+- [Market](https://github.com/giss1408/fidelia-docs/blob/main/docs/business/MARKET.md): sourced figures, regulation and positioning.
+- [Business model](https://github.com/giss1408/fidelia-docs/blob/main/docs/business/BUSINESS-MODEL.md): how the project creates and earns value.
+- [Partners](https://github.com/giss1408/fidelia-docs/blob/main/docs/business/PARTNERS.md): who to contact and what to ask.
+- [Roadmap](https://github.com/giss1408/fidelia-docs/blob/main/docs/business/ROADMAP.md): where we stand, phases and validation gates.
+- [Technical guide](https://github.com/giss1408/fidelia-docs/blob/main/docs/technical/TECHNICAL-GUIDE.md): local development, deployment, and technical boundaries.
 - [Contributing](CONTRIBUTING.md): branches, tests, security, and pull requests.
-- [Documentation index](docs/README.md): complete product and technical documentation map.
+- [Documentation index](https://github.com/giss1408/fidelia-docs/blob/main/docs/README.md): complete product and technical documentation map.
 
 ## Repository structure
 
@@ -38,7 +38,7 @@ alembic -c alembic.ini upgrade head
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Run tests with `pytest -q`. Run the Celery worker separately as described in [TECHNICAL-GUIDE.md](docs/technical/TECHNICAL-GUIDE.md).
+Run tests with `pytest -q`. Run the Celery worker separately as described in [TECHNICAL-GUIDE.md](https://github.com/giss1408/fidelia-docs/blob/main/docs/technical/TECHNICAL-GUIDE.md).
 
 ## VPS test deployment
 
@@ -49,7 +49,7 @@ cd backend-api
 ./deploy-vps-test.sh
 ```
 
-See [VPS-TEST-SERVER.md](docs/technical/VPS-TEST-SERVER.md) for firewall, SSH, secrets, migration, and access guidance.
+See [VPS-TEST-SERVER.md](https://github.com/giss1408/fidelia-docs/blob/main/docs/technical/VPS-TEST-SERVER.md) for firewall, SSH, secrets, migration, and access guidance.
 
 ## Jenkins CI/CD
 

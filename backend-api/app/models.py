@@ -263,6 +263,9 @@ class Venue(Base):
     enrolled_by = Column(String(128), nullable=True, index=True)
     payout_provider = Column(String(16), nullable=True)
     payout_account = Column(String(32), nullable=True)
+    # When the CURRENT wallet became active through the wallet-change process (app/services/wallet_change.py): the first-week payout
+    # cap runs from here. NULL = wallet set before that process existed (or by an admin at enrolment): no cap.
+    wallet_active_since = Column(DateTime, nullable=True)
     # Printed in the venue's payment QR code (see app/api/customer.py). Random
     # and unguessable, so a QR cannot be forged by counting up ids; rotating it
     # voids a stolen or tampered sticker.
@@ -800,6 +803,20 @@ class UsageEvent(Base):
     received_at = Column(DateTime, nullable=False)
 
 
+class AuthEraseOutbox(Base):
+    """A person fidelia erased whose identity in the auth service could not be erased yet (auth unreachable). The number is kept ONLY until
+    auth answers (sealed at rest, blanked at once when done) and for at most AUTH_ERASE_MAX_DAYS: it is the only way to find her there."""
+
+    __tablename__ = "auth_erase_outbox"
+    id = Column(Integer, primary_key=True, index=True)
+    phone_sealed = Column(Text, nullable=False, default="")  # core.secretbox.seal(e164); "" once done or given up
+    created_at = Column(DateTime, nullable=False)
+    attempts = Column(Integer, nullable=False, default=0)
+    next_attempt_at = Column(DateTime, nullable=False, index=True)
+    status = Column(String(12), nullable=False, default="pending")  # pending | done | gave_up
+    finished_at = Column(DateTime, nullable=True)
+
+
 class AccountNumberChange(Base):
     """Every time an account moved to another phone number, and how.
 
@@ -811,7 +828,7 @@ class AccountNumberChange(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     old_phone_e164 = Column(String(16), nullable=False, index=True)
     new_phone_e164 = Column(String(16), nullable=False, index=True)
-    method = Column(String(16), nullable=False)  # "self_service" | "recovery"
+    method = Column(String(16), nullable=False)  # "self_service" | "recovery" | "auth"
     recovery_request_id = Column(Integer, ForeignKey("recovery_requests.id"), nullable=True)
     created_at = Column(DateTime, nullable=False)
 
@@ -1025,3 +1042,92 @@ class LayawayInstallment(Base):
     paid_at = Column(DateTime, nullable=False)
 
     plan = relationship("LayawayPlan", back_populates="installments")
+
+
+class PilotMerchant(Base):
+    """What the team records by hand about a pilot merchant, for the gate review.
+
+    The platform measures what happens after a merchant joins; it cannot know
+    how the shop did before. The baseline is the merchant's own estimate, asked
+    in the Phase 0 interview and recorded before their first Fidelia sale,
+    because a repeat-visit "lift" with no before-figure is a number nobody can
+    defend (docs/business/KPI.md § 12). One row per venue; a venue with a row
+    is in the pilot scorecard.
+
+    `owner_gender` is self-declared and optional ("undisclosed" when the owner
+    prefers not to say, NULL when not asked). It is reported in aggregate only
+    and never feeds any score (docs/business/CONCEPT.md § 8).
+
+    The day-45 commitment is the merchant's answer to the paid-plan offer made
+    before the free pilot ends. It is a signed intention, not a payment: the
+    pilot stays free, and billing starts only when it ends (app/api/billing.py).
+    """
+
+    __tablename__ = "pilot_merchants"
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, unique=True, index=True)
+    baseline_recorded_at = Column(DateTime, nullable=True)
+    baseline_tickets_per_day = Column(Integer, nullable=True)
+    baseline_average_basket = Column(Integer, nullable=True)  # XOF
+    baseline_mobile_money_pct = Column(Integer, nullable=True)  # 0-100
+    # Of this month's customers, how many came back within 30 days, per the
+    # merchant. Compared with the measured rate of identified customers.
+    baseline_repeat_pct = Column(Integer, nullable=True)  # 0-100
+    owner_gender = Column(String(16), nullable=True)  # woman | man | undisclosed
+    commitment = Column(String(16), nullable=True)  # committed | declined | undecided
+    commitment_plan = Column(String(16), nullable=True)
+    commitment_price = Column(Integer, nullable=True)  # XOF per month
+    commitment_at = Column(DateTime, nullable=True)
+    notes = Column(Text, nullable=True)
+    updated_by = Column(String(128), nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+
+    venue = relationship("Venue")
+
+
+
+class WalletChange(Base):
+    """A merchant's request to change where customers' payments are paid out (docs: plan section 6e).
+
+    pending_confirmation -> (an admin sends a WhatsApp code, the merchant types it) -> confirmed_waiting -> 24 h -> active
+    Side exits: frozen ("this wasn't me", waits for an admin), rejected (an admin), cancelled (the merchant), or activated at once by
+    an admin after a phone call (activation_mode "admin_call"). The old wallet keeps working until activation.
+    """
+
+    __tablename__ = "wallet_changes"
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    provider = Column(String(16), nullable=False)
+    account = Column(String(32), nullable=False)
+    prev_provider = Column(String(16), nullable=True)
+    prev_account = Column(String(32), nullable=True)
+    status = Column(String(24), nullable=False, default="pending_confirmation", index=True)
+    requested_by = Column(String(128), nullable=False)
+    requested_at = Column(DateTime, nullable=False)
+    code_hash = Column(String(64), nullable=True)
+    code_expires_at = Column(DateTime, nullable=True)
+    code_attempts = Column(Integer, nullable=False, default=0)
+    code_sent_by = Column(String(128), nullable=True)
+    code_sent_at = Column(DateTime, nullable=True)
+    confirmed_at = Column(DateTime, nullable=True)
+    activates_at = Column(DateTime, nullable=True)
+    activated_at = Column(DateTime, nullable=True)
+    activated_by = Column(String(128), nullable=True)
+    activation_mode = Column(String(16), nullable=True)  # auto | first_wallet | admin_call
+    call_note = Column(Text, nullable=True)
+    frozen_at = Column(DateTime, nullable=True)
+    resolved_by = Column(String(128), nullable=True)
+    resolved_reason = Column(String(255), nullable=True)
+    venue = relationship("Venue")
+
+
+class WalletChangeEvent(Base):
+    """Append-only trail of a wallet change: who did what, when. Never holds codes, full numbers or secrets."""
+
+    __tablename__ = "wallet_change_events"
+    id = Column(Integer, primary_key=True, index=True)
+    change_id = Column(Integer, ForeignKey("wallet_changes.id"), nullable=False, index=True)
+    at = Column(DateTime, nullable=False)
+    actor = Column(String(128), nullable=False)
+    action = Column(String(32), nullable=False)
+    detail = Column(String(255), nullable=True)

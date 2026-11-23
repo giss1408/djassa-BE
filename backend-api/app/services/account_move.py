@@ -54,12 +54,49 @@ AUDIT = [
     (models.LayawayPlan, "cancelled_by"),
     (models.LayawayInstallment, "recorded_by"),
     (models.AccountDeletionRequest, "decided_by"),
+    (models.PilotMerchant, "updated_by"),
+    # wallet changes (app/services/wallet_change.py): who requested, sent the code, activated or rejected, and the trail's actors
+    (models.WalletChange, "requested_by"),
+    (models.WalletChange, "code_sent_by"),
+    (models.WalletChange, "activated_by"),
+    (models.WalletChange, "resolved_by"),
+    (models.WalletChangeEvent, "actor"),
 ]
 
 
 class NumberTaken(Exception):
     """The new number already has an account. Two accounts are never merged
     automatically: each may hold points, a shop, or an identity profile."""
+
+
+async def has_phone_data(db: AsyncSession, e164: str) -> bool:
+    """Is anything stored under `tel:<e164>`? (what a move would carry)"""
+    key = phone_key(e164)
+    for model, column in OWNED:
+        if (await db.execute(select(getattr(model, column)).where(getattr(model, column) == key).limit(1))).first() is not None:
+            return True
+    return False
+
+
+async def move_phone_keys(db: AsyncSession, old_e164: str, new_e164: str) -> int:
+    """Re-keys everything stored under `tel:<old>` to `tel:<new>`: points, payments, consent, shops, identity. It needs no `users` row: a
+    person who signs in only through the auth service has none, yet her data is keyed by her number all the same. Idempotent. The caller
+    commits. Returns how many rows moved (0 = nothing was under the old number)."""
+    old_key, new_key = phone_key(old_e164), phone_key(new_e164)
+    moved = 0
+    # One consent per number. The new number may already have one from a
+    # counter; the person's own consent wins, and is the one that moves.
+    if (
+        await db.execute(select(models.LoyaltyConsent.id).where(models.LoyaltyConsent.customer_id == old_key))
+    ).scalar_one_or_none() is not None:
+        await db.execute(delete(models.LoyaltyConsent).where(models.LoyaltyConsent.customer_id == new_key))
+    for model, column in OWNED:
+        attr = getattr(model, column)
+        moved += (await db.execute(update(model).where(attr == old_key).values({column: new_key}))).rowcount or 0
+    await db.execute(
+        update(models.IdentityProfile).where(models.IdentityProfile.user_id == new_key).values(phone_e164=new_e164)
+    )
+    return moved
 
 
 async def move_account(
@@ -77,19 +114,7 @@ async def move_account(
         raise NumberTaken()
 
     old_e164 = user.phone_e164
-    old_key, new_key = phone_key(old_e164), phone_key(new_e164)
-    # One consent per number. The new number may already have one from a
-    # counter; the person's own consent wins, and is the one that moves.
-    if (
-        await db.execute(select(models.LoyaltyConsent.id).where(models.LoyaltyConsent.customer_id == old_key))
-    ).scalar_one_or_none() is not None:
-        await db.execute(delete(models.LoyaltyConsent).where(models.LoyaltyConsent.customer_id == new_key))
-    for model, column in OWNED:
-        attr = getattr(model, column)
-        await db.execute(update(model).where(attr == old_key).values({column: new_key}))
-    await db.execute(
-        update(models.IdentityProfile).where(models.IdentityProfile.user_id == new_key).values(phone_e164=new_e164)
-    )
+    await move_phone_keys(db, old_e164, new_e164)
 
     user.phone_e164 = new_e164
     # Whoever holds the old number, or a session opened on it, is out.

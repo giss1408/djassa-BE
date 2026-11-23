@@ -5,3 +5,8 @@ venv
 dist
 build
 *.egg-info
+.venv
+.env
+*.db
+media
+tests

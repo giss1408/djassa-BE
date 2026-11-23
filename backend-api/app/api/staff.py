@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
 from ..core.phone import mask_phone, phone_key
-from ..core.security import require_role
+from ..core.security import require_role, step_up
 from ..db import get_db
 from ..services.account_move import revoke_role_sessions
 from .auth import ensure_role, phone_or_422, utcnow
@@ -73,7 +73,7 @@ async def list_staff(db: AsyncSession = Depends(get_db), user=Depends(require_ro
     return [await _out(db, r) for r in rows]
 
 
-@router.post("/merchant/staff", response_model=StaffOut, status_code=201)
+@router.post("/merchant/staff", response_model=StaffOut, status_code=201, dependencies=[Depends(step_up)])
 async def add_staff(payload: StaffIn, db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
     venue = await _my_venue(db, user, require_wallet=False)
     e164 = phone_or_422(payload.phone, payload.country_code)
@@ -115,7 +115,7 @@ async def add_staff(payload: StaffIn, db: AsyncSession = Depends(get_db), user=D
     return await _out(db, row)
 
 
-@router.delete("/merchant/staff/{staff_id}", status_code=204)
+@router.delete("/merchant/staff/{staff_id}", status_code=204, dependencies=[Depends(step_up)])
 async def remove_staff(staff_id: int, db: AsyncSession = Depends(get_db), user=Depends(require_role("merchant"))):
     venue = await _my_venue(db, user, require_wallet=False)
     row = await db.get(models.VenueStaff, staff_id)

@@ -107,3 +107,23 @@ async def test_daily_sms_budget_pauses_codes_for_every_number(client, monkeypatc
     r = await client.post("/api/auth/otp/request", json={"phone": "07 33 33 33 33", "app": "customer"})
     assert r.status_code == 503
     assert 'result="daily_budget"' in (await client.get("/metrics")).text
+
+
+def test_logs_mask_phone_numbers_and_tokens_before_they_are_written():
+    """setup_logging() puts the kit's redaction on the handler: a number or a bearer token that slips into a message or a traceback is masked."""
+    pytest.importorskip("regisse_kit.redact")
+    import io
+
+    from app.observability import setup_logging
+
+    setup_logging()
+    handler = logging.getLogger().handlers[0]
+    stream = io.StringIO()
+    handler.setStream(stream)
+    log = logging.getLogger("fidelia.test-redaction")
+    try:
+        raise RuntimeError("provider rejected +2250701020304")
+    except RuntimeError:
+        log.error("send to 0701020304 with Bearer abc.def.ghi failed", exc_info=True)
+    out = stream.getvalue()
+    assert "0701020304" not in out and "Bearer abc.def.ghi" not in out and "[phone]" in out

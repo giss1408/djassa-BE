@@ -114,6 +114,14 @@ def setup_logging() -> None:
     print its lines twice.
     """
     handler = logging.StreamHandler(sys.stderr)
+    # Last line of defense before logs leave the host: phone numbers, JWTs and bearer tokens in any message, extra or traceback are masked
+    # (regisse_kit.redact). Best effort: if the kit is not installed (Render's image), logs are written as before.
+    try:
+        from regisse_kit.redact import RedactingFilter
+
+        handler.addFilter(RedactingFilter())
+    except ImportError:  # pragma: no cover
+        pass
     if os.getenv("LOG_FORMAT") == "json":
         handler.setFormatter(_JsonFormatter())
     else:
@@ -141,7 +149,7 @@ async def observe_request(request: Request, call_next):
         duration = time.perf_counter() - start
         route = route_label(request)
         record_request(request.method, route, status, duration)
-        if route not in ("/health", "/metrics"):
+        if route not in ("/health", "/healthz", "/metrics"):
             level = logging.ERROR if status >= 500 else logging.INFO
             access_log.log(
                 level,

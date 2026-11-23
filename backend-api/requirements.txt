@@ -1,3 +1,7 @@
+# Direct dependencies. Exact versions of everything, including what these pull
+# in, are in requirements.lock: the image installs with it as a constraint, so
+# a new release never reaches production by surprise. To upgrade: change or
+# add a line here, run `make lock`, run the tests, commit both files.
 fastapi
 uvicorn[standard]
 pydantic
@@ -8,7 +12,7 @@ pytest-bdd
 alembic
 sqlalchemy[asyncio]>=1.4  # [asyncio] pulls greenlet, which SQLAlchemy 2.1 no longer installs by default
 asyncpg
-python-jose[cryptography]
+PyJWT[crypto]  # was python-jose (unmaintained, known vulnerabilities, drags in ecdsa/pyasn1)
 passlib[bcrypt]
 bcrypt<5
 aiosqlite
@@ -30,6 +34,3 @@ strawberry-graphql[fastapi]
 pillow
 # Shop media storage on Cloudflare R2 through its S3 API (app/services/media_storage.py).
 boto3
-# A static ffmpeg (with H.264) inside the wheel, for shop videos where ffmpeg
-# cannot be installed, such as Render's native Python runtime.
-imageio-ffmpeg

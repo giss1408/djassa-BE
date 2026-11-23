@@ -21,6 +21,8 @@ and revokes every session, so whoever holds the old number, or a phone signed
 in on it, is out.
 """
 
+import hmac
+import os
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -29,12 +31,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
-from ..core import otp, security
+from ..core import otp, security, sso
 from ..core.phone import mask_phone, phone_key
 from ..db import get_db
 from ..rate_limiter import limiter
-from ..services import account_delete
-from ..services.account_move import NumberTaken, move_account, revoke_all_sessions, revoke_role_sessions
+from ..services import account_delete, auth_erase
+from ..services.account_move import NumberTaken, has_phone_data, move_account, move_phone_keys, revoke_all_sessions, revoke_role_sessions
 from ..services.otp_sender import OtpDeliveryFailed, get_sender
 from .auth import (
     TokenPairOut, check_code, dev_code, issue_tokens, phone_or_422, send_code, utcnow,
@@ -51,6 +53,12 @@ async def _phone_account(db: AsyncSession, user) -> models.User:
     account = None
     if sub.startswith("tel:"):
         account = (await db.execute(select(models.User).where(models.User.phone_e164 == sub[4:]))).scalar_one_or_none()
+        if account is None and user.get("sso") and user.get("role") == "customer":
+            # A customer who signs in only through the auth service has no row here yet: open it from her (verified) number, so
+            # deletion, number change and the rest work for her like for everyone. Auth already proved the number.
+            account = models.User(phone_e164=sub[4:], roles="customer", disabled=False, created_at=utcnow())
+            db.add(account)
+            await db.flush()
     if account is None or account.disabled:
         raise HTTPException(status_code=403, detail="Disponible uniquement pour un compte connecte par telephone")
     return account
@@ -152,6 +160,44 @@ async def confirm_number_change(
     pair = await issue_tokens(db, account, user["role"], otp.new_family(), now)
     await db.commit()
     return pair
+
+
+# --- The auth service moved a number ------------------------------------------
+
+
+class PhoneChangedIn(BaseModel):
+    old_phone: str = Field(min_length=6, max_length=32)
+    new_phone: str = Field(min_length=6, max_length=32)
+
+
+@router.post("/internal/phone-changed")
+async def auth_phone_changed(payload: PhoneChangedIn, request: Request, db: AsyncSession = Depends(get_db)):
+    """Called by the platform auth service BEFORE it changes a person's number (the person proved the new one there): everything keyed
+    by the old number moves to the new one, exactly as a self-service change here does. Idempotent: nothing to move, or already moved,
+    answers ok. Only the auth service's shared key (FIDELIA_AUTH_HOOK_KEY) opens it; off when the key is not set."""
+    key = os.getenv("FIDELIA_AUTH_HOOK_KEY", "")
+    given = request.headers.get("x-service-key", "")
+    if len(key) < 16 or not hmac.compare_digest(key.encode(), given.encode()):
+        raise HTTPException(status_code=403, detail="forbidden")
+    old_e164 = phone_or_422(payload.old_phone, "CI")
+    new_e164 = phone_or_422(payload.new_phone, "CI")
+    account = (await db.execute(select(models.User).where(models.User.phone_e164 == old_e164))).scalar_one_or_none()
+    if account is None:
+        # A person who signs in only through auth has no `users` row, but her points, consent and payments are keyed by her number all the
+        # same: they follow. A `users` row on the NEW number is someone else's account: never merged.
+        if (await db.execute(select(models.User.id).where(models.User.phone_e164 == new_e164))).scalar_one_or_none() is not None:
+            if await has_phone_data(db, old_e164):
+                raise HTTPException(status_code=409, detail="number_taken")
+            return {"ok": True, "moved": False}  # nothing left under the old number: already moved (her own row is on the new one)
+        moved = await move_phone_keys(db, old_e164, new_e164)
+        await db.commit()
+        return {"ok": True, "moved": moved > 0}  # idempotent: a second call finds nothing under the old key
+    try:
+        await move_account(db, account, new_e164, method="auth", now=utcnow())
+    except NumberTaken:
+        raise HTTPException(status_code=409, detail="number_taken")
+    await db.commit()
+    return {"ok": True, "moved": True}
 
 
 # --- Lost number: reviewed by a person ---------------------------------------
@@ -352,7 +398,7 @@ class RevokeSessionsIn(BaseModel):
     country_code: str = Field(default="CI", min_length=2, max_length=2)
 
 
-@router.post("/admin/users/revoke-sessions")
+@router.post("/admin/users/revoke-sessions", dependencies=[Depends(security.require_step_up())])
 async def admin_revoke_sessions(payload: RevokeSessionsIn, db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))):
     """A reported theft: end every session of that number now."""
     e164 = phone_or_422(payload.phone, payload.country_code)
@@ -423,7 +469,7 @@ async def admin_find_user(phone: str, country_code: str = "CI", db: AsyncSession
     return await _user_out(db, await _user_by_phone(db, phone, country_code))
 
 
-@router.post("/admin/users/disable", response_model=UserOut)
+@router.post("/admin/users/disable", response_model=UserOut, dependencies=[Depends(security.require_step_up())])
 async def admin_disable_user(payload: DisableIn, db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))):
     """Suspends (or restores) an account. Suspending also ends its sessions."""
     account = await _user_by_phone(db, payload.phone, payload.country_code)
@@ -436,7 +482,7 @@ async def admin_disable_user(payload: DisableIn, db: AsyncSession = Depends(get_
     return await _user_out(db, account)
 
 
-@router.post("/admin/users/roles/revoke", response_model=UserOut)
+@router.post("/admin/users/roles/revoke", response_model=UserOut, dependencies=[Depends(security.require_step_up())])
 async def admin_revoke_role(payload: RevokeRoleIn, db: AsyncSession = Depends(get_db), admin=Depends(security.require_role("admin"))):
     """Removes merchant, field agent or admin access. Sessions for that role
     cannot renew; an access token already issued lives out its hour."""
@@ -465,6 +511,7 @@ _DELETE_LAYAWAY = (
 async def delete_my_account(db: AsyncSession = Depends(get_db), user=Depends(security.require_role("customer"))):
     """A customer deletes their own account, at once (services/account_delete.py)."""
     account = await _phone_account(db, user)
+    phone = account.phone_e164
     try:
         await account_delete.delete_account(db, account, utcnow())
     except account_delete.IsShopStaff:
@@ -472,6 +519,7 @@ async def delete_my_account(db: AsyncSession = Depends(get_db), user=Depends(sec
     except account_delete.LayawayInProgress:
         raise HTTPException(status_code=409, detail=_DELETE_LAYAWAY)
     await db.commit()
+    await auth_erase.tell_auth(phone)  # auth is the last step: fidelia's data is gone first (queued for retry if auth is down)
     return {"deleted": True}
 
 
@@ -573,6 +621,7 @@ async def complete_deletion_request(
         await db.execute(select(models.User).where(models.User.phone_e164 == r.phone_e164))
     ).scalar_one_or_none()
     now = utcnow()
+    erased_phone = account.phone_e164 if account is not None else None
     if account is not None:
         try:
             await account_delete.delete_account(db, account, now, staff=True, decided_by=admin["username"])
@@ -584,6 +633,8 @@ async def complete_deletion_request(
             raise HTTPException(status_code=409, detail=_DELETE_LAYAWAY)
     r.status, r.decision_note, r.decided_by, r.decided_at = "done", payload.note, admin["username"], now
     await db.commit()
+    if erased_phone:
+        await auth_erase.tell_auth(erased_phone)
     return await _deletion_out(db, r)
 
 

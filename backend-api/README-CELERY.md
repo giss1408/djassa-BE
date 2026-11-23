@@ -26,6 +26,7 @@ application code.
 |---|---|---|
 | `placements.expire_finished` | every 15 min | Drops a finished featured-slot campaign out of the carousel. Reads are defended anyway (`list_deals` filters on live placements), so a missed run only leaves `Deal.is_featured` briefly stale. |
 | `sale_events.report_quarantine` | daily | Logs a warning while migration `0014_sale_events` still has declared sales it could not attach to a venue. Those are real amounts belonging to nobody we can name and are excluded from every revenue figure — the count has to stay visible until it is zero. Resolve via `GET /api/admin/sale-events/quarantined`. |
+| `auth.erase_outbox` | every 10 minutes (built in: `beat_schedule` in `app/celery_app.py`; start the worker with `-B -s /tmp/celerybeat-schedule`; `AUTH_ERASE_OUTBOX_SECONDS` changes it) | Retries telling the auth service about people fidelia erased while it was unreachable (`app/services/auth_erase.py`): the number is kept sealed until auth answers, blanked at once when done, and given up (logged `auth erase GIVEN UP`, erase her by hand) after `AUTH_ERASE_MAX_DAYS` (default 30). Only needed with SSO on. |
 | `maintenance.purge_expired` | daily | Deletes sign-in codes older than a day, refresh tokens past expiry (and revoked ones after 30 days), and app error reports older than `CLIENT_EVENTS_RETENTION_DAYS` (default 90), so phone numbers and stacks are kept only while useful. Rotated, unexpired tokens are kept on purpose: they are what detects a stolen token being reused. See `app/services/purge.py`. |
 
 Run one by hand:

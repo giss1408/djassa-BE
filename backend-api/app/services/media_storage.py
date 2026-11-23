@@ -10,6 +10,8 @@ Chosen with `MEDIA_STORAGE`:
     R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET,
     MEDIA_PUBLIC_BASE_URL  (the bucket's public r2.dev URL or a custom domain)
   The access key should be an R2 API token scoped to that one bucket.
+  `R2_JURISDICTION=eu` for a bucket created with the EU jurisdiction (its
+  data stays in the EU; such a bucket answers only on the EU endpoint).
 
 Keys carry a random part, so a URL cannot be guessed from a shop id, and
 files never change once written: they are served with a one-year immutable
@@ -40,6 +42,9 @@ class LocalStorage:
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(path, target)
 
+    def get(self, key: str, path: str) -> None:
+        shutil.copyfile(self.root / key, path)
+
     def delete(self, key: str) -> None:
         try:
             (self.root / key).unlink()
@@ -56,11 +61,13 @@ class R2Storage:
     def __init__(self, account_id: str, access_key: str, secret_key: str, bucket: str, public_base: str):
         import boto3  # only needed when R2 is configured
 
+        jurisdiction = f".{os.environ['R2_JURISDICTION']}" if os.getenv("R2_JURISDICTION") else ""
+
         self.bucket = bucket
         self.public_base = public_base.rstrip("/")
         self.client = boto3.client(
             "s3",
-            endpoint_url=f"https://{account_id}.r2.cloudflarestorage.com",
+            endpoint_url=f"https://{account_id}{jurisdiction}.r2.cloudflarestorage.com",
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
             region_name="auto",
@@ -70,6 +77,9 @@ class R2Storage:
         self.client.upload_file(
             path, self.bucket, key, ExtraArgs={"ContentType": _content_type(key), "CacheControl": IMMUTABLE}
         )
+
+    def get(self, key: str, path: str) -> None:
+        self.client.download_file(self.bucket, key, path)
 
     def delete(self, key: str) -> None:
         self.client.delete_object(Bucket=self.bucket, Key=key)

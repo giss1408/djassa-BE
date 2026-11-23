@@ -29,7 +29,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
-from ..core.security import get_current_user, require_role
+from ..core.security import get_current_user, require_role, step_up
 from ..db import get_db
 from ..schemas import ConsentIn, ConsentOut
 from ..services import revenue as revenue_service
@@ -110,7 +110,7 @@ async def _events_in_window(db: AsyncSession, venue_id: int, days: int):
     return events, since, now
 
 
-@router.get("/export/merchant/revenue.csv")
+@router.get("/export/merchant/revenue.csv", dependencies=[Depends(step_up)])
 async def export_revenue_summary(
     days: int = Query(90, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
@@ -205,7 +205,7 @@ async def export_revenue_summary(
     )
 
 
-@router.get("/export/merchant/customers.csv")
+@router.get("/export/merchant/customers.csv", dependencies=[Depends(step_up)])
 async def export_customer_rows(
     days: int = Query(90, ge=1, le=365),
     db: AsyncSession = Depends(get_db),

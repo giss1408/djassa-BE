@@ -38,4 +38,4 @@ For schema changes, review [MIGRATIONS.md](backend-api/MIGRATIONS.md) and includ
 - [ ] Documentation and configuration examples are updated.
 - [ ] `pytest -q` passes.
 
-See [skills/README.md](skills/README.md) and [docs/technical/TECHNICAL-GUIDE.md](docs/technical/TECHNICAL-GUIDE.md) for implementation guidance.
+See [skills/README.md](skills/README.md) and [docs/technical/TECHNICAL-GUIDE.md](https://github.com/giss1408/fidelia-docs/blob/main/docs/technical/TECHNICAL-GUIDE.md) for implementation guidance.

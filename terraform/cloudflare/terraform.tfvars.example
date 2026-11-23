@@ -1,0 +1,20 @@
+# Copy to terraform.tfvars (never committed) and fill in.
+account_id = "0123456789abcdef0123456789abcdef"
+zone_id    = "fedcba9876543210fedcba9876543210"
+zone_name  = "example.ci"
+
+environments = {
+  prod = {
+    api_hostname    = "api.example.ci"
+    render_hostname = "fidelia-api-prod.onrender.com"
+    # First apply with false; true once Render shows the domain verified.
+    proxied = false
+    media = {
+      hostname = "media.example.ci"
+      bucket   = "fidelia-media-prod"
+    }
+  }
+}
+
+# Better passed as TF_VAR_origin_secrets='{"prod":"..."}' than written here.
+# origin_secrets = { prod = "the API's CLOUDFLARE_ORIGIN_SECRET" }

@@ -17,7 +17,6 @@ app/services/media_storage.py.
 """
 
 import json
-import secrets
 import shutil
 import tempfile
 from datetime import datetime, timedelta, timezone
@@ -31,9 +30,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
 from ..core.security import SHOP_STAFF, require_role
-from ..db import AsyncSessionLocal, get_db
+from ..db import get_db
 from ..schemas.media import MediaOut
-from ..services.media_processing import MediaRejected, process_image, process_video
+from ..services import media_jobs
+from ..services.media_jobs import finish as _finish
 from ..services.media_storage import get_storage
 from .payment_requests import _my_venue
 
@@ -139,43 +139,6 @@ async def _all_media(db: AsyncSession, venue_id: int) -> list[MediaOut]:
     return [media_out(m) for m in rows]
 
 
-def _process_and_store(media_id: int, venue_id: int, kind: str, src: str, workdir: str) -> tuple[dict, int | None]:
-    """CPU and network work, run off the event loop."""
-    processed = (process_image if kind == "image" else process_video)(src, workdir)
-    storage = get_storage()
-    token = secrets.token_hex(6)
-    variants = {}
-    for name, (path, info) in processed.files.items():
-        key = f"venues/{venue_id}/{media_id}-{token}/{name}{Path(path).suffix}"
-        storage.put(key, path)
-        variants[name] = {"key": key, **info}
-    return variants, processed.duration_s
-
-
-async def _finish(media_id: int, venue_id: int, kind: str, src: str, workdir: str) -> None:
-    """Processes one upload and records the outcome. Never raises: a failure
-    is stored on the row for whoever uploaded it to read."""
-    try:
-        variants, duration = await run_in_threadpool(_process_and_store, media_id, venue_id, kind, src, workdir)
-        status, error = "ready", None
-    except MediaRejected as exc:
-        variants, duration, status, error = None, None, "failed", str(exc)
-    except Exception:  # storage down, ffmpeg crashed...
-        variants, duration, status, error = None, None, "failed", "Traitement impossible, reessayez plus tard"
-    finally:
-        shutil.rmtree(workdir, ignore_errors=True)
-    async with AsyncSessionLocal() as db:
-        media = await db.get(models.VenueMedia, media_id)
-        if media is None:  # deleted while processing: drop what was stored
-            if variants:
-                for v in variants.values():
-                    await run_in_threadpool(get_storage().delete, v["key"])
-            return
-        media.status, media.error, media.duration_s = status, error, duration
-        media.variants = json.dumps(variants) if variants else None
-        await db.commit()
-
-
 async def _receive(upload: UploadFile, kind: str, workdir: str) -> str:
     """Copies the upload to our own file, refusing it past the size limit
     without reading the rest."""
@@ -232,10 +195,28 @@ async def _add(
         # A second or two: answer with the finished photo.
         await _finish(media.id, venue.id, kind, src, workdir)
         await db.refresh(media)
+    elif media_jobs.use_worker() and await _queue(media.id, venue.id, kind, src):
+        # Converted by the worker (app/services/media_jobs.py).
+        shutil.rmtree(workdir, ignore_errors=True)
     else:
         # Minutes on a small server: answer now, convert after the response.
         background.add_task(_finish, media.id, venue.id, kind, src, workdir)
     return media_out(media)
+
+
+async def _queue(media_id: int, venue_id: int, kind: str, src: str) -> bool:
+    """Hands a video to the worker. False when the queue or storage is down:
+    the API then converts it itself rather than lose it."""
+    try:
+        key = await run_in_threadpool(media_jobs.stage, src)
+    except Exception:
+        return False
+    try:
+        await run_in_threadpool(media_jobs.enqueue, media_id, venue_id, kind, key)
+    except Exception:
+        await run_in_threadpool(get_storage().delete, key)
+        return False
+    return True
 
 
 async def _delete(db: AsyncSession, venue_id: int, media_id: int) -> None:

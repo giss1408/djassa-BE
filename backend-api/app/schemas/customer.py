@@ -172,6 +172,16 @@ class DutyOut(DutyIn):
     venue_id: int
 
 
+class AdminPharmacyOut(BaseModel):
+    """A pharmacy with its duties that have not ended yet, for the admin app."""
+
+    id: int
+    name: str
+    commune: str
+    address: str | None = None
+    duties: list[DutyOut]
+
+
 class PayTargetOut(BaseModel):
     """What a scanned QR resolves to, as the SERVER knows it.
 

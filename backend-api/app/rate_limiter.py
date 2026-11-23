@@ -1,14 +1,21 @@
 import os
 
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
-# Central limiter instance for the app; import from other modules
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+from .edge import client_ip
 
-# Centralized rate limiter with exemption helper
-limiter = Limiter(key_func=get_remote_address)
+# One limiter for the whole app. Counted per caller address (app/edge.py: never
+# the address the caller wrote itself). Counters live in RATE_LIMIT_STORAGE_URI
+# (Render Key Value in production, so they survive deploys and are shared by
+# every instance); in memory when unset (development, tests). If the store is
+# unreachable, the limiter counts in memory until it is back rather than
+# failing every request.
+limiter = Limiter(
+    key_func=client_ip,
+    storage_uri=os.getenv("RATE_LIMIT_STORAGE_URI", "memory://"),
+    in_memory_fallback_enabled=True,
+    key_prefix="fidelia-rl",
+)
 
 
 def public_read_limit() -> str:

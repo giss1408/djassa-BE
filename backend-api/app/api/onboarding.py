@@ -24,7 +24,7 @@ own account, points only by default.
 from datetime import datetime
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,9 +34,11 @@ from ..core import otp, security
 from ..core.phone import mask_phone
 from ..db import get_db
 from ..rate_limiter import limiter
+from ..services import admin_alerts
 from ..services.otp_sender import OtpDeliveryFailed, get_sender
 from .auth import check_code, dev_code, link_merchant, phone_or_422, send_code, utcnow
 from .customer import CATEGORIES, new_pay_code, qr_payload
+from .pilot import forget_owner
 from .customer import _venue_out as _public_venue_out
 from ..schemas.customer import VenueOut as PublicVenueOut
 
@@ -129,6 +131,9 @@ async def admin_create_venue(
     shop enrolled in person without its merchant would wait for an admin."""
     if user["role"] == "agent" and not payload.merchant_phone:
         raise HTTPException(status_code=422, detail="Indiquez le numero du gerant")
+    if user["role"] == "agent" and (payload.payout_provider or payload.payout_account):
+        # Where customers' money is paid out is entered by the merchant in Fidelia Pro, never by the agent who enrols the shop.
+        raise HTTPException(status_code=422, detail="wallet_set_by_merchant")
     venue = await create_venue(db, payload, utcnow(), enrolled_by=user["username"])
     await db.commit()
     if venue.owner_username and venue.owner_username.startswith("tel:"):
@@ -213,7 +218,9 @@ async def partner_code(request: Request, payload: PartnerCodeIn, db: AsyncSessio
 
 @router.post("/partner-requests", status_code=202)
 @limiter.limit("5/minute;20/hour")
-async def file_partner_request(request: Request, payload: PartnerRequestIn, db: AsyncSession = Depends(get_db)):
+async def file_partner_request(
+    request: Request, payload: PartnerRequestIn, background: BackgroundTasks, db: AsyncSession = Depends(get_db)
+):
     e164 = phone_or_422(payload.phone, payload.country_code)
     now = utcnow()
     await check_code(db, e164, payload.code, "partner", now)
@@ -245,6 +252,13 @@ async def file_partner_request(request: Request, payload: PartnerRequestIn, db: 
         )
     )
     await db.commit()
+    background.add_task(
+        admin_alerts.send,
+        "Nouvelle demande commerçant",
+        f"{payload.shop_name.strip()} ({payload.category}, {payload.commune.strip()}) : à appeler",
+        priority=4,
+        tags=["shopping_cart"],
+    )
     return {
         "status": "pending",
         "message": "Demande recue. Un agent Fidelia vous appelle pour finaliser votre inscription.",
@@ -453,7 +467,10 @@ async def admin_update_venue(
     elif venue.pay_code is None:
         venue.pay_code = new_pay_code()
     if payload.merchant_phone:
+        previous = venue.owner_username
         await link_merchant(db, phone_or_422(payload.merchant_phone, payload.country_code), venue, utcnow())
+        if previous and previous != venue.owner_username:
+            await forget_owner(db, venue.id)
     await db.commit()
     await db.refresh(venue)
     return await _detail(db, venue)

@@ -86,6 +86,29 @@ groups:
         annotations:
           summary: "The SMS provider is refusing sign-in codes; nobody can sign in"
 
+      # OTP_SENDER=orange,africastalking: codes still arrive, through the
+      # fallback, at a higher price per code. Usually Orange's bundle is spent.
+      - alert: OtpPrimaryProviderFailing
+        expr: sum(increase(fidelia_otp_sms_total{provider="orange",result="failed"}[30m])) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Orange is refusing sign-in codes; the fallback provider is sending them (check the Orange SMS bundle)"
+
+      # Orange's delivery receipts: codes accepted by Orange that never reach
+      # phones on one network (Orange notes issues towards MTN).
+      - alert: OtpSmsNotDelivered
+        expr: |
+          sum by (network) (increase(fidelia_otp_sms_delivery_total{status="DeliveryImpossible"}[1h]))
+            / sum by (network) (increase(fidelia_otp_sms_delivery_total[1h])) > 0.3
+          and sum by (network) (increase(fidelia_otp_sms_delivery_total[1h])) > 5
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Over 30% of sign-in codes to {{ $labels.network }} numbers could not be delivered in the last hour"
+
       - alert: OtpDailyBudgetReached
         expr: sum(increase(fidelia_auth_events_total{event="otp_request",result="daily_budget"}[10m])) > 0
         labels:
