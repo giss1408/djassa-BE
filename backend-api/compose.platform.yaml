@@ -12,11 +12,17 @@ x-common: &common
   env_file: .env.platform
   restart: unless-stopped
   networks: [infra_net]
-  volumes: [media:/app/media]
+  # Hardening: the image filesystem is read-only; only the media volume and /tmp (a disk-backed volume per service, because media conversion
+  # writes large temporary files: tmpfs would spend the container's RAM) are writable. No capabilities, no privilege gain, bounded processes.
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  pids_limit: 512
 
 services:
   web:
     <<: *common
+    volumes: [media:/app/media, web_tmp:/tmp]
     container_name: fidelia-web              # the upstream infra/conf.d/fidelia.caddy proxies to, and the host the auth service calls its hook on
     command: ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips '*' --no-access-log"]
     mem_limit: 768m
@@ -30,6 +36,7 @@ services:
 
   worker:
     <<: *common
+    volumes: [media:/app/media, worker_tmp:/tmp]
     container_name: fidelia-worker
     # -B: the beat schedule (auth erase outbox every 10 minutes). The schedule file goes to /tmp: the app dir is not writable.
     # --concurrency 1: one video conversion at a time (ffmpeg), as the code expects (app/celery_tasks.py).
@@ -47,6 +54,8 @@ services:
 
 volumes:
   media:
+  web_tmp:
+  worker_tmp:
 
 networks:
   infra_net:
